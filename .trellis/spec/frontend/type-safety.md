@@ -1,51 +1,96 @@
 # Type Safety
 
-> Type safety patterns in this project.
+> Type-safety and runtime-validation patterns.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's type safety conventions here.
+TypeScript `strict` mode. **Zod is the single source of truth** for every data
+contract that crosses a boundary (AI output, persisted JSON, IPC payloads).
+Types are *derived from* schemas with `z.infer`, never hand-written alongside
+them. Validate at every trust boundary; the rest of the app works with typed,
+validated data.
 
-Questions to answer:
-- What type system do you use?
-- How are types organized?
-- What validation library do you use?
-- How do you handle type inference?
--->
-
-(To be filled by the team)
+Key schemas: `src/lib/types/exam.ts` (ExamPaper, 7-type Question union),
+`src/lib/types/config.ts` (AppConfig / ModelConfig / AppSettings).
 
 ---
 
-## Type Organization
+## Convention: schema first, type derived
 
-<!-- Where types are defined, shared types vs local types -->
+```ts
+export const QuestionSchema = z.discriminatedUnion("type", [ /* 7 variants */ ]);
+export type Question = z.infer<typeof QuestionSchema>;  // derived, never separate
+```
 
-(To be filled by the team)
-
----
-
-## Validation
-
-<!-- Runtime validation patterns (Zod, Yup, io-ts, etc.) -->
-
-(To be filled by the team)
+**Why:** one definition. A field added to the schema flows into the type, the
+validator, and AI/persistence parsing at once — no drift.
 
 ---
 
-## Common Patterns
+## Convention: discriminated unions for question types
 
-<!-- Type utilities, generics, type guards -->
+The 7 question types share a `baseFields` spread (`id`, `content`, `score`) and
+discriminate on `type`. Objective types carry checkable answers; subjective
+carry reference/criteria. `AiQuestionsResponseSchema = { questions: [...] }` is
+what the AI must return (questions-only, never a full paper snapshot).
 
-(To be filled by the team)
+When adding a question type: add the variant schema, add it to the union, and
+extend `OBJECTIVE_TYPES`/`formatAnswer`/`toStudentVersion`/`TypeFields` —
+`tsc` + the discriminated-union exhaustiveness will flag the switch sites.
+
+---
+
+## Convention: validate at every boundary
+
+```ts
+// AI output
+const result = AiQuestionsResponseSchema.safeParse(parsed);
+// persisted JSON (load + import)
+return ExamPaperSchema.parse(JSON.parse(raw));
+```
+
+Rust hands back **raw JSON strings**; the frontend parses + validates (see
+backend/directory-structure.md). Never trust a JSON string as typed without
+running its schema.
+
+---
+
+## Gotcha: Zod v4 `.default({})` on an all-optional object fails typing
+
+> **Warning**: In Zod v4, `Schema.default({})` requires the value to satisfy the
+> schema's **output** type. An object schema whose fields all have defaults still
+> types its output as fully-required, so `.default({})` raises
+> "Type '{}' is missing the following properties…" even though every field has a
+> default.
+
+**Fix:** use `.prefault({})` (applies defaults to a *partial input*) for nested
+all-defaulted objects:
+
+```ts
+// ❌ AppSettingsSchema.default({})   → TS2769
+// ✅
+settings: AppSettingsSchema.prefault({}),
+```
+
+`default()` is still correct for scalars (`z.number().default(1)`,
+`z.string().default("")`). See `src/lib/types/config.ts`.
+
+---
+
+## Versioned persistence
+
+`ExamPaper` and `AppConfig` carry an integer `version` (`PAPER_SCHEMA_VERSION`,
+`CONFIG_SCHEMA_VERSION`) so future schema changes can detect + migrate old files.
+Bump the constant and add migration when the shape changes incompatibly.
 
 ---
 
 ## Forbidden Patterns
 
-<!-- any, type assertions, etc. -->
-
-(To be filled by the team)
+- **`any`** — use `unknown` + a schema parse, or a proper type.
+- **Hand-written type duplicating a Zod schema** — derive with `z.infer`.
+- **Type assertions (`as T`) to silence boundary errors** — parse instead. The
+  one accepted use is the narrowed `...rest as Question` in `toStudentVersion`
+  after deleting answer keys, where the runtime shape is provably valid.

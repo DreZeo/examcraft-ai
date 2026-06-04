@@ -14,12 +14,12 @@ This directory contains guidelines for frontend development. Fill in each file w
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
+| [Directory Structure](./directory-structure.md) | src/ layout, lib/stores/components split | Filled |
+| [Component Guidelines](./component-guidelines.md) | Component patterns, i18n, a11y, print | Filled |
 | [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
+| [State Management](./state-management.md) | Zustand patterns, streaming event contract | Filled |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
+| [Type Safety](./type-safety.md) | Zod-as-contract, discriminated unions, gotchas | Filled |
 
 ---
 
