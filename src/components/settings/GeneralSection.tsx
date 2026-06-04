@@ -1,4 +1,11 @@
 import { useTranslation } from "react-i18next";
+import {
+  Languages,
+  MessageSquareText,
+  Palette,
+  Save,
+  Sparkles,
+} from "lucide-react";
 import { useConfigStore } from "../../stores/configStore";
 import type { ExplanationTier, Theme } from "../../lib/types/config";
 import { inputCls } from "../../lib/ui/styles";
@@ -12,10 +19,13 @@ export function GeneralSection() {
   const s = config.settings;
 
   return (
-    <div className="space-y-5 text-sm">
-      <label className="flex items-center justify-between gap-4">
-        <span className="font-medium text-foreground">
-          {t("settings.language")}
+    <div className="min-h-[24rem] space-y-5 text-sm">
+      <label className={rowCls}>
+        <span className={labelCls}>
+          <Languages className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-foreground">
+            {t("settings.language")}
+          </span>
         </span>
         <select
           value={s.language}
@@ -31,9 +41,12 @@ export function GeneralSection() {
         </select>
       </label>
 
-      <label className="flex items-center justify-between gap-4">
-        <span className="font-medium text-foreground">
-          {t("settings.theme")}
+      <label className={rowCls}>
+        <span className={labelCls}>
+          <Palette className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-foreground">
+            {t("settings.theme")}
+          </span>
         </span>
         <select
           value={s.theme}
@@ -48,9 +61,12 @@ export function GeneralSection() {
         </select>
       </label>
 
-      <label className="flex items-center justify-between gap-4">
-        <span className="font-medium text-foreground">
-          {t("settings.autoSave")}
+      <label className={rowCls}>
+        <span className={labelCls}>
+          <Save className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-foreground">
+            {t("settings.autoSave")}
+          </span>
         </span>
         <input
           type="checkbox"
@@ -62,9 +78,12 @@ export function GeneralSection() {
         />
       </label>
 
-      <label className="flex items-center justify-between gap-4">
-        <span className="font-medium text-foreground">
-          {t("settings.explanationTier")}
+      <label className={rowCls}>
+        <span className={labelCls}>
+          <Sparkles className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-foreground">
+            {t("settings.explanationTier")}
+          </span>
         </span>
         <select
           value={s.explanationTier}
@@ -81,11 +100,12 @@ export function GeneralSection() {
         </select>
       </label>
 
-      <div>
+      <div className="rounded-md border border-border bg-background p-3">
         <label
           htmlFor="custom-instructions"
-          className="font-medium text-foreground"
+          className="flex items-center gap-2 font-medium text-foreground"
         >
+          <MessageSquareText className="h-4 w-4 text-muted-foreground" />
           {t("settings.customInstructions")}
         </label>
         <textarea
@@ -101,3 +121,7 @@ export function GeneralSection() {
     </div>
   );
 }
+
+const rowCls =
+  "flex flex-col gap-2 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between";
+const labelCls = "inline-flex items-center gap-2";

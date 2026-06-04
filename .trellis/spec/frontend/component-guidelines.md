@@ -98,6 +98,13 @@ Hover/focus transitions use `transition-colors` (150–250ms). **Only** animate 
 
 **Mandatory:** `src/styles/index.css` includes a global `@media (prefers-reduced-motion: reduce)` rule that kills all transitions/animations. Don't override it.
 
+### Scrollbars
+
+Scrollbar styling is global in `src/styles/index.css`: thin, low-contrast,
+white-gray/light-neutral tracks and thumbs, using semantic HSL tokens. Do not
+add one-off scrollbar styles inside components unless a specific embedded
+surface has a documented exception.
+
 ### Print
 
 - **Print:** add `no-print` to any UI chrome that must not appear in PDF export

@@ -110,6 +110,30 @@ body {
   color: hsl(var(--foreground));
 }
 
+/* Thin, low-contrast scrollbars across the workbench. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) hsl(var(--background) / 0.35);
+}
+
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+*::-webkit-scrollbar-track {
+  background: hsl(var(--background) / 0.35);
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: hsl(var(--border));
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.45);
+}
+
 /* Respect reduced-motion: kill all transitions/animations globally. */
 @media (prefers-reduced-motion: reduce) {
   *,

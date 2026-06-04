@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
+  Bot,
   PanelRightClose,
   PanelRightOpen,
   Send,
@@ -87,10 +88,12 @@ export function AssistantDrawer({
   }
 
   return (
-    <aside className="no-print flex w-[380px] shrink-0 flex-col border-l border-border bg-card transition-all duration-200">
-      <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+    <aside className="no-print flex w-[400px] shrink-0 flex-col border-l border-border bg-card transition-all duration-200">
+      <div className="flex items-center justify-between border-b border-border bg-muted/30 px-3 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
-          <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Sparkles className="h-4 w-4" />
+          </span>
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">
               {t("assistant.title")}
@@ -113,7 +116,10 @@ export function AssistantDrawer({
         </button>
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-auto p-3">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 space-y-4 overflow-auto bg-background/45 p-3"
+      >
         {!activeConfig && (
           <div className="animate-fade-in rounded-md bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
             <p className="flex items-start gap-2">
@@ -135,19 +141,22 @@ export function AssistantDrawer({
         ))}
 
         {streaming && (
-          <div className="animate-fade-in rounded-lg bg-muted px-3 py-2 text-sm text-foreground">
+          <div className="mr-8 animate-fade-in rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm">
             {streamBuffer ? (
               <Markdown>{streamBuffer}</Markdown>
             ) : (
-              <span className="text-muted-foreground">{t("assistant.thinking")}</span>
+              <span className="inline-flex items-center gap-2 text-muted-foreground">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                {t("assistant.thinking")}
+              </span>
             )}
           </div>
         )}
       </div>
 
-      <div className="border-t border-border p-3">
+      <div className="border-t border-border bg-card p-3">
         {focusedQuestion && (
-          <div className="mb-2 flex items-center justify-between rounded-md bg-primary/10 px-2 py-1 text-xs text-primary">
+          <div className="mb-2 flex items-center justify-between rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-xs text-primary">
             <span className="truncate">{t("paper.aiModify")}: {focusedQuestion.type}</span>
             <button
               type="button"
@@ -167,7 +176,7 @@ export function AssistantDrawer({
           disabled={!activeConfig}
           rows={3}
           placeholder={t("assistant.placeholder")}
-          className={`${inputCls} resize-none`}
+          className={`${inputCls} resize-none bg-background shadow-inner`}
         />
         {streaming ? (
           <button
@@ -207,14 +216,19 @@ function MessageItem({
     case "text":
       if (message.role === "user") {
         return (
-          <div className="ml-8 animate-fade-in rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground">
+          <div className="ml-10 animate-fade-in rounded-lg rounded-br-sm bg-primary px-3 py-2 text-sm text-primary-foreground shadow-sm transition-transform hover:-translate-y-0.5">
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
           </div>
         );
       }
       return (
-        <div className="mr-8 animate-fade-in rounded-lg bg-muted px-3 py-2 text-sm text-foreground">
-          <Markdown>{message.content}</Markdown>
+        <div className="mr-8 flex animate-fade-in items-start gap-2">
+          <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+            <Bot className="h-3.5 w-3.5" />
+          </span>
+          <div className="min-w-0 flex-1 rounded-lg rounded-tl-sm border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm transition-colors hover:border-ring/40">
+            <Markdown>{message.content}</Markdown>
+          </div>
         </div>
       );
     case "confirmation":

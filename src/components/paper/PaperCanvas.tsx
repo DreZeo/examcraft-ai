@@ -29,8 +29,8 @@ export function PaperCanvas() {
   }
 
   return (
-    <div className="flex justify-center px-6 py-8">
-      <div className="paper-sheet w-full max-w-3xl rounded-lg bg-card p-10 shadow-sm">
+    <div className="flex min-w-fit justify-center px-4 py-8 sm:px-6">
+      <div className="paper-sheet min-h-[297mm] w-full max-w-[210mm] rounded-lg bg-card p-6 shadow-sm sm:p-[14mm]">
         {paper.title && (
           <h1 className="mb-6 text-center text-2xl font-semibold text-foreground">
             {paper.title}
