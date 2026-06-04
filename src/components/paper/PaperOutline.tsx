@@ -31,20 +31,24 @@ export function PaperOutline({
       className={
         open
           ? "no-print motion-panel-shell hidden w-56 shrink-0 overflow-hidden border-r border-border bg-background/60 lg:flex lg:flex-col"
-          : "no-print motion-panel-shell hidden w-12 shrink-0 overflow-hidden border-r border-border bg-background/60 lg:flex lg:flex-col"
+          : "no-print motion-panel-shell hidden w-16 shrink-0 overflow-hidden border-r border-border bg-background/60 lg:flex lg:flex-col"
       }
     >
-      <div className="flex items-center gap-2 border-b border-border px-2.5 py-3">
-        <div
-          className="motion-panel-content flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap"
-          data-open={open}
-          aria-hidden={!open}
-        >
-          <ListTree className="h-4 w-4 shrink-0 text-primary" />
-          <h2 className="min-w-0 truncate text-sm font-semibold text-foreground">
-            {t("paper.outline")}
-          </h2>
-        </div>
+      <div
+        className={
+          open
+            ? "flex items-center gap-2 border-b border-border px-2.5 py-3"
+            : "flex justify-center border-b border-border py-3"
+        }
+      >
+        {open && (
+          <div className="motion-panel-content flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap">
+            <ListTree className="h-4 w-4 shrink-0 text-primary" />
+            <h2 className="min-w-0 truncate text-sm font-semibold text-foreground">
+              {t("paper.outline")}
+            </h2>
+          </div>
+        )}
         <button
           type="button"
           aria-label={open ? t("paper.collapseOutline") : t("paper.expandOutline")}
@@ -69,20 +73,18 @@ export function PaperOutline({
           }
         >
           <FileText className="h-7 w-7 text-muted-foreground/70" />
-          <p
-            className="motion-panel-content mt-2 w-44 overflow-hidden text-xs leading-5 text-muted-foreground"
-            data-open={open}
-            aria-hidden={!open}
-          >
-            {t("paper.outlineEmpty")}
-          </p>
+          {open && (
+            <p className="motion-panel-content mt-2 w-44 overflow-hidden text-xs leading-5 text-muted-foreground">
+              {t("paper.outlineEmpty")}
+            </p>
+          )}
         </div>
       ) : (
         <nav
           className={
             open
               ? "min-h-0 flex-1 overflow-auto p-2"
-              : "min-h-0 flex-1 overflow-auto px-1 py-2"
+              : "min-h-0 flex-1 overflow-auto py-2 pl-2 pr-3"
           }
         >
           <ol className="space-y-1">
@@ -118,11 +120,8 @@ export function PaperOutline({
                   >
                     {index + 1}
                   </span>
-                  <span
-                    className="motion-panel-content min-w-0 flex-1 overflow-hidden"
-                    data-open={open}
-                    aria-hidden={!open}
-                  >
+                  {open && (
+                    <span className="motion-panel-content min-w-0 flex-1 overflow-hidden">
                       <span className="block truncate text-xs font-medium">
                         {t(`questionType.${question.type}`)}
                       </span>
@@ -130,6 +129,7 @@ export function PaperOutline({
                         {summarizeMarkdown(question.content)}
                       </span>
                     </span>
+                  )}
                 </button>
               </li>
             ))}
@@ -159,7 +159,7 @@ const inactiveItemCls =
   " text-foreground hover:bg-accent hover:text-accent-foreground";
 
 const collapsedBaseItemCls =
-  "flex w-full justify-center rounded-md py-1 transition-colors focus-visible:outline-none " +
+  "flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-none " +
   "focus-visible:ring-2 focus-visible:ring-ring cursor-pointer";
 
 const collapsedActiveItemCls =
