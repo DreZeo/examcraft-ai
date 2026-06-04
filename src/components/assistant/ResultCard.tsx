@@ -11,6 +11,10 @@ import {
   Undo2,
 } from "lucide-react";
 import type { AiPaperOperation, Question } from "../../lib/types/exam";
+import {
+  countPaperOperationChanges,
+  previewPaperOperations,
+} from "../../lib/exam/operationPreview";
 import { useAssistantStore } from "../../stores/assistantStore";
 import { usePaperStore } from "../../stores/paperStore";
 import { Markdown } from "../paper/Markdown";
@@ -22,14 +26,6 @@ interface ResultCardProps {
   questions?: Question[];
   applied: boolean;
 }
-
-type OperationSummary = {
-  rename?: Extract<AiPaperOperation, { type: "renamePaper" }>;
-  added: Question[];
-  updated: Question[];
-  deleted: string[];
-  reordered: string[] | null;
-};
 
 /** Preview validated AI paper operations and apply them only on user action. */
 export function ResultCard({
@@ -43,13 +39,8 @@ export function ResultCard({
   const [open, setOpen] = useState(false);
   const applyResult = useAssistantStore((s) => s.applyResult);
   const undoApply = usePaperStore((s) => s.undoApply);
-  const summary = summarizeOperations(operations, questions);
-  const totalChanges =
-    (summary.rename ? 1 : 0) +
-    summary.added.length +
-    summary.updated.length +
-    summary.deleted.length +
-    (summary.reordered ? 1 : 0);
+  const summary = previewPaperOperations(operations, questions);
+  const totalChanges = countPaperOperationChanges(summary);
 
   return (
     <div className="animate-fade-in rounded-lg border border-border bg-card p-3 text-sm shadow-sm">
@@ -212,44 +203,4 @@ function QuestionList({
       </ol>
     </div>
   );
-}
-
-function summarizeOperations(
-  operations: AiPaperOperation[],
-  legacyQuestions: Question[] | undefined,
-): OperationSummary {
-  const summary: OperationSummary = {
-    added: legacyQuestions ?? [],
-    updated: [],
-    deleted: [],
-    reordered: null,
-  };
-
-  for (const operation of operations) {
-    switch (operation.type) {
-      case "renamePaper":
-        summary.rename = operation;
-        break;
-      case "appendQuestions":
-        summary.added.push(...operation.questions);
-        break;
-      case "updateQuestion":
-        summary.updated.push(operation.question);
-        break;
-      case "deleteQuestion":
-        summary.deleted.push(operation.id);
-        break;
-      case "reorderQuestions":
-        summary.reordered = operation.questionIds;
-        break;
-      default:
-        exhaustive(operation);
-    }
-  }
-
-  return summary;
-}
-
-function exhaustive(value: never): never {
-  throw new Error(`Unhandled paper operation: ${JSON.stringify(value)}`);
 }

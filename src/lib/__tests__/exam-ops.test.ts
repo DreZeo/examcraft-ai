@@ -10,6 +10,10 @@ import {
   updateQuestion,
   totalScore,
 } from "../exam/merge";
+import {
+  countPaperOperationChanges,
+  previewPaperOperations,
+} from "../exam/operationPreview";
 import { toStudentVersion } from "../exam/studentVersion";
 import { summarizePaper } from "../exam/summary";
 
@@ -105,6 +109,36 @@ describe("merge operations", () => {
     expect(p.title).toBe("六年级英语试卷");
     expect(p.questions.map((q) => q.id)).toEqual(["q4", "q1", "q3"]);
     expect(p.questions[1].content).toBe("updated");
+  });
+});
+
+describe("paper operation preview", () => {
+  it("summarizes mixed AI paper operations without applying them", () => {
+    const preview = previewPaperOperations([
+      { type: "renamePaper", title: "六年级英语试卷" },
+      { type: "appendQuestions", questions: [sc("q4")] },
+      {
+        type: "updateQuestion",
+        id: "q1",
+        question: { ...sc("q1"), content: "updated" },
+      },
+      { type: "deleteQuestion", id: "q2" },
+      { type: "reorderQuestions", questionIds: ["q4", "q1", "q3"] },
+    ]);
+
+    expect(preview.rename?.title).toBe("六年级英语试卷");
+    expect(preview.added.map((q) => q.id)).toEqual(["q4"]);
+    expect(preview.updated.map((q) => q.id)).toEqual(["q1"]);
+    expect(preview.deleted).toEqual(["q2"]);
+    expect(preview.reordered).toEqual(["q4", "q1", "q3"]);
+    expect(countPaperOperationChanges(preview)).toBe(5);
+  });
+
+  it("keeps legacy generated questions in the added bucket", () => {
+    const preview = previewPaperOperations([], [sc("legacy")]);
+
+    expect(preview.added.map((q) => q.id)).toEqual(["legacy"]);
+    expect(countPaperOperationChanges(preview)).toBe(1);
   });
 });
 
