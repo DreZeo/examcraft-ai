@@ -1,18 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useConfigStore } from "./stores/configStore";
 import { usePaperStore } from "./stores/paperStore";
 import { useTheme } from "./hooks/useTheme";
 import { FirstLaunch } from "./components/layout/FirstLaunch";
 import { TopBar } from "./components/layout/TopBar";
+import { PaperOutline } from "./components/paper/PaperOutline";
 import { PaperCanvas } from "./components/paper/PaperCanvas";
 import { AssistantDrawer } from "./components/assistant/AssistantDrawer";
 import { SettingsModal } from "./components/settings/SettingsModal";
 
 export default function App() {
   const { loaded, dataDir, init } = useConfigStore();
+  const paper = usePaperStore((s) => s.paper);
   const loadPaper = usePaperStore((s) => s.load);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [outlineOpen, setOutlineOpen] = useState(true);
+  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
+  const paperScrollRef = useRef<HTMLElement | null>(null);
 
   useTheme();
 
@@ -23,6 +28,18 @@ export default function App() {
   useEffect(() => {
     if (dataDir) void loadPaper();
   }, [dataDir, loadPaper]);
+
+  useEffect(() => {
+    if (paper.questions.length === 0) {
+      setActiveQuestionId(null);
+      return;
+    }
+    setActiveQuestionId((current) =>
+      current && paper.questions.some((question) => question.id === current)
+        ? current
+        : paper.questions[0].id,
+    );
+  }, [paper.questions]);
 
   // Esc closes the settings modal / collapses the drawer.
   useEffect(() => {
@@ -52,8 +69,18 @@ export default function App() {
     <div className="flex h-full flex-col bg-background text-foreground">
       <TopBar onOpenSettings={() => setSettingsOpen(true)} />
       <div className="flex min-h-0 flex-1">
-        <main className="min-w-0 flex-1 overflow-auto">
-          <PaperCanvas />
+        <PaperOutline
+          questions={paper.questions}
+          activeQuestionId={activeQuestionId}
+          open={outlineOpen}
+          onToggle={() => setOutlineOpen((value) => !value)}
+          onActiveQuestionChange={setActiveQuestionId}
+        />
+        <main ref={paperScrollRef} className="min-w-0 flex-1 overflow-auto">
+          <PaperCanvas
+            scrollRootRef={paperScrollRef}
+            onActiveQuestionChange={setActiveQuestionId}
+          />
         </main>
         <AssistantDrawer
           open={drawerOpen}

@@ -80,6 +80,10 @@
   "paper": {
     "emptyTitle": "还没有题目",
     "emptySubtitle": "在右侧 AI 助手描述你的需求，或手动添加第一题。",
+    "outline": "题目索引",
+    "outlineEmpty": "添加题目后可在这里快速跳转。",
+    "collapseOutline": "收起题目索引",
+    "expandOutline": "展开题目索引",
     "teacherView": "教师视图",
     "studentPreview": "学生预览",
     "answer": "答案",

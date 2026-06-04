@@ -80,6 +80,10 @@
   "paper": {
     "emptyTitle": "No questions yet",
     "emptySubtitle": "Describe your needs in the AI assistant on the right, or add the first question manually.",
+    "outline": "Question outline",
+    "outlineEmpty": "Add questions to jump through the paper here.",
+    "collapseOutline": "Collapse question outline",
+    "expandOutline": "Expand question outline",
     "teacherView": "Teacher view",
     "studentPreview": "Student preview",
     "answer": "Answer",

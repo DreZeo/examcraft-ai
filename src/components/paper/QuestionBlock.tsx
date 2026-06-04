@@ -35,7 +35,11 @@ export function QuestionBlock({
   const focusQuestion = useAssistantStore((s) => s.focusQuestion);
 
   return (
-    <li className="question-block group relative rounded-md border border-transparent px-3 py-2 transition-colors hover:border-border hover:bg-accent/40">
+    <li
+      id={`question-${question.id}`}
+      data-question-id={question.id}
+      className="question-block scroll-mt-8 group relative rounded-md border border-transparent px-3 py-2 transition-colors hover:border-border hover:bg-accent/40"
+    >
       {!studentView && (
         <div className="no-print absolute right-2 top-2 hidden gap-1 group-hover:flex">
           <ActionButton

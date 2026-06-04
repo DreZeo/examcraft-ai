@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Plus } from "lucide-react";
 import { usePaperStore } from "../../stores/paperStore";
@@ -8,16 +8,25 @@ import { QuestionBlock } from "./QuestionBlock";
 import { QuestionEditModal } from "./QuestionEditModal";
 import { ExamInfoHeader } from "./ExamInfoHeader";
 
+interface PaperCanvasProps {
+  scrollRootRef?: RefObject<HTMLElement | null>;
+  onActiveQuestionChange?: (id: string | null) => void;
+}
+
 /**
  * Center "sheet": a centered white page that renders the assembled paper. Shows
  * a guided empty state when there are no questions. Honors the teacher/student
  * view toggle by filtering answers for the student preview. Hosts the
  * block-level edit modal and the "add question manually" affordances.
  */
-export function PaperCanvas() {
+export function PaperCanvas({
+  scrollRootRef,
+  onActiveQuestionChange,
+}: PaperCanvasProps) {
   const { t } = useTranslation();
   const { paper, view, addBlankQuestion } = usePaperStore();
   const display = view === "student" ? toStudentVersion(paper) : paper;
+  const questionIds = display.questions.map((question) => question.id).join("|");
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const editing = editingId
@@ -27,6 +36,43 @@ export function PaperCanvas() {
   function addAndEdit() {
     setEditingId(addBlankQuestion());
   }
+
+  useEffect(() => {
+    if (!onActiveQuestionChange) return;
+    if (display.questions.length === 0) {
+      onActiveQuestionChange(null);
+      return;
+    }
+    const root = scrollRootRef?.current ?? null;
+    const visible = new Map<string, number>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = (entry.target as HTMLElement).dataset.questionId;
+          if (!id) continue;
+          if (entry.isIntersecting) visible.set(id, entry.intersectionRatio);
+          else visible.delete(id);
+        }
+
+        const next =
+          Array.from(visible.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ??
+          null;
+        onActiveQuestionChange(next);
+      },
+      {
+        root,
+        threshold: [0.15, 0.35, 0.6, 0.85],
+        rootMargin: "-12% 0px -62% 0px",
+      },
+    );
+
+    for (const question of display.questions) {
+      const node = document.getElementById(`question-${question.id}`);
+      if (node) observer.observe(node);
+    }
+
+    return () => observer.disconnect();
+  }, [questionIds, onActiveQuestionChange, scrollRootRef]);
 
   return (
     <div className="flex min-w-fit justify-center px-4 py-8 sm:px-6">
