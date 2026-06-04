@@ -95,6 +95,24 @@ AI output is never auto-applied. The result card holds the parsed questions;
 into `undoSnapshot` before mutating, enabling one-level `undoApply()`. Manual
 edits don't push undo state (MVP scope).
 
+## Pattern: paper-scoped persistence
+
+The app manages a local paper library rather than a single anonymous document.
+`paperStore` owns the active paper id, paper metadata list, and all paper
+mutations. Paper metadata lives in `papers/index.json`; each `ExamPaper` payload
+stays in `papers/{paperId}.json`, validated by Zod on the frontend. Do not add
+library metadata to `ExamPaper`.
+
+Assistant history is scoped to the active paper. `assistantStore.loadForPaper`
+loads or creates `chats/{paperId}/{sessionId}.json`, including both rendered
+messages and the API `apiHistory`. Switching papers must switch assistant
+sessions too. Message content is read-only history; "edit" means renaming the
+chat session title.
+
+`working-paper.json` remains a compatibility mirror of the active paper. New
+save paths should write the active paper file and update the mirror, not bring
+back single-paper state.
+
 ---
 
 ## Common Mistakes

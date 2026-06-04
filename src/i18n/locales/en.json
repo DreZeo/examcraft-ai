@@ -64,6 +64,12 @@
     "collapse": "Collapse",
     "expand": "Expand",
     "resize": "Resize assistant",
+    "history": "Chat history",
+    "newChat": "New chat",
+    "renameChat": "Rename chat",
+    "deleteChat": "Delete chat",
+    "expandHistory": "Expand chat history",
+    "collapseHistory": "Collapse chat history",
     "noModel": "Please configure a model in Settings first.",
     "goToSettings": "Go to Settings",
     "confirmGenerate": "Confirm & generate",
@@ -118,6 +124,18 @@
     "removeScoringPoint": "Remove point",
     "scoringCriteria": "Scoring criteria",
     "solution": "Solution"
+  },
+  "paperLibrary": {
+    "title": "Paper manager",
+    "subtitle": "Manage the local paper library. Open, duplicate, or delete papers.",
+    "newPaper": "New paper",
+    "paperTitle": "Paper title",
+    "questions": "Questions",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "open": "Open paper",
+    "duplicate": "Duplicate paper",
+    "empty": "No papers yet"
   },
   "questionType": {
     "single-choice": "Single choice",

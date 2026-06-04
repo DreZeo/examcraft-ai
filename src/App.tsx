@@ -8,12 +8,17 @@ import { PaperOutline } from "./components/paper/PaperOutline";
 import { PaperCanvas } from "./components/paper/PaperCanvas";
 import { AssistantDrawer } from "./components/assistant/AssistantDrawer";
 import { SettingsModal } from "./components/settings/SettingsModal";
+import { PaperManagerModal } from "./components/paper/PaperManagerModal";
+import { useAssistantStore } from "./stores/assistantStore";
 
 export default function App() {
   const { loaded, dataDir, init } = useConfigStore();
   const paper = usePaperStore((s) => s.paper);
+  const activePaperId = usePaperStore((s) => s.activePaperId);
   const loadPaper = usePaperStore((s) => s.load);
+  const loadAssistantForPaper = useAssistantStore((s) => s.loadForPaper);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [paperManagerOpen, setPaperManagerOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [outlineOpen, setOutlineOpen] = useState(true);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
@@ -28,6 +33,10 @@ export default function App() {
   useEffect(() => {
     if (dataDir) void loadPaper();
   }, [dataDir, loadPaper]);
+
+  useEffect(() => {
+    if (activePaperId) void loadAssistantForPaper(activePaperId);
+  }, [activePaperId, loadAssistantForPaper]);
 
   useEffect(() => {
     if (paper.questions.length === 0) {
@@ -45,7 +54,8 @@ export default function App() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        if (settingsOpen) setSettingsOpen(false);
+        if (paperManagerOpen) setPaperManagerOpen(false);
+        else if (settingsOpen) setSettingsOpen(false);
         else setDrawerOpen(false);
       }
       if ((e.ctrlKey || e.metaKey) && e.key === ",") {
@@ -55,7 +65,7 @@ export default function App() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [settingsOpen]);
+  }, [settingsOpen, paperManagerOpen]);
 
   if (!loaded) {
     return <div className="grid h-full place-items-center bg-background text-muted-foreground" />;
@@ -67,7 +77,10 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
-      <TopBar onOpenSettings={() => setSettingsOpen(true)} />
+      <TopBar
+        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenPaperManager={() => setPaperManagerOpen(true)}
+      />
       <div className="flex min-h-0 flex-1">
         <PaperOutline
           questions={paper.questions}
@@ -89,6 +102,9 @@ export default function App() {
         />
       </div>
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {paperManagerOpen && (
+        <PaperManagerModal onClose={() => setPaperManagerOpen(false)} />
+      )}
     </div>
   );
 }

@@ -56,6 +56,10 @@ pointer lives in the Tauri app-data dir:
 - `default_data_dir() -> AppResult<String>`  (Documents/AI试卷)
 - `load_config(data_dir) / save_config(data_dir, contents)`  (raw JSON string)
 - `load_working_paper(data_dir) / save_working_paper(data_dir, contents)`
+- `load_paper_index(data_dir) / save_paper_index(data_dir, contents)`
+- `load_paper(data_dir, paper_id) / save_paper(data_dir, paper_id, contents) / delete_paper(data_dir, paper_id)`
+- `load_chat_index(data_dir, paper_id) / save_chat_index(data_dir, paper_id, contents)`
+- `load_chat_session(data_dir, paper_id, session_id) / save_chat_session(...) / delete_chat_session(...)`
 
 **openai.rs** — see frontend `state-management.md` for the event contract:
 - `stream_chat(base_url, api_key, model, messages, temperature?, max_tokens?) -> AppResult<()>` (streams via events)
@@ -76,6 +80,11 @@ TS. Duplicating it as Rust structs would create two sources of truth that drift.
 Rust is a thin, schema-agnostic persistence + network layer.
 
 **Related:** `frontend/type-safety.md` (Zod as the single contract).
+
+Paper library and chat history commands follow the same rule. Rust owns the
+directory layout (`papers/`, `chats/`) and safe file names; TypeScript owns
+`PaperIndex`, `ChatIndex`, and `ChatSession` validation. `save_paper` also
+updates `working-paper.json` as a compatibility mirror of the active paper.
 
 ---
 

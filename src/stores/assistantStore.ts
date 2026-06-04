@@ -3,12 +3,26 @@ import { v4 as uuid } from "uuid";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type { Question } from "../lib/types/exam";
+import type {
+  ApiMessage,
+  ChatMessage,
+  ChatSession,
+  ChatSessionMeta,
+} from "../lib/types/library";
+import {
+  createChatIndex,
+  createChatSession,
+  removeChatSessionMeta,
+  renameChatSession,
+  updateChatSessionContent,
+  upsertChatSessionMeta,
+} from "../lib/api/chatLibrary";
 import { buildSystemPrompt } from "../lib/api/systemPrompt";
 import { validateQuestions } from "../lib/api/validateQuestions";
 import { extractJson } from "../lib/api/extractJson";
 import { type AppError } from "../lib/api/errorMessages";
 import { summarizePaper } from "../lib/exam/summary";
-import { getApiKey } from "../lib/storage/tauri";
+import * as storage from "../lib/storage/tauri";
 import { useConfigStore } from "./configStore";
 import { usePaperStore } from "./paperStore";
 
@@ -22,43 +36,23 @@ import { usePaperStore } from "./paperStore";
  * Valid questions are previewed in a result card — never auto-applied.
  */
 
-type ApiRole = "user" | "assistant" | "system";
-
-interface ApiMessage {
-  role: ApiRole;
-  content: string;
-}
-
-export type ChatMessage =
-  | { id: string; kind: "text"; role: ApiRole; content: string }
-  | { id: string; kind: "confirmation"; content: string; resolved: boolean }
-  | {
-      id: string;
-      kind: "result";
-      prose: string;
-      questions: Question[];
-      applyMode: "append" | "replace";
-      applied: boolean;
-    }
-  | {
-      id: string;
-      kind: "error";
-      code: string;
-      detail?: string;
-      raw?: string;
-      retryExhausted: boolean;
-    };
-
 const MAX_JSON_RETRIES = 3;
 
 interface AssistantState {
   messages: ChatMessage[];
+  sessions: ChatSessionMeta[];
+  activeSessionId: string | null;
   status: "idle" | "streaming";
   /** Accumulated content of the in-flight assistant reply (typewriter view). */
   streamBuffer: string;
   /** Question pulled into context via "AI modify"; switches apply to replace. */
   focusedQuestion: Question | null;
 
+  loadForPaper: (paperId: string) => Promise<void>;
+  newSession: () => Promise<void>;
+  openSession: (id: string) => Promise<void>;
+  renameSession: (id: string, title: string) => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
   confirm: (cardId: string) => Promise<void>;
   dismissConfirmation: (cardId: string) => void;
@@ -74,6 +68,8 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
   // --- Turn-local state (singleton store, persists across runChat calls) ---
   /** Conversation as sent to the model (system prompt prepended at send time). */
   let apiHistory: ApiMessage[] = [];
+  let activePaperId: string | null = null;
+  let activeSession: ChatSession | null = null;
   /** JSON self-correction attempts for the current generation turn. */
   let retryCount = 0;
   let unlisteners: UnlistenFn[] = [];
@@ -93,6 +89,80 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
 
   function pushMessage(message: ChatMessage) {
     set((s) => ({ messages: [...s.messages, message] }));
+  }
+
+  function now() {
+    return new Date().toISOString();
+  }
+
+  function currentDataDir() {
+    return useConfigStore.getState().dataDir;
+  }
+
+  async function persistSession() {
+    const dataDir = currentDataDir();
+    if (!dataDir || !activePaperId || !activeSession) return;
+    activeSession = updateChatSessionContent(
+      activeSession,
+      get().messages,
+      apiHistory,
+      now(),
+    );
+    const index =
+      (await storage.loadChatIndex(dataDir, activePaperId)) ??
+      createChatIndex(activeSession);
+    const nextIndex = upsertChatSessionMeta(index, activeSession);
+    await storage.saveChatSession(dataDir, activePaperId, activeSession);
+    await storage.saveChatIndex(dataDir, activePaperId, nextIndex);
+    set({
+      sessions: nextIndex.sessions,
+      activeSessionId: nextIndex.activeSessionId,
+    });
+  }
+
+  async function ensureSession(paperId: string): Promise<ChatSession> {
+    const dataDir = currentDataDir();
+    if (!dataDir) return createChatSession(paperId, now());
+    const index = await storage.loadChatIndex(dataDir, paperId);
+    const sessionId = index?.activeSessionId ?? index?.sessions[0]?.id ?? null;
+    if (sessionId) {
+      const existing = await storage.loadChatSession(dataDir, paperId, sessionId);
+      if (existing) {
+        await storage.saveChatIndex(dataDir, paperId, {
+          ...(index ?? createChatIndex(existing)),
+          activeSessionId: existing.id,
+        });
+        return existing;
+      }
+    }
+    const created = createChatSession(paperId, now());
+    await storage.saveChatSession(dataDir, paperId, created);
+    await storage.saveChatIndex(dataDir, paperId, createChatIndex(created));
+    return created;
+  }
+
+  async function activateSession(paperId: string, session: ChatSession) {
+    const dataDir = currentDataDir();
+    activePaperId = paperId;
+    activeSession = session;
+    apiHistory = session.apiHistory;
+    if (dataDir) {
+      const index =
+        (await storage.loadChatIndex(dataDir, paperId)) ?? createChatIndex(session);
+      const nextIndex = upsertChatSessionMeta(index, session);
+      await storage.saveChatIndex(dataDir, paperId, nextIndex);
+      set({
+        sessions: nextIndex.sessions,
+        activeSessionId: session.id,
+        messages: session.messages,
+      });
+      return;
+    }
+    set({
+      sessions: [session],
+      activeSessionId: session.id,
+      messages: session.messages,
+    });
   }
 
   /** Build the full message array for the next API call. */
@@ -121,7 +191,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
 
     let apiKey: string | null;
     try {
-      apiKey = await getApiKey(active.id);
+      apiKey = await storage.getApiKey(active.id);
     } catch {
       apiKey = null;
     }
@@ -185,6 +255,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         content: reply.trim(),
         resolved: false,
       });
+      await persistSession();
       return;
     }
 
@@ -202,6 +273,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         applyMode: focused ? "replace" : "append",
         applied: false,
       });
+      await persistSession();
       return;
     }
 
@@ -213,6 +285,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         role: "user",
         content: `Your previous response did not pass validation:\n${result.error}\n\nReturn the corrected questions as JSON inside a \`\`\`json fenced block. Output only valid JSON.`,
       });
+      await persistSession();
       await runChat();
       return;
     }
@@ -226,6 +299,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       raw: result.raw,
       retryExhausted: true,
     });
+    await persistSession();
   }
 
   async function handleError(error: AppError): Promise<void> {
@@ -240,13 +314,89 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       detail: error.detail,
       retryExhausted: false,
     });
+    await persistSession();
   }
 
   return {
     messages: [],
+    sessions: [],
+    activeSessionId: null,
     status: "idle",
     streamBuffer: "",
     focusedQuestion: null,
+
+    loadForPaper: async (paperId) => {
+      await teardown();
+      const session = await ensureSession(paperId);
+      await activateSession(paperId, session);
+      set({ status: "idle", streamBuffer: "", focusedQuestion: null });
+    },
+
+    newSession: async () => {
+      const paperId = activePaperId ?? usePaperStore.getState().activePaperId;
+      if (!paperId) return;
+      const session = createChatSession(paperId, now());
+      const dataDir = currentDataDir();
+      if (dataDir) {
+        await storage.saveChatSession(dataDir, paperId, session);
+      }
+      await activateSession(paperId, session);
+    },
+
+    openSession: async (id) => {
+      const dataDir = currentDataDir();
+      const paperId = activePaperId ?? usePaperStore.getState().activePaperId;
+      if (!dataDir || !paperId) return;
+      const session = await storage.loadChatSession(dataDir, paperId, id);
+      if (session) await activateSession(paperId, session);
+    },
+
+    renameSession: async (id, title) => {
+      const dataDir = currentDataDir();
+      const paperId = activePaperId ?? usePaperStore.getState().activePaperId;
+      if (!dataDir || !paperId) return;
+      const session =
+        id === activeSession?.id
+          ? activeSession
+          : await storage.loadChatSession(dataDir, paperId, id);
+      if (!session) return;
+      const renamed = renameChatSession(session, title, now());
+      await storage.saveChatSession(dataDir, paperId, renamed);
+      const index =
+        (await storage.loadChatIndex(dataDir, paperId)) ?? createChatIndex(renamed);
+      const nextIndex = upsertChatSessionMeta(index, renamed);
+      await storage.saveChatIndex(dataDir, paperId, nextIndex);
+      if (id === activeSession?.id) activeSession = renamed;
+      set({
+        sessions: nextIndex.sessions,
+        activeSessionId: nextIndex.activeSessionId,
+      });
+    },
+
+    deleteSession: async (id) => {
+      const dataDir = currentDataDir();
+      const paperId = activePaperId ?? usePaperStore.getState().activePaperId;
+      if (!dataDir || !paperId) return;
+      await storage.deleteChatSession(dataDir, paperId, id);
+      const index =
+        (await storage.loadChatIndex(dataDir, paperId)) ?? {
+          version: 1,
+          activeSessionId: null,
+          sessions: [],
+        };
+      let nextIndex = removeChatSessionMeta(index, id);
+      if (nextIndex.sessions.length === 0) {
+        const created = createChatSession(paperId, now());
+        await storage.saveChatSession(dataDir, paperId, created);
+        nextIndex = createChatIndex(created);
+      }
+      await storage.saveChatIndex(dataDir, paperId, nextIndex);
+      const nextId = nextIndex.activeSessionId ?? nextIndex.sessions[0]?.id;
+      const session = nextId
+        ? await storage.loadChatSession(dataDir, paperId, nextId)
+        : null;
+      if (session) await activateSession(paperId, session);
+    },
 
     sendMessage: async (text) => {
       const trimmed = text.trim();
@@ -260,6 +410,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       retryCount = 0;
       apiHistory.push({ role: "user", content });
       pushMessage({ id: uuid(), kind: "text", role: "user", content: trimmed });
+      await persistSession();
       await runChat();
     },
 
@@ -278,6 +429,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         content:
           "Confirmed. Generate the questions now as JSON inside a ```json fenced block.",
       });
+      await persistSession();
       await runChat();
     },
 
@@ -289,6 +441,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
             : m,
         ),
       }));
+      void persistSession();
     },
 
     retry: async () => {
@@ -312,6 +465,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       if (reply) {
         apiHistory.push({ role: "assistant", content: reply });
         pushMessage({ id: uuid(), kind: "text", role: "assistant", content: reply });
+        await persistSession();
       }
     },
 
@@ -328,6 +482,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         ),
         focusedQuestion: null,
       }));
+      void persistSession();
     },
 
     focusQuestion: (question) => set({ focusedQuestion: question }),
@@ -337,6 +492,8 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       void teardown();
       apiHistory = [];
       retryCount = 0;
+      activeSession = null;
+      activePaperId = null;
       set({ messages: [], status: "idle", streamBuffer: "", focusedQuestion: null });
     },
   };

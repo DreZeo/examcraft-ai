@@ -64,7 +64,7 @@ export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
   async function doImport() {
     try {
       const imported = await importJson(dataDir);
-      if (imported) replacePaper(imported);
+      if (imported) await replacePaper(imported);
     } catch {
       window.alert(t("export.importFailed"));
     }

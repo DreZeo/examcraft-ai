@@ -64,6 +64,12 @@
     "collapse": "收起",
     "expand": "展开",
     "resize": "调整助手宽度",
+    "history": "对话历史",
+    "newChat": "新建对话",
+    "renameChat": "重命名对话",
+    "deleteChat": "删除对话",
+    "expandHistory": "展开对话历史",
+    "collapseHistory": "收起对话历史",
     "noModel": "请先在设置中配置模型。",
     "goToSettings": "前往设置",
     "confirmGenerate": "确认生成",
@@ -118,6 +124,18 @@
     "removeScoringPoint": "删除要点",
     "scoringCriteria": "评分标准",
     "solution": "解题步骤"
+  },
+  "paperLibrary": {
+    "title": "试卷管理",
+    "subtitle": "管理本地试卷库，快速打开、复制或删除试卷。",
+    "newPaper": "新建试卷",
+    "paperTitle": "试卷标题",
+    "questions": "题目数",
+    "createdAt": "创建时间",
+    "updatedAt": "更新时间",
+    "open": "打开试卷",
+    "duplicate": "复制试卷",
+    "empty": "暂无试卷"
   },
   "questionType": {
     "single-choice": "单选题",

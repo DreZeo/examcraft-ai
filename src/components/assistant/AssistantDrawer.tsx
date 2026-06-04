@@ -11,12 +11,14 @@ import {
   X,
 } from "lucide-react";
 import { useConfigStore } from "../../stores/configStore";
-import { useAssistantStore, type ChatMessage } from "../../stores/assistantStore";
+import { useAssistantStore } from "../../stores/assistantStore";
+import type { ChatMessage } from "../../lib/types/library";
 import { iconBtn, inputCls } from "../../lib/ui/styles";
 import { Markdown } from "../paper/Markdown";
 import { ConfirmationCard } from "./ConfirmationCard";
 import { ResultCard } from "./ResultCard";
 import { ErrorCard } from "./ErrorCard";
+import { ChatHistoryPanel } from "./ChatHistoryPanel";
 
 interface AssistantDrawerProps {
   open: boolean;
@@ -167,6 +169,8 @@ export function AssistantDrawer({
           <PanelRightClose className="h-5 w-5" />
         </button>
       </div>
+
+      <ChatHistoryPanel />
 
       <div
         ref={scrollRef}

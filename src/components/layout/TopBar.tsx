@@ -4,6 +4,7 @@ import {
   CircleAlert,
   FilePlus2,
   FileText,
+  FolderOpen,
   Loader2,
   Settings,
 } from "lucide-react";
@@ -13,13 +14,14 @@ import { ExportMenu } from "./ExportMenu";
 
 interface TopBarProps {
   onOpenSettings: () => void;
+  onOpenPaperManager: () => void;
 }
 
 /**
  * Slim top bar: editable paper title, save status, new-paper, teacher/student
  * view toggle, and the settings gear. Export lives here too (wired in PR3).
  */
-export function TopBar({ onOpenSettings }: TopBarProps) {
+export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
   const { t } = useTranslation();
   const { paper, setTitle, saveStatus, view, setView, newPaper } =
     usePaperStore();
@@ -67,9 +69,14 @@ export function TopBar({ onOpenSettings }: TopBarProps) {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-1 rounded-md border border-border bg-background/60 p-1">
-        <button type="button" onClick={newPaper} className={actionBtn}>
+        <button type="button" onClick={() => void newPaper()} className={actionBtn}>
           <FilePlus2 className="h-4 w-4" />
           <span className="hidden sm:inline">{t("app.newPaper")}</span>
+        </button>
+
+        <button type="button" onClick={onOpenPaperManager} className={actionBtn}>
+          <FolderOpen className="h-4 w-4" />
+          <span className="hidden sm:inline">{t("paperLibrary.title")}</span>
         </button>
 
         <ExportMenu triggerClassName={actionBtn} />

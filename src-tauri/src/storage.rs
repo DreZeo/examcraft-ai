@@ -9,6 +9,9 @@ use tauri::{AppHandle, Manager};
 const BOOTSTRAP_FILE: &str = "bootstrap.json";
 const CONFIG_FILE: &str = "config.json";
 const WORKING_PAPER_FILE: &str = "working-paper.json";
+const PAPERS_DIR: &str = "papers";
+const CHATS_DIR: &str = "chats";
+const INDEX_FILE: &str = "index.json";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Bootstrap {
@@ -78,6 +81,18 @@ fn write_json_file(dir: &Path, file: &str, contents: &str) -> AppResult<()> {
     Ok(())
 }
 
+fn safe_json_name(id: &str) -> String {
+    id.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
 /// Load config.json from the data dir as a raw JSON string (validated frontend-side).
 #[tauri::command]
 pub fn load_config(data_dir: String) -> AppResult<Option<String>> {
@@ -100,4 +115,117 @@ pub fn load_working_paper(data_dir: String) -> AppResult<Option<String>> {
 #[tauri::command]
 pub fn save_working_paper(data_dir: String, contents: String) -> AppResult<()> {
     write_json_file(Path::new(&data_dir), WORKING_PAPER_FILE, &contents)
+}
+
+// ---- Paper library ----
+
+#[tauri::command]
+pub fn load_paper_index(data_dir: String) -> AppResult<Option<String>> {
+    read_json_file(&Path::new(&data_dir).join(PAPERS_DIR), INDEX_FILE)
+}
+
+#[tauri::command]
+pub fn save_paper_index(data_dir: String, contents: String) -> AppResult<()> {
+    write_json_file(&Path::new(&data_dir).join(PAPERS_DIR), INDEX_FILE, &contents)
+}
+
+#[tauri::command]
+pub fn load_paper(data_dir: String, paper_id: String) -> AppResult<Option<String>> {
+    let file = format!("{}.json", safe_json_name(&paper_id));
+    read_json_file(&Path::new(&data_dir).join(PAPERS_DIR), &file)
+}
+
+#[tauri::command]
+pub fn save_paper(data_dir: String, paper_id: String, contents: String) -> AppResult<()> {
+    let file = format!("{}.json", safe_json_name(&paper_id));
+    write_json_file(&Path::new(&data_dir).join(PAPERS_DIR), &file, &contents)?;
+    write_json_file(Path::new(&data_dir), WORKING_PAPER_FILE, &contents)
+}
+
+#[tauri::command]
+pub fn delete_paper(data_dir: String, paper_id: String) -> AppResult<()> {
+    let file = format!("{}.json", safe_json_name(&paper_id));
+    let path = Path::new(&data_dir).join(PAPERS_DIR).join(file);
+    if path.exists() {
+        fs::remove_file(path)?;
+    }
+    let chat_dir = Path::new(&data_dir)
+        .join(CHATS_DIR)
+        .join(safe_json_name(&paper_id));
+    if chat_dir.exists() {
+        fs::remove_dir_all(chat_dir)?;
+    }
+    Ok(())
+}
+
+// ---- Paper-scoped chat history ----
+
+#[tauri::command]
+pub fn load_chat_index(data_dir: String, paper_id: String) -> AppResult<Option<String>> {
+    read_json_file(
+        &Path::new(&data_dir)
+            .join(CHATS_DIR)
+            .join(safe_json_name(&paper_id)),
+        INDEX_FILE,
+    )
+}
+
+#[tauri::command]
+pub fn save_chat_index(data_dir: String, paper_id: String, contents: String) -> AppResult<()> {
+    write_json_file(
+        &Path::new(&data_dir)
+            .join(CHATS_DIR)
+            .join(safe_json_name(&paper_id)),
+        INDEX_FILE,
+        &contents,
+    )
+}
+
+#[tauri::command]
+pub fn load_chat_session(
+    data_dir: String,
+    paper_id: String,
+    session_id: String,
+) -> AppResult<Option<String>> {
+    let file = format!("{}.json", safe_json_name(&session_id));
+    read_json_file(
+        &Path::new(&data_dir)
+            .join(CHATS_DIR)
+            .join(safe_json_name(&paper_id)),
+        &file,
+    )
+}
+
+#[tauri::command]
+pub fn save_chat_session(
+    data_dir: String,
+    paper_id: String,
+    session_id: String,
+    contents: String,
+) -> AppResult<()> {
+    let file = format!("{}.json", safe_json_name(&session_id));
+    write_json_file(
+        &Path::new(&data_dir)
+            .join(CHATS_DIR)
+            .join(safe_json_name(&paper_id)),
+        &file,
+        &contents,
+    )
+}
+
+#[tauri::command]
+pub fn delete_chat_session(
+    data_dir: String,
+    paper_id: String,
+    session_id: String,
+) -> AppResult<()> {
+    let file = format!("{}.json", safe_json_name(&session_id));
+    let path = Path::new(&data_dir)
+        .join(CHATS_DIR)
+        .join(safe_json_name(&paper_id))
+        .join(file);
+    if path.exists() {
+        fs::remove_file(path)?;
+    }
+    Ok(())
 }
