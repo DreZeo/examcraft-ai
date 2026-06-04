@@ -41,9 +41,11 @@ export function PaperOutline({
             : "flex justify-center border-b border-border py-3"
         }
       >
-        {open && <ListTree className="h-4 w-4 text-primary" />}
         {open && (
-          <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+          <ListTree className="h-4 w-4 animate-panel-content-in text-primary" />
+        )}
+        {open && (
+          <h2 className="min-w-0 flex-1 animate-panel-content-in truncate text-sm font-semibold text-foreground">
             {t("paper.outline")}
           </h2>
         )}
@@ -52,12 +54,12 @@ export function PaperOutline({
           aria-label={open ? t("paper.collapseOutline") : t("paper.expandOutline")}
           title={open ? t("paper.collapseOutline") : t("paper.expandOutline")}
           onClick={onToggle}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+          className="group inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
         >
           {open ? (
-            <PanelLeftClose className="h-4 w-4" />
+            <PanelLeftClose className="h-4 w-4 transition-transform duration-200 ease-out group-hover:-translate-x-0.5" />
           ) : (
-            <PanelLeftOpen className="h-4 w-4" />
+            <PanelLeftOpen className="h-4 w-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
           )}
         </button>
       </div>
@@ -66,8 +68,8 @@ export function PaperOutline({
         <div
           className={
             open
-              ? "flex flex-1 flex-col items-center justify-center px-4 text-center"
-              : "flex flex-1 items-start justify-center pt-4"
+              ? "flex flex-1 animate-panel-content-in flex-col items-center justify-center px-4 text-center"
+              : "flex flex-1 animate-panel-content-in items-start justify-center pt-4"
           }
         >
           <FileText className="h-7 w-7 text-muted-foreground/70" />
@@ -81,8 +83,8 @@ export function PaperOutline({
         <nav
           className={
             open
-              ? "min-h-0 flex-1 overflow-auto p-2"
-              : "min-h-0 flex-1 overflow-auto px-1 py-2"
+              ? "min-h-0 flex-1 animate-panel-content-in overflow-auto p-2"
+              : "min-h-0 flex-1 animate-panel-content-in overflow-auto px-1 py-2"
           }
         >
           <ol className="space-y-1">
