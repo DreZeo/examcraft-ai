@@ -17,8 +17,8 @@ This directory contains guidelines for backend development. Fill in each file wi
 | [Directory Structure](./directory-structure.md) | Module organization, command/IPC surface | Filled |
 | [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | N/A (no DB — JSON files) |
 | [Error Handling](./error-handling.md) | AppError contract, error codes, gotchas | Filled |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
+| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Filled |
+| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | Filled |
 
 ---
 

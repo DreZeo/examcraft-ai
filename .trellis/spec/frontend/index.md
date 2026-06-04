@@ -16,9 +16,9 @@ This directory contains guidelines for frontend development. Fill in each file w
 |-------|-------------|--------|
 | [Directory Structure](./directory-structure.md) | src/ layout, lib/stores/components split | Filled |
 | [Component Guidelines](./component-guidelines.md) | Component patterns, i18n, a11y, print | Filled |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
+| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | Filled |
 | [State Management](./state-management.md) | Zustand patterns, streaming event contract | Filled |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
+| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Filled |
 | [Type Safety](./type-safety.md) | Zod-as-contract, discriminated unions, gotchas | Filled |
 
 ---
