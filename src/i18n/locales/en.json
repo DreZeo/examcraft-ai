@@ -1,0 +1,99 @@
+{
+  "app": {
+    "title": "AI Exam Generator",
+    "newPaper": "New Paper",
+    "untitled": "Untitled Paper"
+  },
+  "saveStatus": {
+    "saved": "Saved",
+    "saving": "Saving…",
+    "unsaved": "Unsaved changes"
+  },
+  "settings": {
+    "title": "Settings",
+    "modelConfigs": "Model Configurations",
+    "addConfig": "Add configuration",
+    "name": "Name",
+    "baseUrl": "Base URL",
+    "model": "Model",
+    "apiKey": "API Key",
+    "apiKeyConfigured": "Configured",
+    "fetchModels": "Fetch models",
+    "testConnection": "Test connection",
+    "advanced": "Advanced settings",
+    "temperature": "Temperature",
+    "maxTokens": "Max tokens",
+    "active": "Active",
+    "setActive": "Set active",
+    "delete": "Delete",
+    "general": "General",
+    "language": "Language",
+    "autoSave": "Auto-save",
+    "explanationTier": "Explanation detail",
+    "customInstructions": "Custom instructions",
+    "dataDirectory": "Data directory",
+    "openInExplorer": "Open in file manager",
+    "changeLocation": "Change location",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "explanationTier": {
+    "none": "None",
+    "brief": "Brief",
+    "detailed": "Detailed"
+  },
+  "assistant": {
+    "title": "AI Assistant",
+    "placeholder": "Describe what you need…",
+    "send": "Send",
+    "stop": "Stop",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "noModel": "Please configure a model in Settings first.",
+    "goToSettings": "Go to Settings",
+    "confirmGenerate": "Confirm & generate",
+    "modify": "Modify",
+    "applyToPaper": "Apply to paper",
+    "undo": "Undo",
+    "viewRaw": "View AI raw response",
+    "retry": "Retry",
+    "checkSettings": "Check settings"
+  },
+  "paper": {
+    "emptyTitle": "No questions yet",
+    "emptySubtitle": "Describe your needs in the AI assistant on the right, or add the first question manually.",
+    "teacherView": "Teacher view",
+    "studentPreview": "Student preview",
+    "answer": "Answer",
+    "explanation": "Explanation",
+    "edit": "Edit",
+    "delete": "Delete",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "aiModify": "AI modify"
+  },
+  "export": {
+    "title": "Export",
+    "json": "JSON project",
+    "markdown": "Markdown file",
+    "pdf": "PDF",
+    "version": "Version",
+    "teacher": "Teacher version",
+    "student": "Student version"
+  },
+  "firstLaunch": {
+    "title": "Choose where to store your data",
+    "description": "Your papers and settings will be saved here. You can change this later in Settings.",
+    "choose": "Choose folder",
+    "confirm": "Confirm",
+    "recommended": "Recommended"
+  },
+  "errors": {
+    "authFailed": "Authentication failed. Your API key may be invalid or expired.",
+    "quotaExceeded": "Quota exceeded or rate limited. Check your account balance.",
+    "timeout": "Request timed out. The network or model may be slow.",
+    "network": "Network error. Could not reach the model endpoint.",
+    "jsonRetryExhausted": "The AI could not produce valid question data after several attempts.",
+    "unknown": "Something went wrong."
+  }
+}
