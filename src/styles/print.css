@@ -1,0 +1,71 @@
+/*
+ * Print / PDF export styles. PDF export is "print to PDF" via the browser's
+ * native dialog (window.print()), so these rules transform the live workbench
+ * into a clean exam sheet: all UI chrome is hidden, only the centered paper
+ * remains. Teacher/student answer visibility follows the on-screen view toggle,
+ * since print reuses the live DOM. Page numbers are emitted by @page.
+ */
+
+@media print {
+  /* Page setup: margins + footer page numbers. */
+  @page {
+    margin: 18mm 16mm;
+    @bottom-center {
+      content: counter(page) " / " counter(pages);
+    }
+  }
+
+  /* Hide UI chrome: top bar, drawer, hover actions, anything opted out. */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset the workbench shell so only the sheet flows down the page. */
+  html,
+  body,
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  #root > div {
+    display: block !important;
+    height: auto !important;
+    background: #ffffff !important;
+  }
+
+  main {
+    overflow: visible !important;
+    flex: none !important;
+  }
+
+  /* The paper sheet fills the page, no shadow / rounded card framing. */
+  .paper-sheet {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Centered exam title. */
+  .paper-sheet h1 {
+    text-align: center;
+  }
+
+  /* Avoid splitting a question across a page break where possible. */
+  .question-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Keep answer blocks readable in grayscale print. */
+  .answer-block {
+    background: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

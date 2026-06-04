@@ -1,0 +1,108 @@
+import { describe, it, expect } from "vitest";
+import { ExamPaperSchema, type ExamPaper } from "../types/exam";
+import { paperToMarkdown } from "../export/markdown";
+
+function makePaper(): ExamPaper {
+  return ExamPaperSchema.parse({
+    title: "Sample Exam",
+    metadata: { subject: "Math", className: "5A", duration: 90 },
+    questions: [
+      {
+        id: "q1",
+        type: "single-choice",
+        content: "What is 2 + 2?",
+        options: ["3", "4", "5"],
+        correctAnswer: 1,
+        explanation: "Basic addition.",
+        score: 5,
+      },
+      {
+        id: "q2",
+        type: "single-choice",
+        content: "Capital of France?",
+        options: ["Berlin", "Paris"],
+        correctAnswer: 1,
+        score: 5,
+      },
+      {
+        id: "q3",
+        type: "fill-in-blank",
+        content: "Water is made of hydrogen and ___.",
+        blanks: ["oxygen"],
+        score: 4,
+      },
+      {
+        id: "q4",
+        type: "short-answer",
+        content: "Explain gravity.",
+        referenceAnswer: "A force of attraction between masses.",
+        scoringPoints: ["mentions force", "mentions mass"],
+        score: 8,
+      },
+    ],
+  });
+}
+
+describe("paperToMarkdown", () => {
+  it("includes the title and answers in the teacher variant", () => {
+    const md = paperToMarkdown(makePaper(), { includeAnswers: true });
+    expect(md).toContain("# Sample Exam");
+    expect(md).toContain("【答案】");
+    expect(md).toContain("B"); // single-choice index 1 -> B
+    expect(md).toContain("oxygen"); // fill-in-blank answer
+    expect(md).toContain("A force of attraction"); // reference answer
+    expect(md).toContain("【解析】** Basic addition.");
+    expect(md).toContain("【评分点】** mentions force；mentions mass");
+  });
+
+  it("excludes answers and explanations in the student variant", () => {
+    const md = paperToMarkdown(makePaper(), { includeAnswers: false });
+    expect(md).toContain("# Sample Exam");
+    expect(md).not.toContain("【答案】");
+    expect(md).not.toContain("【解析】");
+    expect(md).not.toContain("oxygen");
+    expect(md).not.toContain("A force of attraction");
+    // Options still render so students can answer.
+    expect(md).toContain("B. Paris");
+  });
+
+  it("groups questions by type with CN ordinal numbered sections", () => {
+    const md = paperToMarkdown(makePaper(), { includeAnswers: true });
+    expect(md).toContain("## 一、单选题");
+    expect(md).toContain("## 二、填空题");
+    expect(md).toContain("## 三、简答题");
+    // No essay/calculation section because the paper has none.
+    expect(md).not.toContain("论述题");
+    expect(md).not.toContain("计算题");
+  });
+
+  it("restarts question numbering within each section", () => {
+    const md = paperToMarkdown(makePaper(), { includeAnswers: true });
+    const lines = md.split("\n");
+    // Two single-choice questions numbered 1 and 2.
+    expect(lines.some((l) => l.startsWith("1. What is 2 + 2?"))).toBe(true);
+    expect(lines.some((l) => l.startsWith("2. Capital of France?"))).toBe(true);
+    // First (and only) fill-in-blank question restarts at 1.
+    expect(
+      lines.some((l) => l.startsWith("1. Water is made of hydrogen")),
+    ).toBe(true);
+  });
+
+  it("renders an exam-info header when header flags are provided", () => {
+    const md = paperToMarkdown(makePaper(), {
+      includeAnswers: true,
+      header: {
+        subject: true,
+        className: true,
+        studentName: true,
+        duration: true,
+        totalScore: true,
+      },
+    });
+    expect(md).toContain("科目：Math");
+    expect(md).toContain("班级：5A");
+    expect(md).toContain("时长：90 分钟");
+    // total score falls back to the sum of question scores (5+5+4+8 = 22)
+    expect(md).toContain("总分：22 分");
+  });
+});

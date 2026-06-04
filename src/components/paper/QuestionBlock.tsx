@@ -2,37 +2,46 @@ import { useTranslation } from "react-i18next";
 import type { Question } from "../../lib/types/exam";
 import { usePaperStore } from "../../stores/paperStore";
 import { useAssistantStore } from "../../stores/assistantStore";
+import { formatAnswer } from "../../lib/exam/answer";
 import { Markdown } from "./Markdown";
 
 interface QuestionBlockProps {
   question: Question;
   index: number;
   studentView: boolean;
+  onEdit: (id: string) => void;
 }
 
 /**
  * A single question rendered on the sheet. Static = minimal sheet style; on
- * hover it lifts into a card revealing reorder/delete actions. Answers and
+ * hover it lifts into a card revealing edit/reorder/delete actions. Answers and
  * explanations show only in teacher view.
  */
 export function QuestionBlock({
   question,
   index,
   studentView,
+  onEdit,
 }: QuestionBlockProps) {
   const { t } = useTranslation();
   const { reorder, deleteQuestion } = usePaperStore();
   const focusQuestion = useAssistantStore((s) => s.focusQuestion);
 
   return (
-    <li className="group relative rounded-md border border-transparent px-3 py-2 transition hover:border-slate-200 hover:bg-slate-50/60">
+    <li className="question-block group relative rounded-md border border-transparent px-3 py-2 transition hover:border-slate-200 hover:bg-slate-50/60">
       {!studentView && (
-        <div className="absolute right-2 top-2 hidden gap-1 group-hover:flex">
+        <div className="no-print absolute right-2 top-2 hidden gap-1 group-hover:flex">
           <ActionButton
             label={t("paper.aiModify")}
             onClick={() => focusQuestion(question)}
           >
             ✦
+          </ActionButton>
+          <ActionButton
+            label={t("paper.edit")}
+            onClick={() => onEdit(question.id)}
+          >
+            ✎
           </ActionButton>
           <ActionButton
             label={t("paper.moveUp")}
@@ -95,7 +104,7 @@ function AnswerBlock({ question }: { question: Question }) {
   if (!answer && !explanation) return null;
 
   return (
-    <div className="mt-2 rounded-md bg-indigo-50/70 px-3 py-2 text-sm text-slate-700">
+    <div className="answer-block mt-2 rounded-md bg-indigo-50/70 px-3 py-2 text-sm text-slate-700">
       {answer && (
         <p>
           <span className="font-medium text-indigo-700">
@@ -114,27 +123,6 @@ function AnswerBlock({ question }: { question: Question }) {
       )}
     </div>
   );
-}
-
-function formatAnswer(q: Question): string {
-  switch (q.type) {
-    case "single-choice":
-      return String.fromCharCode(65 + q.correctAnswer);
-    case "multiple-choice":
-      return q.correctAnswers
-        .map((i) => String.fromCharCode(65 + i))
-        .join(", ");
-    case "true-false":
-      return q.correctAnswer ? "✓" : "✗";
-    case "fill-in-blank":
-      return q.blanks.join(" / ");
-    case "short-answer":
-      return q.referenceAnswer;
-    case "essay":
-      return q.scoringCriteria;
-    case "calculation":
-      return q.answer;
-  }
 }
 
 function ActionButton({

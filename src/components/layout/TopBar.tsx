@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { usePaperStore } from "../../stores/paperStore";
+import { ExportMenu } from "./ExportMenu";
 
 interface TopBarProps {
   onOpenSettings: () => void;
@@ -15,7 +16,7 @@ export function TopBar({ onOpenSettings }: TopBarProps) {
     usePaperStore();
 
   return (
-    <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2">
+    <header className="no-print flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2">
       <input
         aria-label={t("app.title")}
         value={paper.title}
@@ -52,6 +53,8 @@ export function TopBar({ onOpenSettings }: TopBarProps) {
       >
         {t("app.newPaper")}
       </button>
+
+      <ExportMenu />
 
       <button
         type="button"

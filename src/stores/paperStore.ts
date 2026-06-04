@@ -1,8 +1,10 @@
 import { create } from "zustand";
+import { v4 as uuid } from "uuid";
 import {
   ExamPaperSchema,
   type ExamPaper,
   type Question,
+  type QuestionType,
 } from "../lib/types/exam";
 import {
   appendQuestions,
@@ -11,6 +13,7 @@ import {
   updateQuestion,
   replaceById,
 } from "../lib/exam/merge";
+import { createBlankQuestion } from "../lib/exam/blankQuestion";
 import * as storage from "../lib/storage/tauri";
 import { useConfigStore } from "./configStore";
 
@@ -29,6 +32,8 @@ interface PaperState {
 
   load: () => Promise<void>;
   newPaper: () => void;
+  /** Replace the entire paper (e.g. JSON project import). Clears undo. */
+  replacePaper: (paper: ExamPaper) => void;
   setTitle: (title: string) => void;
   setView: (view: ViewMode) => void;
 
@@ -36,6 +41,8 @@ interface PaperState {
   undoApply: () => void;
 
   editQuestion: (question: Question) => void;
+  /** Append a blank question (default single-choice) and return its new id. */
+  addBlankQuestion: (type?: QuestionType) => string;
   deleteQuestion: (id: string) => void;
   reorder: (id: string, direction: "up" | "down") => void;
 }
@@ -82,6 +89,8 @@ export const usePaperStore = create<PaperState>((set, get) => {
 
     newPaper: () => mutate(emptyPaper(), { undoSnapshot: null }),
 
+    replacePaper: (paper) => mutate(paper, { undoSnapshot: null }),
+
     setTitle: (title) => mutate({ ...get().paper, title }),
 
     setView: (view) => set({ view }),
@@ -101,6 +110,12 @@ export const usePaperStore = create<PaperState>((set, get) => {
     },
 
     editQuestion: (question) => mutate(updateQuestion(get().paper, question)),
+
+    addBlankQuestion: (type = "single-choice") => {
+      const question = createBlankQuestion(type, uuid());
+      mutate(appendQuestions(get().paper, [question]));
+      return question.id;
+    },
 
     deleteQuestion: (id) => mutate(removeQuestion(get().paper, id)),
 
