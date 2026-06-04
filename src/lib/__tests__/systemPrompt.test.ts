@@ -1,9 +1,24 @@
 import { describe, it, expect } from "vitest";
 import { buildSystemPrompt } from "../api/systemPrompt";
-import { AppSettingsSchema, type AppSettings } from "../types/config";
+import {
+  AgentConfigSchema,
+  AppSettingsSchema,
+  type AgentConfig,
+  type AppSettings,
+} from "../types/config";
 
 function settings(patch: Partial<AppSettings> = {}): AppSettings {
   return AppSettingsSchema.parse({ ...patch });
+}
+
+function agent(patch: Partial<AgentConfig> = {}): AgentConfig {
+  return AgentConfigSchema.parse({
+    id: "agent-1",
+    name: "Math Teacher",
+    description: "Teaches math.",
+    instructions: "Use step-by-step reasoning.",
+    ...patch,
+  });
 }
 
 describe("buildSystemPrompt", () => {
@@ -43,17 +58,25 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toMatch(/detailed, step-by-step/i);
   });
 
-  it("appends custom instructions when present", () => {
-    const prompt = buildSystemPrompt(
-      settings({ customInstructions: "Always use metric units." }),
-    );
-    expect(prompt).toContain("Always use metric units.");
-    expect(prompt).toMatch(/additional user instructions/i);
+  it("appends the active AI agent when present", () => {
+    const prompt = buildSystemPrompt(settings(), undefined, agent());
+    expect(prompt).toMatch(/active ai agent/i);
+    expect(prompt).toContain("Math Teacher");
+    expect(prompt).toContain("Use step-by-step reasoning.");
   });
 
-  it("omits the custom section when instructions are blank", () => {
-    const prompt = buildSystemPrompt(settings({ customInstructions: "   " }));
-    expect(prompt).not.toMatch(/additional user instructions/i);
+  it("omits the agent section when no active agent is provided", () => {
+    const prompt = buildSystemPrompt(settings(), undefined, null);
+    expect(prompt).not.toMatch(/active ai agent/i);
+  });
+
+  it("omits the agent section when instructions are blank", () => {
+    const prompt = buildSystemPrompt(
+      settings(),
+      undefined,
+      agent({ instructions: "   " }),
+    );
+    expect(prompt).not.toMatch(/active ai agent/i);
   });
 
   it("includes the paper summary when provided", () => {

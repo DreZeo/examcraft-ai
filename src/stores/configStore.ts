@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { v4 as uuid } from "uuid";
 import {
   defaultAppConfig,
+  type AgentConfig,
   type AppConfig,
   type AppSettings,
   type ModelConfig,
@@ -36,8 +37,16 @@ interface ConfigState {
   deleteConfig: (id: string) => Promise<void>;
   setActiveConfig: (id: string) => Promise<void>;
   updateSettings: (patch: Partial<AppSettings>) => Promise<void>;
+  addAgent: (agent: Omit<AgentConfig, "id" | "builtIn">) => Promise<string>;
+  updateAgent: (
+    id: string,
+    patch: Partial<Omit<AgentConfig, "id" | "builtIn">>,
+  ) => Promise<void>;
+  deleteAgent: (id: string) => Promise<void>;
+  setActiveAgent: (id: string | null) => Promise<void>;
 
   activeConfig: () => ModelConfig | null;
+  activeAgent: () => AgentConfig | null;
 }
 
 export const useConfigStore = create<ConfigState>((set, get) => {
@@ -122,9 +131,56 @@ export const useConfigStore = create<ConfigState>((set, get) => {
       await persist({ ...cur, settings });
     },
 
+    addAgent: async (agent) => {
+      const id = uuid();
+      const cur = get().config;
+      await persist({
+        ...cur,
+        agents: [...cur.agents, { ...agent, id }],
+      });
+      return id;
+    },
+
+    updateAgent: async (id, patch) => {
+      const cur = get().config;
+      await persist({
+        ...cur,
+        agents: cur.agents.map((agent) =>
+          agent.id === id ? { ...agent, ...patch } : agent,
+        ),
+      });
+    },
+
+    deleteAgent: async (id) => {
+      const cur = get().config;
+      const target = cur.agents.find((agent) => agent.id === id);
+      if (!target) return;
+      const deletedBuiltInAgentIds = target.builtIn
+        ? [...new Set([...cur.deletedBuiltInAgentIds, id])]
+        : cur.deletedBuiltInAgentIds;
+      await persist({
+        ...cur,
+        agents: cur.agents.filter((agent) => agent.id !== id),
+        deletedBuiltInAgentIds,
+        activeAgentId: cur.activeAgentId === id ? null : cur.activeAgentId,
+      });
+    },
+
+    setActiveAgent: async (id) => {
+      const cur = get().config;
+      const activeAgentId =
+        id && cur.agents.some((agent) => agent.id === id) ? id : null;
+      await persist({ ...cur, activeAgentId });
+    },
+
     activeConfig: () => {
       const { config } = get();
       return config.configs.find((c) => c.id === config.activeConfigId) ?? null;
+    },
+
+    activeAgent: () => {
+      const { config } = get();
+      return config.agents.find((agent) => agent.id === config.activeAgentId) ?? null;
     },
   };
 });

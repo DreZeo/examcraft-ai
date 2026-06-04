@@ -1,4 +1,4 @@
-import type { AppSettings, ExplanationTier } from "../types/config";
+import type { AgentConfig, AppSettings, ExplanationTier } from "../types/config";
 
 /**
  * Build the system prompt sent to the model each turn.
@@ -14,6 +14,7 @@ import type { AppSettings, ExplanationTier } from "../types/config";
 export function buildSystemPrompt(
   settings: AppSettings,
   paperSummary?: string,
+  activeAgent?: AgentConfig | null,
 ): string {
   const sections: string[] = [
     ROLE,
@@ -23,9 +24,20 @@ export function buildSystemPrompt(
     explanationInstruction(settings.explanationTier),
   ];
 
-  const custom = settings.customInstructions.trim();
-  if (custom) {
-    sections.push(`# Additional user instructions\n${custom}`);
+  if (activeAgent?.instructions.trim()) {
+    sections.push(
+      [
+        "# Active AI agent",
+        `Name: ${activeAgent.name}`,
+        activeAgent.description.trim()
+          ? `Description: ${activeAgent.description.trim()}`
+          : "",
+        "Instructions:",
+        activeAgent.instructions.trim(),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
   }
 
   if (paperSummary && paperSummary.trim()) {

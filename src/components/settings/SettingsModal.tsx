@@ -4,6 +4,7 @@ import {
   Bot,
   Check,
   FolderKanban,
+  GraduationCap,
   Settings2,
   SlidersHorizontal,
   X,
@@ -13,12 +14,13 @@ import { iconBtn } from "../../lib/ui/styles";
 import { ModelConfigSection } from "./ModelConfigSection";
 import { GeneralSection } from "./GeneralSection";
 import { DataDirSection } from "./DataDirSection";
+import { AgentSection } from "./AgentSection";
 
 interface SettingsModalProps {
   onClose: () => void;
 }
 
-type Tab = "models" | "general" | "data";
+type Tab = "models" | "agents" | "general" | "data";
 
 interface TabItem {
   id: Tab;
@@ -33,6 +35,12 @@ const tabs: TabItem[] = [
     labelKey: "settings.modelConfigs",
     descriptionKey: "settings.modelConfigsDescription",
     icon: Bot,
+  },
+  {
+    id: "agents",
+    labelKey: "settings.aiAgents",
+    descriptionKey: "settings.aiAgentsDescription",
+    icon: GraduationCap,
   },
   {
     id: "general",
@@ -126,6 +134,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
             <div className="min-h-0 overflow-auto p-4 sm:p-6">
               {tab === "models" && <ModelConfigSection />}
+              {tab === "agents" && <AgentSection />}
               {tab === "general" && <GeneralSection />}
               {tab === "data" && <DataDirSection />}
             </div>

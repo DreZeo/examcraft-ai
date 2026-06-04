@@ -85,6 +85,26 @@ settings: AppSettingsSchema.prefault({}),
 `CONFIG_SCHEMA_VERSION`) so future schema changes can detect + migrate old files.
 Bump the constant and add migration when the shape changes incompatibly.
 
+### Convention: config normalization lives in the schema
+
+`AppConfigSchema` may use a base object schema plus `.transform()` to normalize
+persisted config after parsing. Use this for compatible additions such as
+default preset lists, invalid active-id cleanup, and legacy field migration.
+Store actions should receive already-normalized `AppConfig` and should not
+duplicate migration logic.
+
+```ts
+const AppConfigBaseSchema = z.object({ /* persisted fields */ });
+
+export const AppConfigSchema = AppConfigBaseSchema.transform((config) => ({
+  ...config,
+  activeAgentId: isKnownAgent(config.activeAgentId) ? config.activeAgentId : null,
+}));
+```
+
+Tests for schema normalization belong beside the type contract tests and should
+cover fresh config, old config, and invalid references.
+
 ---
 
 ## Forbidden Patterns

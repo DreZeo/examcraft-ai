@@ -167,9 +167,13 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
 
   /** Build the full message array for the next API call. */
   function buildApiMessages(): ApiMessage[] {
-    const { config } = useConfigStore.getState();
+    const configState = useConfigStore.getState();
     const summary = summarizePaper(usePaperStore.getState().paper);
-    const system = buildSystemPrompt(config.settings, summary);
+    const system = buildSystemPrompt(
+      configState.config.settings,
+      summary,
+      configState.activeAgent(),
+    );
     return [{ role: "system", content: system }, ...apiHistory];
   }
 

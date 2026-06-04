@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import {
   Languages,
-  MessageSquareText,
   Palette,
   Save,
   Sparkles,
@@ -12,7 +11,7 @@ import { inputCls } from "../../lib/ui/styles";
 
 const selectCls = inputCls + " w-auto py-1.5 cursor-pointer";
 
-/** General preferences: language, theme, auto-save, explanation tier, custom instructions. */
+/** General preferences: language, theme, auto-save, and explanation tier. */
 export function GeneralSection() {
   const { t } = useTranslation();
   const { config, updateSettings } = useConfigStore();
@@ -100,24 +99,6 @@ export function GeneralSection() {
         </select>
       </label>
 
-      <div className="rounded-md border border-border bg-background p-3">
-        <label
-          htmlFor="custom-instructions"
-          className="flex items-center gap-2 font-medium text-foreground"
-        >
-          <MessageSquareText className="h-4 w-4 text-muted-foreground" />
-          {t("settings.customInstructions")}
-        </label>
-        <textarea
-          id="custom-instructions"
-          rows={4}
-          value={s.customInstructions}
-          onChange={(e) =>
-            void updateSettings({ customInstructions: e.currentTarget.value })
-          }
-          className={inputCls + " mt-1 resize-none"}
-        />
-      </div>
     </div>
   );
 }

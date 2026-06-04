@@ -14,6 +14,8 @@
     "subtitle": "管理模型、偏好和本地数据位置",
     "modelConfigs": "模型配置",
     "modelConfigsDescription": "配置 OpenAI 兼容接口、模型名称和 API Key。",
+    "aiAgents": "AI 智能体",
+    "aiAgentsDescription": "创建并启用一个教师角色，让 AI 按指定风格辅助出题。",
     "addConfig": "添加配置",
     "name": "名称",
     "baseUrl": "Base URL",
@@ -45,6 +47,19 @@
     "changeLocation": "更改位置",
     "save": "保存",
     "cancel": "取消"
+  },
+  "agents": {
+    "description": "启用后，智能体指令会加入每次 AI 对话的系统提示词。一次只能启用一个，也可以全部停用。",
+    "activeHint": "当前已启用一个 AI 智能体",
+    "inactiveHint": "当前使用默认 AI 助手",
+    "builtIn": "内置",
+    "add": "新建智能体",
+    "enable": "启用",
+    "disable": "停用",
+    "name": "智能体名称",
+    "agentDescription": "说明",
+    "instructions": "补充指令",
+    "noDescription": "暂无说明"
   },
   "explanationTier": {
     "none": "无",

@@ -14,6 +14,8 @@
     "subtitle": "Manage models, preferences, and local data",
     "modelConfigs": "Model Configurations",
     "modelConfigsDescription": "Configure OpenAI-compatible endpoints, model names, and API keys.",
+    "aiAgents": "AI agents",
+    "aiAgentsDescription": "Create and enable one teacher persona to guide how the AI helps author questions.",
     "addConfig": "Add configuration",
     "name": "Name",
     "baseUrl": "Base URL",
@@ -45,6 +47,19 @@
     "changeLocation": "Change location",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "agents": {
+    "description": "When enabled, the agent instructions are added to every AI conversation system prompt. Only one agent can be active, and all agents can be disabled.",
+    "activeHint": "An AI agent is currently active",
+    "inactiveHint": "Using the default AI assistant",
+    "builtIn": "Built-in",
+    "add": "New agent",
+    "enable": "Enable",
+    "disable": "Disable",
+    "name": "Agent name",
+    "agentDescription": "Description",
+    "instructions": "Instructions",
+    "noDescription": "No description"
   },
   "explanationTier": {
     "none": "None",
