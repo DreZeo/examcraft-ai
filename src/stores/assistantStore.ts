@@ -18,7 +18,7 @@ import {
   upsertChatSessionMeta,
 } from "../lib/api/chatLibrary";
 import { buildSystemPrompt } from "../lib/api/systemPrompt";
-import { validateQuestions } from "../lib/api/validateQuestions";
+import { validatePaperOperations } from "../lib/api/validatePaperOperations";
 import { extractJson } from "../lib/api/extractJson";
 import { type AppError } from "../lib/api/errorMessages";
 import { summarizePaper } from "../lib/exam/summary";
@@ -33,7 +33,7 @@ import { usePaperStore } from "./paperStore";
  * Phase 1 (analyze + confirm): the model replies with no JSON; we render a
  * confirmation card. Phase 2 (generate): on confirm we ask for JSON, validate
  * it with Zod, and on failure re-invoke with the error fed back (max 3 tries).
- * Valid questions are previewed in a result card — never auto-applied.
+ * Valid paper operations are previewed in a result card — never auto-applied.
  */
 
 const MAX_JSON_RETRIES = 3;
@@ -264,17 +264,17 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     }
 
     // Phase 2: JSON present -> validate.
-    const result = validateQuestions(reply);
+    const focused = get().focusedQuestion;
+    const applyMode = focused ? "replace" : "append";
+    const result = validatePaperOperations(reply, applyMode);
     if (result.ok) {
       apiHistory.push({ role: "assistant", content: reply });
       retryCount = 0;
-      const focused = get().focusedQuestion;
       pushMessage({
         id: uuid(),
         kind: "result",
         prose,
-        questions: result.questions,
-        applyMode: focused ? "replace" : "append",
+        operations: result.operations,
         applied: false,
       });
       await persistSession();
@@ -287,7 +287,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       apiHistory.push({ role: "assistant", content: reply });
       apiHistory.push({
         role: "user",
-        content: `Your previous response did not pass validation:\n${result.error}\n\nReturn the corrected questions as JSON inside a \`\`\`json fenced block. Output only valid JSON.`,
+        content: `Your previous response did not pass validation:\n${result.error}\n\nReturn the corrected paper operations as JSON inside a \`\`\`json fenced block. Output only valid JSON.`,
       });
       await persistSession();
       await runChat();
@@ -431,7 +431,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       apiHistory.push({
         role: "user",
         content:
-          "Confirmed. Generate the questions now as JSON inside a ```json fenced block.",
+          "Confirmed. Generate the paper operations now as JSON inside a ```json fenced block.",
       });
       await persistSession();
       await runChat();
@@ -479,7 +479,11 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
           m.id === cardId && m.kind === "result",
       );
       if (!card || card.applied) return;
-      usePaperStore.getState().applyAiQuestions(card.questions, card.applyMode);
+      if (card.operations.length > 0) {
+        usePaperStore.getState().applyAiOperations(card.operations);
+      } else if (card.questions && card.applyMode) {
+        usePaperStore.getState().applyAiQuestions(card.questions, card.applyMode);
+      }
       set((s) => ({
         messages: s.messages.map((m) =>
           m.id === cardId && m.kind === "result" ? { ...m, applied: true } : m,

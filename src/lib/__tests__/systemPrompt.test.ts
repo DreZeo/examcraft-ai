@@ -48,6 +48,21 @@ describe("buildSystemPrompt", () => {
     expect(buildSystemPrompt(settings())).toMatch(/mandatory/i);
   });
 
+  it("instructs the model to return paper operations", () => {
+    const prompt = buildSystemPrompt(settings());
+    expect(prompt).toContain('"operations"');
+    expect(prompt).toContain("renamePaper");
+    expect(prompt).toContain("appendQuestions");
+    expect(prompt).toContain("updateQuestion");
+    expect(prompt).toContain("deleteQuestion");
+    expect(prompt).toContain("reorderQuestions");
+  });
+
+  it("asks for natural smart titles when generating papers", () => {
+    const prompt = buildSystemPrompt(settings());
+    expect(prompt).toContain("六年级英语试卷");
+  });
+
   it("reflects the explanation tier — none", () => {
     const prompt = buildSystemPrompt(settings({ explanationTier: "none" }));
     expect(prompt).toMatch(/do not include an "explanation"/i);

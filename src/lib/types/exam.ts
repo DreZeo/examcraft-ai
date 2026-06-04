@@ -114,6 +114,37 @@ export const AiQuestionsResponseSchema = z.object({
   questions: z.array(QuestionSchema),
 });
 
+export const AiPaperOperationSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("renamePaper"),
+    title: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal("appendQuestions"),
+    questions: z.array(QuestionSchema).min(1),
+  }),
+  z.object({
+    type: z.literal("updateQuestion"),
+    id: z.string().min(1),
+    question: QuestionSchema,
+  }).refine((operation) => operation.id === operation.question.id, {
+    message: "id must match question.id",
+    path: ["question", "id"],
+  }),
+  z.object({
+    type: z.literal("deleteQuestion"),
+    id: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal("reorderQuestions"),
+    questionIds: z.array(z.string().min(1)).min(1),
+  }),
+]);
+
+export const AiPaperOperationsResponseSchema = z.object({
+  operations: z.array(AiPaperOperationSchema).min(1),
+});
+
 export type QuestionType = Question["type"];
 export type SingleChoiceQuestion = z.infer<typeof SingleChoiceSchema>;
 export type MultipleChoiceQuestion = z.infer<typeof MultipleChoiceSchema>;
@@ -126,6 +157,10 @@ export type Question = z.infer<typeof QuestionSchema>;
 export type ExamMetadata = z.infer<typeof ExamMetadataSchema>;
 export type ExamPaper = z.infer<typeof ExamPaperSchema>;
 export type AiQuestionsResponse = z.infer<typeof AiQuestionsResponseSchema>;
+export type AiPaperOperation = z.infer<typeof AiPaperOperationSchema>;
+export type AiPaperOperationsResponse = z.infer<
+  typeof AiPaperOperationsResponseSchema
+>;
 
 /** Question types whose answers are objective/checkable. */
 export const OBJECTIVE_TYPES: readonly QuestionType[] = [

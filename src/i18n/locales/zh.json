@@ -95,6 +95,12 @@
     "retry": "重试",
     "checkSettings": "检查设置",
     "generated": "已生成 {{count}} 道题",
+    "operationSummary": "AI 建议 {{count}} 项改动",
+    "renamePaper": "重命名试卷",
+    "addQuestions": "新增 {{count}} 道题",
+    "updateQuestions": "修改 {{count}} 道题",
+    "deleteQuestions": "删除 {{count}} 道题",
+    "reorderQuestions": "重排题目顺序",
     "applied": "已应用到试卷",
     "thinking": "思考中…",
     "you": "你"

@@ -4,7 +4,7 @@ import type { AgentConfig, AppSettings, ExplanationTier } from "../types/config"
  * Build the system prompt sent to the model each turn.
  *
  * The prompt is a fixed, built-in instruction set (not user-editable) that
- * defines the two-phase interaction flow, the 7-type question JSON schema
+ * defines the two-phase interaction flow, the paper-operation JSON schema
  * (mirroring `lib/types/exam.ts`), subject-neutrality, fenced-JSON output, and
  * mandatory answers. The explanation-detail tier and any custom user
  * instructions from settings are appended. When a paper summary is supplied it
@@ -20,6 +20,7 @@ export function buildSystemPrompt(
     ROLE,
     TWO_PHASE_FLOW,
     SCHEMA,
+    OPERATIONS,
     OUTPUT_RULES,
     explanationInstruction(settings.explanationTier),
   ];
@@ -57,16 +58,17 @@ Phase 1 — Analyze & confirm: When the user requests questions, restate your
 understanding as a short plan (question type(s), count, topic, difficulty, score
 per question). Do NOT output any JSON in this phase. End by asking the user to
 confirm or adjust.
-Phase 2 — Generate: Only after the user confirms, output the questions as JSON.
+Phase 2 — Generate: Only after the user confirms, output paper operations as JSON.
 If the user clearly asks to modify an existing question, you may skip straight to
 generation for that single question.`;
 
 const SCHEMA = `# Question JSON schema
-Return an object: {"questions": [ ...Question ]}. Return ONLY the questions
-involved in this turn (new ones to append, or the edited one to replace) — never
-a full-paper snapshot. Every question has: "id" (string; reuse the given id when
-editing, otherwise invent a unique one), "type", "content" (Markdown stem;
-inline math as $...$, block math as $$...$$), and "score" (positive number).
+Question objects appear inside paper operations. Return ONLY the questions
+involved in this turn (new ones to append, or edited replacements) — never a
+full-paper snapshot unless reordering references existing ids. Every question
+has: "id" (string; reuse the given id when editing, otherwise invent a unique
+one), "type", "content" (Markdown stem; inline math as $...$, block math as
+$$...$$), and "score" (positive number).
 Per type:
 - "single-choice": "options" (string[], 2–10), "correctAnswer" (index into options), "explanation"?
 - "multiple-choice": "options" (string[], 2–10), "correctAnswers" (index[]), "explanation"?
@@ -76,12 +78,31 @@ Per type:
 - "essay": "scoringCriteria" (string), "explanation"?
 - "calculation": "solution" (step-by-step, Markdown+LaTeX), "answer" (string), "explanation"?`;
 
+const OPERATIONS = `# Paper operation JSON schema
+In Phase 2, return an object: {"operations": [ ...Operation ]}.
+Supported operations:
+- {"type":"renamePaper","title":"..."} — set a concise paper title. When the
+  user asks to generate a paper with grade/subject/topic, include a natural title
+  such as "六年级英语试卷".
+- {"type":"appendQuestions","questions":[ ...Question ]} — add new questions.
+- {"type":"updateQuestion","id":"existing-id","question": Question} — replace
+  one existing question. The question.id MUST equal the target id.
+- {"type":"deleteQuestion","id":"existing-id"} — delete one existing question.
+- {"type":"reorderQuestions","questionIds":["id-1","id-2", "..."]} — reorder
+  existing questions. Include the intended order using ids from the current paper.
+Use the smallest operation set that satisfies the user request. For normal
+generation, return renamePaper when a better title is obvious, then appendQuestions.
+For destructive edits such as delete or broad reorder, mention the intended
+change in Phase 1 before producing JSON.`;
+
 const OUTPUT_RULES = `# Output rules
 - In Phase 2, put the JSON inside a single fenced \`\`\`json code block. Natural
   language around it is allowed but the data must be inside the fence.
 - Answers are MANDATORY for every question (objective: correctAnswer/correctAnswers/blanks;
   subjective: referenceAnswer/scoringCriteria/answer). Never omit them.
-- Output valid JSON: double-quoted keys and strings, no trailing commas, no comments.`;
+- Output valid JSON: double-quoted keys and strings, no trailing commas, no comments.
+- Prefer the operations schema. Legacy {"questions":[...]} output is allowed only
+  if no title/edit/delete/reorder operation is needed.`;
 
 function explanationInstruction(tier: ExplanationTier): string {
   const map: Record<ExplanationTier, string> = {

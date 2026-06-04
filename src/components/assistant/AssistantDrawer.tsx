@@ -311,6 +311,7 @@ function MessageItem({
         <ResultCard
           id={message.id}
           prose={message.prose}
+          operations={message.operations}
           questions={message.questions}
           applied={message.applied}
         />

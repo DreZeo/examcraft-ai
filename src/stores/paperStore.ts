@@ -1,12 +1,14 @@
 import { create } from "zustand";
 import { v4 as uuid } from "uuid";
 import {
+  type AiPaperOperation,
   type ExamPaper,
   type Question,
   type QuestionType,
 } from "../lib/types/exam";
 import type { PaperIndex, PaperMeta } from "../lib/types/library";
 import {
+  applyPaperOperations,
   appendQuestions,
   removeQuestion,
   moveQuestion,
@@ -48,6 +50,7 @@ interface PaperState {
   setView: (view: ViewMode) => void;
 
   applyAiQuestions: (questions: Question[], mode: "append" | "replace") => void;
+  applyAiOperations: (operations: AiPaperOperation[]) => void;
   undoApply: () => void;
 
   editQuestion: (question: Question) => void;
@@ -287,6 +290,11 @@ export const usePaperStore = create<PaperState>((set, get) => {
           ? appendQuestions(current, questions)
           : replaceById(current, questions);
       mutate(next, { undoSnapshot: current });
+    },
+
+    applyAiOperations: (operations) => {
+      const current = get().paper;
+      mutate(applyPaperOperations(current, operations), { undoSnapshot: current });
     },
 
     undoApply: () => {

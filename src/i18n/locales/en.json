@@ -95,6 +95,12 @@
     "retry": "Retry",
     "checkSettings": "Check settings",
     "generated": "Generated {{count}} question(s)",
+    "operationSummary": "AI suggested {{count}} change(s)",
+    "renamePaper": "Rename paper",
+    "addQuestions": "Add {{count}} question(s)",
+    "updateQuestions": "Update {{count}} question(s)",
+    "deleteQuestions": "Delete {{count}} question(s)",
+    "reorderQuestions": "Reorder questions",
     "applied": "Applied to paper",
     "thinking": "Thinking…",
     "you": "You"

@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, Plus, Undo2 } from "lucide-react";
-import type { Question } from "../../lib/types/exam";
+import {
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  ListOrdered,
+  Pencil,
+  Plus,
+  Trash2,
+  Undo2,
+} from "lucide-react";
+import type { AiPaperOperation, Question } from "../../lib/types/exam";
 import { useAssistantStore } from "../../stores/assistantStore";
 import { usePaperStore } from "../../stores/paperStore";
 import { Markdown } from "../paper/Markdown";
@@ -9,20 +18,38 @@ import { Markdown } from "../paper/Markdown";
 interface ResultCardProps {
   id: string;
   prose: string;
-  questions: Question[];
+  operations: AiPaperOperation[];
+  questions?: Question[];
   applied: boolean;
 }
 
-/**
- * Phase-2 result: a collapsible preview of the questions the assistant
- * generated. Nothing touches the paper until the user clicks "apply"; after
- * applying, an "undo" reverses the single AI-apply via the paper store.
- */
-export function ResultCard({ id, prose, questions, applied }: ResultCardProps) {
+type OperationSummary = {
+  rename?: Extract<AiPaperOperation, { type: "renamePaper" }>;
+  added: Question[];
+  updated: Question[];
+  deleted: string[];
+  reordered: string[] | null;
+};
+
+/** Preview validated AI paper operations and apply them only on user action. */
+export function ResultCard({
+  id,
+  prose,
+  operations,
+  questions,
+  applied,
+}: ResultCardProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const applyResult = useAssistantStore((s) => s.applyResult);
   const undoApply = usePaperStore((s) => s.undoApply);
+  const summary = summarizeOperations(operations, questions);
+  const totalChanges =
+    (summary.rename ? 1 : 0) +
+    summary.added.length +
+    summary.updated.length +
+    summary.deleted.length +
+    (summary.reordered ? 1 : 0);
 
   return (
     <div className="animate-fade-in rounded-lg border border-border bg-card p-3 text-sm shadow-sm">
@@ -37,7 +64,7 @@ export function ResultCard({ id, prose, questions, applied }: ResultCardProps) {
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between rounded-md text-left font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
       >
-        <span>{t("assistant.generated", { count: questions.length })}</span>
+        <span>{t("assistant.operationSummary", { count: totalChanges })}</span>
         {open ? (
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         ) : (
@@ -46,26 +73,55 @@ export function ResultCard({ id, prose, questions, applied }: ResultCardProps) {
       </button>
 
       {open && (
-        <ol className="mt-2 space-y-2 border-t border-border pt-2">
-          {questions.map((q, i) => (
-            <li key={q.id} className="rounded-md bg-muted px-2 py-1.5">
-              <div className="flex items-baseline gap-2">
-                <span className="select-none text-xs font-medium text-muted-foreground">
-                  {i + 1}.
-                </span>
-                <span className="rounded bg-secondary px-1.5 text-xs text-secondary-foreground">
-                  {q.type}
-                </span>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {q.score}
-                </span>
-              </div>
-              <div className="mt-1 min-w-0">
-                <Markdown>{q.content}</Markdown>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <div className="mt-2 space-y-2 border-t border-border pt-2">
+          {summary.rename && (
+            <SummaryRow
+              icon={<FileText className="h-4 w-4" />}
+              label={t("assistant.renamePaper")}
+            >
+              <span className="font-medium text-foreground">
+                {summary.rename.title}
+              </span>
+            </SummaryRow>
+          )}
+
+          {summary.deleted.length > 0 && (
+            <SummaryRow
+              icon={<Trash2 className="h-4 w-4" />}
+              label={t("assistant.deleteQuestions", {
+                count: summary.deleted.length,
+              })}
+            >
+              <span className="text-muted-foreground">
+                {summary.deleted.join(", ")}
+              </span>
+            </SummaryRow>
+          )}
+
+          {summary.reordered && (
+            <SummaryRow
+              icon={<ListOrdered className="h-4 w-4" />}
+              label={t("assistant.reorderQuestions")}
+            >
+              <span className="text-muted-foreground">
+                {summary.reordered.join(" → ")}
+              </span>
+            </SummaryRow>
+          )}
+
+          <QuestionList
+            icon={<Plus className="h-4 w-4" />}
+            title={t("assistant.addQuestions", { count: summary.added.length })}
+            questions={summary.added}
+          />
+          <QuestionList
+            icon={<Pencil className="h-4 w-4" />}
+            title={t("assistant.updateQuestions", {
+              count: summary.updated.length,
+            })}
+            questions={summary.updated}
+          />
+        </div>
       )}
 
       <div className="mt-3 flex items-center gap-2">
@@ -96,4 +152,104 @@ export function ResultCard({ id, prose, questions, applied }: ResultCardProps) {
       </div>
     </div>
   );
+}
+
+function SummaryRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-md bg-muted px-2 py-1.5">
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="text-xs">{children}</div>
+    </div>
+  );
+}
+
+function QuestionList({
+  icon,
+  title,
+  questions,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  questions: Question[];
+}) {
+  if (questions.length === 0) return null;
+  return (
+    <div className="rounded-md bg-muted px-2 py-1.5">
+      <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {icon}
+        <span>{title}</span>
+      </div>
+      <ol className="space-y-1.5">
+        {questions.map((q, i) => (
+          <li key={q.id} className="rounded bg-background/70 px-2 py-1.5">
+            <div className="mb-1 flex items-baseline gap-2">
+              <span className="select-none text-xs font-medium text-muted-foreground">
+                {i + 1}.
+              </span>
+              <span className="rounded bg-secondary px-1.5 text-xs text-secondary-foreground">
+                {q.type}
+              </span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {q.score}
+              </span>
+            </div>
+            <div className="min-w-0 text-xs">
+              <Markdown variant="compact">{q.content}</Markdown>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function summarizeOperations(
+  operations: AiPaperOperation[],
+  legacyQuestions: Question[] | undefined,
+): OperationSummary {
+  const summary: OperationSummary = {
+    added: legacyQuestions ?? [],
+    updated: [],
+    deleted: [],
+    reordered: null,
+  };
+
+  for (const operation of operations) {
+    switch (operation.type) {
+      case "renamePaper":
+        summary.rename = operation;
+        break;
+      case "appendQuestions":
+        summary.added.push(...operation.questions);
+        break;
+      case "updateQuestion":
+        summary.updated.push(operation.question);
+        break;
+      case "deleteQuestion":
+        summary.deleted.push(operation.id);
+        break;
+      case "reorderQuestions":
+        summary.reordered = operation.questionIds;
+        break;
+      default:
+        exhaustive(operation);
+    }
+  }
+
+  return summary;
+}
+
+function exhaustive(value: never): never {
+  throw new Error(`Unhandled paper operation: ${JSON.stringify(value)}`);
 }

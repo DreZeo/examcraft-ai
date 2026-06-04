@@ -1,4 +1,4 @@
-import type { ExamPaper, Question } from "../types/exam";
+import type { AiPaperOperation, ExamPaper, Question } from "../types/exam";
 
 /**
  * Pure operations for mutating an exam paper. The AI returns only the questions
@@ -60,6 +60,27 @@ export function moveQuestion(
   return { ...paper, questions: next };
 }
 
+/** Reorder existing questions by id, keeping omitted questions after the listed ids. */
+export function reorderQuestions(
+  paper: ExamPaper,
+  questionIds: string[],
+): ExamPaper {
+  const byId = new Map(paper.questions.map((q) => [q.id, q]));
+  const seen = new Set<string>();
+  const reordered: Question[] = [];
+
+  for (const id of questionIds) {
+    const question = byId.get(id);
+    if (question && !seen.has(id)) {
+      reordered.push(question);
+      seen.add(id);
+    }
+  }
+
+  const remaining = paper.questions.filter((q) => !seen.has(q.id));
+  return { ...paper, questions: [...reordered, ...remaining] };
+}
+
 /** Replace a single question's fields in place (manual edit). */
 export function updateQuestion(
   paper: ExamPaper,
@@ -73,7 +94,34 @@ export function updateQuestion(
   };
 }
 
+/** Apply a validated AI operation batch to a paper. */
+export function applyPaperOperations(
+  paper: ExamPaper,
+  operations: AiPaperOperation[],
+): ExamPaper {
+  return operations.reduce((current, operation) => {
+    switch (operation.type) {
+      case "renamePaper":
+        return { ...current, title: operation.title };
+      case "appendQuestions":
+        return appendQuestions(current, operation.questions);
+      case "updateQuestion":
+        return replaceById(current, [operation.question]);
+      case "deleteQuestion":
+        return removeQuestion(current, operation.id);
+      case "reorderQuestions":
+        return reorderQuestions(current, operation.questionIds);
+      default:
+        return exhaustive(operation);
+    }
+  }, paper);
+}
+
 /** Sum of all question scores. */
 export function totalScore(paper: ExamPaper): number {
   return paper.questions.reduce((sum, q) => sum + q.score, 0);
+}
+
+function exhaustive(value: never): never {
+  throw new Error(`Unhandled paper operation: ${JSON.stringify(value)}`);
 }

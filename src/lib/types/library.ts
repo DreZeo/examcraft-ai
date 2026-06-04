@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { QuestionSchema } from "./exam";
+import { AiPaperOperationSchema, QuestionSchema } from "./exam";
 
 export const PaperMetaSchema = z.object({
   id: z.string().min(1),
@@ -39,8 +39,9 @@ export const ChatMessageSchema = z.discriminatedUnion("kind", [
     id: z.string().min(1),
     kind: z.literal("result"),
     prose: z.string(),
-    questions: z.array(QuestionSchema),
-    applyMode: z.enum(["append", "replace"]),
+    questions: z.array(QuestionSchema).optional(),
+    applyMode: z.enum(["append", "replace"]).optional(),
+    operations: z.array(AiPaperOperationSchema).default([]),
     applied: z.boolean(),
   }),
   z.object({

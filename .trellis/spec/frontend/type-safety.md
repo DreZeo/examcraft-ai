@@ -29,16 +29,33 @@ validator, and AI/persistence parsing at once — no drift.
 
 ---
 
-## Convention: discriminated unions for question types
+## Convention: discriminated unions for question types and AI paper operations
 
 The 7 question types share a `baseFields` spread (`id`, `content`, `score`) and
 discriminate on `type`. Objective types carry checkable answers; subjective
-carry reference/criteria. `AiQuestionsResponseSchema = { questions: [...] }` is
-what the AI must return (questions-only, never a full paper snapshot).
+carry reference/criteria.
 
 When adding a question type: add the variant schema, add it to the union, and
 extend `OBJECTIVE_TYPES`/`formatAnswer`/`toStudentVersion`/`TypeFields` —
 `tsc` + the discriminated-union exhaustiveness will flag the switch sites.
+
+AI paper edits use `AiPaperOperationsResponseSchema = { operations: [...] }`,
+where each operation is a discriminated union member:
+
+```ts
+type Operation =
+  | { type: "renamePaper"; title: string }
+  | { type: "appendQuestions"; questions: Question[] }
+  | { type: "updateQuestion"; id: string; question: Question }
+  | { type: "deleteQuestion"; id: string }
+  | { type: "reorderQuestions"; questionIds: string[] };
+```
+
+`updateQuestion.id` must equal `question.id`; enforce this in the schema with a
+refinement so the UI cannot preview one id while the store replaces another.
+Legacy AI output shaped as `{ questions: [...] }` may be accepted only at the
+validator boundary and converted to operations. Store and component code should
+prefer operations so title/delete/reorder behavior stays explicit and reviewable.
 
 ---
 
@@ -46,7 +63,7 @@ extend `OBJECTIVE_TYPES`/`formatAnswer`/`toStudentVersion`/`TypeFields` —
 
 ```ts
 // AI output
-const result = AiQuestionsResponseSchema.safeParse(parsed);
+const result = AiPaperOperationsResponseSchema.safeParse(parsed);
 // persisted JSON (load + import)
 return ExamPaperSchema.parse(JSON.parse(raw));
 ```

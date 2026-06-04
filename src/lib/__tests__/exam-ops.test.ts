@@ -2,9 +2,11 @@ import { describe, it, expect } from "vitest";
 import type { ExamPaper, Question } from "../types/exam";
 import {
   appendQuestions,
+  applyPaperOperations,
   replaceById,
   removeQuestion,
   moveQuestion,
+  reorderQuestions,
   updateQuestion,
   totalScore,
 } from "../exam/merge";
@@ -70,6 +72,12 @@ describe("merge operations", () => {
     ]);
   });
 
+  it("reorders questions by id and keeps omitted questions at the end", () => {
+    const base = paper([sc("q1"), sc("q2"), sc("q3")]);
+    const p = reorderQuestions(base, ["q3", "missing", "q1"]);
+    expect(p.questions.map((q) => q.id)).toEqual(["q3", "q1", "q2"]);
+  });
+
   it("updates a single question in place", () => {
     const edited = { ...sc("q1"), content: "edited" };
     const p = updateQuestion(paper([sc("q1"), sc("q2")]), edited);
@@ -78,6 +86,25 @@ describe("merge operations", () => {
 
   it("sums total score", () => {
     expect(totalScore(paper([sc("q1", 5), sc("q2", 10)]))).toBe(15);
+  });
+
+  it("applies mixed AI paper operations in order", () => {
+    const base = paper([sc("q1"), sc("q2"), sc("q3")]);
+    const p = applyPaperOperations(base, [
+      { type: "renamePaper", title: "六年级英语试卷" },
+      { type: "deleteQuestion", id: "q2" },
+      {
+        type: "updateQuestion",
+        id: "q1",
+        question: { ...sc("q1"), content: "updated" },
+      },
+      { type: "appendQuestions", questions: [sc("q4")] },
+      { type: "reorderQuestions", questionIds: ["q4", "q1"] },
+    ]);
+
+    expect(p.title).toBe("六年级英语试卷");
+    expect(p.questions.map((q) => q.id)).toEqual(["q4", "q1", "q3"]);
+    expect(p.questions[1].content).toBe("updated");
   });
 });
 
