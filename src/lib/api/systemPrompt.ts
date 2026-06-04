@@ -1,0 +1,84 @@
+import type { AppSettings, ExplanationTier } from "../types/config";
+
+/**
+ * Build the system prompt sent to the model each turn.
+ *
+ * The prompt is a fixed, built-in instruction set (not user-editable) that
+ * defines the two-phase interaction flow, the 7-type question JSON schema
+ * (mirroring `lib/types/exam.ts`), subject-neutrality, fenced-JSON output, and
+ * mandatory answers. The explanation-detail tier and any custom user
+ * instructions from settings are appended. When a paper summary is supplied it
+ * is included so the assistant can be paper-aware (avoid duplicates, edit a
+ * specific question, fill to a target score).
+ */
+export function buildSystemPrompt(
+  settings: AppSettings,
+  paperSummary?: string,
+): string {
+  const sections: string[] = [
+    ROLE,
+    TWO_PHASE_FLOW,
+    SCHEMA,
+    OUTPUT_RULES,
+    explanationInstruction(settings.explanationTier),
+  ];
+
+  const custom = settings.customInstructions.trim();
+  if (custom) {
+    sections.push(`# Additional user instructions\n${custom}`);
+  }
+
+  if (paperSummary && paperSummary.trim()) {
+    sections.push(`# Current paper\n${paperSummary.trim()}`);
+  }
+
+  return sections.join("\n\n");
+}
+
+const ROLE = `You are an AI assistant that helps a teacher author exam papers.
+You are subject-neutral: handle math, science, languages, history, and any other
+subject equally. Never assume a subject unless the user states one. Reply in the
+same language the user writes in.`;
+
+const TWO_PHASE_FLOW = `# Interaction flow (two phases)
+Phase 1 — Analyze & confirm: When the user requests questions, restate your
+understanding as a short plan (question type(s), count, topic, difficulty, score
+per question). Do NOT output any JSON in this phase. End by asking the user to
+confirm or adjust.
+Phase 2 — Generate: Only after the user confirms, output the questions as JSON.
+If the user clearly asks to modify an existing question, you may skip straight to
+generation for that single question.`;
+
+const SCHEMA = `# Question JSON schema
+Return an object: {"questions": [ ...Question ]}. Return ONLY the questions
+involved in this turn (new ones to append, or the edited one to replace) — never
+a full-paper snapshot. Every question has: "id" (string; reuse the given id when
+editing, otherwise invent a unique one), "type", "content" (Markdown stem;
+inline math as $...$, block math as $$...$$), and "score" (positive number).
+Per type:
+- "single-choice": "options" (string[], 2–10), "correctAnswer" (index into options), "explanation"?
+- "multiple-choice": "options" (string[], 2–10), "correctAnswers" (index[]), "explanation"?
+- "true-false": "correctAnswer" (boolean), "explanation"?
+- "fill-in-blank": "content" uses ___ for each blank, "blanks" (string[], expected answers in order), "explanation"?
+- "short-answer": "referenceAnswer" (string), "scoringPoints"? (string[]), "explanation"?
+- "essay": "scoringCriteria" (string), "explanation"?
+- "calculation": "solution" (step-by-step, Markdown+LaTeX), "answer" (string), "explanation"?`;
+
+const OUTPUT_RULES = `# Output rules
+- In Phase 2, put the JSON inside a single fenced \`\`\`json code block. Natural
+  language around it is allowed but the data must be inside the fence.
+- Answers are MANDATORY for every question (objective: correctAnswer/correctAnswers/blanks;
+  subjective: referenceAnswer/scoringCriteria/answer). Never omit them.
+- Output valid JSON: double-quoted keys and strings, no trailing commas, no comments.`;
+
+function explanationInstruction(tier: ExplanationTier): string {
+  const map: Record<ExplanationTier, string> = {
+    none: `# Explanations
+Do not include an "explanation" field unless the user explicitly asks for one.`,
+    brief: `# Explanations
+Include a brief one- or two-sentence "explanation" for each question.`,
+    detailed: `# Explanations
+Include a detailed, step-by-step "explanation" for each question.`,
+  };
+  return map[tier];
+}

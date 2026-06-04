@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { Question } from "../../lib/types/exam";
 import { usePaperStore } from "../../stores/paperStore";
+import { useAssistantStore } from "../../stores/assistantStore";
 import { Markdown } from "./Markdown";
 
 interface QuestionBlockProps {
@@ -21,11 +22,18 @@ export function QuestionBlock({
 }: QuestionBlockProps) {
   const { t } = useTranslation();
   const { reorder, deleteQuestion } = usePaperStore();
+  const focusQuestion = useAssistantStore((s) => s.focusQuestion);
 
   return (
     <li className="group relative rounded-md border border-transparent px-3 py-2 transition hover:border-slate-200 hover:bg-slate-50/60">
       {!studentView && (
         <div className="absolute right-2 top-2 hidden gap-1 group-hover:flex">
+          <ActionButton
+            label={t("paper.aiModify")}
+            onClick={() => focusQuestion(question)}
+          >
+            ✦
+          </ActionButton>
           <ActionButton
             label={t("paper.moveUp")}
             onClick={() => reorder(question.id, "up")}

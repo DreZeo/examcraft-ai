@@ -4,8 +4,8 @@ use serde::Serialize;
 ///
 /// Each command returns `Result<T, AppError>`; Tauri serializes the error so the
 /// React layer can map the `code` to a user-friendly, localized message.
-#[derive(Debug, thiserror::Error, Serialize)]
-#[serde(tag = "code", content = "detail")]
+#[derive(Debug, Clone, thiserror::Error, Serialize)]
+#[serde(tag = "code", content = "detail", rename_all = "camelCase")]
 pub enum AppError {
     #[error("keychain error: {0}")]
     Keychain(String),
@@ -63,3 +63,30 @@ impl From<reqwest::Error> for AppError {
 }
 
 pub type AppResult<T> = Result<T, AppError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The serialized `code` is the load-bearing contract with the frontend
+    /// (`errorMessages.ts` maps these exact lowercase strings to i18n keys).
+    #[test]
+    fn error_codes_serialize_camel_case() {
+        assert_eq!(
+            serde_json::to_string(&AppError::Auth).unwrap(),
+            r#"{"code":"auth"}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&AppError::Quota).unwrap(),
+            r#"{"code":"quota"}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&AppError::Timeout).unwrap(),
+            r#"{"code":"timeout"}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&AppError::Network("x".into())).unwrap(),
+            r#"{"code":"network","detail":"x"}"#
+        );
+    }
+}

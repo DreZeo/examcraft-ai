@@ -20,6 +20,10 @@
     "apiKeyConfigured": "Configured",
     "fetchModels": "Fetch models",
     "testConnection": "Test connection",
+    "connectionOk": "Connection OK",
+    "connectionFailed": "Connection failed",
+    "fetchModelsFailed": "Could not fetch models",
+    "enterUrlAndKey": "Enter base URL and API key first",
     "advanced": "Advanced settings",
     "temperature": "Temperature",
     "maxTokens": "Max tokens",
@@ -57,7 +61,11 @@
     "undo": "Undo",
     "viewRaw": "View AI raw response",
     "retry": "Retry",
-    "checkSettings": "Check settings"
+    "checkSettings": "Check settings",
+    "generated": "Generated {{count}} question(s)",
+    "applied": "Applied to paper",
+    "thinking": "Thinking…",
+    "you": "You"
   },
   "paper": {
     "emptyTitle": "No questions yet",

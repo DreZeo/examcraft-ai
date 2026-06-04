@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import { useConfigStore } from "../../stores/configStore";
 import { getApiKey } from "../../lib/storage/tauri";
 
@@ -28,10 +29,63 @@ export function ModelConfigForm({ configId, onDone }: ModelConfigFormProps) {
     existing?.maxTokens?.toString() ?? "",
   );
   const [busy, setBusy] = useState(false);
+  const [models, setModels] = useState<string[]>([]);
+  const [probing, setProbing] = useState(false);
+  const [status, setStatus] = useState<{
+    kind: "ok" | "error";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     if (configId) void getApiKey(configId).then((k) => setKeyConfigured(!!k));
   }, [configId]);
+
+  /** Resolve the key to probe with: a freshly typed one, else the stored one. */
+  async function resolveKey(): Promise<string | null> {
+    if (apiKey) return apiKey;
+    if (configId) return getApiKey(configId);
+    return null;
+  }
+
+  async function fetchModels() {
+    setStatus(null);
+    const key = await resolveKey();
+    if (!baseUrl.trim() || !key) {
+      setStatus({ kind: "error", text: t("settings.enterUrlAndKey") });
+      return;
+    }
+    setProbing(true);
+    try {
+      const list = await invoke<string[]>("list_models", {
+        baseUrl,
+        apiKey: key,
+      });
+      setModels(list);
+      if (list.length > 0 && !model) setModel(list[0]);
+    } catch {
+      setStatus({ kind: "error", text: t("settings.fetchModelsFailed") });
+    } finally {
+      setProbing(false);
+    }
+  }
+
+  async function testConnection() {
+    setStatus(null);
+    const key = await resolveKey();
+    if (!baseUrl.trim() || !key) {
+      setStatus({ kind: "error", text: t("settings.enterUrlAndKey") });
+      return;
+    }
+    setProbing(true);
+    try {
+      await invoke("test_connection", { baseUrl, apiKey: key });
+      setStatus({ kind: "ok", text: t("settings.connectionOk") });
+    } catch {
+      setStatus({ kind: "error", text: t("settings.connectionFailed") });
+    } finally {
+      setProbing(false);
+    }
+  }
 
   const canSave =
     name.trim() && baseUrl.trim() && model.trim() && (existing || apiKey);
@@ -73,7 +127,29 @@ export function ModelConfigForm({ configId, onDone }: ModelConfigFormProps) {
         />
       </Field>
       <Field label={t("settings.model")}>
-        <input value={model} onChange={(e) => setModel(e.currentTarget.value)} placeholder="gpt-4o" className={inputCls} />
+        {models.length > 0 ? (
+          <select
+            value={model}
+            onChange={(e) => setModel(e.currentTarget.value)}
+            className={inputCls}
+          >
+            {!models.includes(model) && model && (
+              <option value={model}>{model}</option>
+            )}
+            {models.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            value={model}
+            onChange={(e) => setModel(e.currentTarget.value)}
+            placeholder="gpt-4o"
+            className={inputCls}
+          />
+        )}
       </Field>
       <Field label={t("settings.apiKey")}>
         <input
@@ -84,6 +160,36 @@ export function ModelConfigForm({ configId, onDone }: ModelConfigFormProps) {
           className={inputCls}
         />
       </Field>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void fetchModels()}
+          disabled={probing}
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          {t("settings.fetchModels")}
+        </button>
+        <button
+          type="button"
+          onClick={() => void testConnection()}
+          disabled={probing}
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          {t("settings.testConnection")}
+        </button>
+        {status && (
+          <span
+            className={
+              status.kind === "ok"
+                ? "text-xs text-emerald-600"
+                : "text-xs text-red-600"
+            }
+          >
+            {status.text}
+          </span>
+        )}
+      </div>
 
       <button
         type="button"

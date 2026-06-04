@@ -1,5 +1,6 @@
 mod error;
 mod keychain;
+mod openai;
 mod storage;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -20,6 +21,10 @@ pub fn run() {
             storage::save_config,
             storage::load_working_paper,
             storage::save_working_paper,
+            openai::stream_chat,
+            openai::abort_chat,
+            openai::list_models,
+            openai::test_connection,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
