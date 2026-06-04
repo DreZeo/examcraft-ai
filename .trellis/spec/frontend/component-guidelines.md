@@ -96,6 +96,12 @@ import { Settings, PanelRightClose, Trash2 } from "lucide-react";
 
 Hover/focus transitions use `transition-colors` (150–250ms). **Only** animate `transform`/`opacity`, never `width`/`height` (causes layout shift and reflow). Drawer slide, card fade-in can use `animate-fade-in` (defined in index.css).
 
+Exception: persistent workbench rails that already reserve layout space (paper
+outline, assistant drawer) may use the shared `.motion-panel-shell` width
+transition for open/close only. Keep content mounted and clipped inside the
+shell, fade text with `.motion-panel-content`, and disable width transition
+during pointer resizing with `data-resizing="true"`.
+
 **Mandatory:** `src/styles/index.css` includes a global `@media (prefers-reduced-motion: reduce)` rule that kills all transitions/animations. Don't override it.
 
 ### Scrollbars

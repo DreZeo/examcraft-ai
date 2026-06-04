@@ -30,31 +30,27 @@ export function PaperOutline({
     <aside
       className={
         open
-          ? "no-print hidden w-56 shrink-0 border-r border-border bg-background/60 lg:flex lg:flex-col"
-          : "no-print hidden w-12 shrink-0 border-r border-border bg-background/60 lg:flex lg:flex-col"
+          ? "no-print motion-panel-shell hidden w-56 shrink-0 overflow-hidden border-r border-border bg-background/60 lg:flex lg:flex-col"
+          : "no-print motion-panel-shell hidden w-12 shrink-0 overflow-hidden border-r border-border bg-background/60 lg:flex lg:flex-col"
       }
     >
-      <div
-        className={
-          open
-            ? "flex items-center gap-2 border-b border-border px-3 py-3"
-            : "flex justify-center border-b border-border py-3"
-        }
-      >
-        {open && (
-          <ListTree className="h-4 w-4 animate-panel-content-in text-primary" />
-        )}
-        {open && (
-          <h2 className="min-w-0 flex-1 animate-panel-content-in truncate text-sm font-semibold text-foreground">
+      <div className="flex items-center gap-2 border-b border-border px-2.5 py-3">
+        <div
+          className="motion-panel-content flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap"
+          data-open={open}
+          aria-hidden={!open}
+        >
+          <ListTree className="h-4 w-4 shrink-0 text-primary" />
+          <h2 className="min-w-0 truncate text-sm font-semibold text-foreground">
             {t("paper.outline")}
           </h2>
-        )}
+        </div>
         <button
           type="button"
           aria-label={open ? t("paper.collapseOutline") : t("paper.expandOutline")}
           title={open ? t("paper.collapseOutline") : t("paper.expandOutline")}
           onClick={onToggle}
-          className="group inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+          className="group inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
         >
           {open ? (
             <PanelLeftClose className="h-4 w-4 transition-transform duration-200 ease-out group-hover:-translate-x-0.5" />
@@ -68,23 +64,25 @@ export function PaperOutline({
         <div
           className={
             open
-              ? "flex flex-1 animate-panel-content-in flex-col items-center justify-center px-4 text-center"
-              : "flex flex-1 animate-panel-content-in items-start justify-center pt-4"
+              ? "flex flex-1 flex-col items-center justify-center px-4 text-center"
+              : "flex flex-1 items-start justify-center pt-4"
           }
         >
           <FileText className="h-7 w-7 text-muted-foreground/70" />
-          {open && (
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              {t("paper.outlineEmpty")}
-            </p>
-          )}
+          <p
+            className="motion-panel-content mt-2 w-44 overflow-hidden text-xs leading-5 text-muted-foreground"
+            data-open={open}
+            aria-hidden={!open}
+          >
+            {t("paper.outlineEmpty")}
+          </p>
         </div>
       ) : (
         <nav
           className={
             open
-              ? "min-h-0 flex-1 animate-panel-content-in overflow-auto p-2"
-              : "min-h-0 flex-1 animate-panel-content-in overflow-auto px-1 py-2"
+              ? "min-h-0 flex-1 overflow-auto p-2"
+              : "min-h-0 flex-1 overflow-auto px-1 py-2"
           }
         >
           <ol className="space-y-1">
@@ -120,8 +118,11 @@ export function PaperOutline({
                   >
                     {index + 1}
                   </span>
-                  {open && (
-                    <span className="min-w-0 flex-1">
+                  <span
+                    className="motion-panel-content min-w-0 flex-1 overflow-hidden"
+                    data-open={open}
+                    aria-hidden={!open}
+                  >
                       <span className="block truncate text-xs font-medium">
                         {t(`questionType.${question.type}`)}
                       </span>
@@ -129,7 +130,6 @@ export function PaperOutline({
                         {summarizeMarkdown(question.content)}
                       </span>
                     </span>
-                  )}
                 </button>
               </li>
             ))}
