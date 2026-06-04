@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
+import { Plus, Trash2 } from "lucide-react";
+import { inputCls } from "../../lib/ui/styles";
 
 /** Shared form primitives for the question editor, matching the settings style. */
 
-export const inputCls =
-  "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+export { inputCls };
 
 export function Field({
   label,
@@ -14,7 +15,7 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
+      <span className="mb-1 block text-sm font-medium text-foreground">
         {label}
       </span>
       {children}
@@ -85,7 +86,7 @@ export function ListEditor({
       {items.map((item, i) => (
         <div key={i} className="flex items-center gap-2">
           {prefix && (
-            <span className="w-5 shrink-0 text-sm text-slate-500">
+            <span className="w-5 shrink-0 text-sm text-muted-foreground">
               {prefix(i)}
             </span>
           )}
@@ -104,18 +105,19 @@ export function ListEditor({
             title={removeLabel}
             disabled={items.length <= minItems}
             onClick={() => onChange(items.filter((_, j) => j !== i))}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-40"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
           >
-            ✕
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       ))}
       <button
         type="button"
         onClick={() => onChange([...items, ""])}
-        className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+        className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
       >
-        + {addLabel}
+        <Plus className="h-4 w-4" />
+        {addLabel}
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AlertCircle, ChevronDown, ChevronRight, RotateCcw, Settings } from "lucide-react";
 import { errorMessageKey } from "../../lib/api/errorMessages";
 import { useAssistantStore } from "../../stores/assistantStore";
 
@@ -34,8 +35,11 @@ export function ErrorCard({
     : t(errorMessageKey({ code, detail }));
 
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50/70 p-3 text-sm text-red-800">
-      <p>{message}</p>
+    <div className="animate-fade-in rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+      <p className="flex items-start gap-2">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>{message}</span>
+      </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
         {!retryExhausted && (
@@ -43,16 +47,18 @@ export function ErrorCard({
             type="button"
             disabled={streaming}
             onClick={() => void retry()}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
           >
+            <RotateCcw className="h-4 w-4" />
             {t("assistant.retry")}
           </button>
         )}
         <button
           type="button"
           onClick={onCheckSettings}
-          className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
+          className="inline-flex items-center gap-1.5 rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-red-800 dark:text-red-200 dark:hover:bg-red-900/40 cursor-pointer"
         >
+          <Settings className="h-4 w-4" />
           {t("assistant.checkSettings")}
         </button>
       </div>
@@ -62,12 +68,17 @@ export function ErrorCard({
           <button
             type="button"
             onClick={() => setShowRaw((v) => !v)}
-            className="text-xs text-red-600 underline"
+            className="inline-flex items-center gap-1 text-xs text-red-600 transition-colors hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-red-300 dark:hover:text-red-200 cursor-pointer"
           >
-            {showRaw ? "▾" : "▸"} {t("assistant.viewRaw")}
+            {showRaw ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            {t("assistant.viewRaw")}
           </button>
           {showRaw && (
-            <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-white/70 p-2 text-xs text-slate-600">
+            <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-2 text-xs text-muted-foreground">
               {raw}
             </pre>
           )}

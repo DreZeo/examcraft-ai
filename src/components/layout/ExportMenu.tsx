@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Download, ChevronDown, FileJson, Upload } from "lucide-react";
 import { usePaperStore } from "../../stores/paperStore";
 import { useConfigStore } from "../../stores/configStore";
 import { useExportStore, type ExamInfoFields } from "../../stores/exportStore";
+import { ghostBtn } from "../../lib/ui/styles";
 import {
   exportJson,
   exportMarkdown,
@@ -84,15 +86,25 @@ export function ExportMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+        className={ghostBtn}
       >
+        <Download className="h-4 w-4" />
         {t("export.title")}
+        <ChevronDown className="h-4 w-4" />
       </button>
 
       {open && (
-        <div className="absolute right-0 z-20 mt-1 w-60 rounded-md border border-slate-200 bg-white p-1 text-sm shadow-lg">
-          <MenuItem label={t("export.json")} onClick={doJson} />
-          <MenuItem label={t("export.importJson")} onClick={doImport} />
+        <div className="absolute right-0 z-20 mt-1 w-60 animate-fade-in rounded-md border border-border bg-popover p-1 text-sm text-popover-foreground shadow-lg">
+          <MenuItem
+            label={t("export.json")}
+            icon={<FileJson className="h-4 w-4" />}
+            onClick={doJson}
+          />
+          <MenuItem
+            label={t("export.importJson")}
+            icon={<Upload className="h-4 w-4" />}
+            onClick={doImport}
+          />
 
           <Section label={t("export.markdown")}>
             <Variant label={t("export.teacher")} onClick={() => doMarkdown(true)} />
@@ -104,12 +116,13 @@ export function ExportMenu() {
             <Variant label={t("export.student")} onClick={() => doPdf(false)} />
           </Section>
 
-          <div className="my-1 border-t border-slate-100" />
-          <label className="flex items-center gap-2 px-2 py-1.5 text-xs text-slate-600">
+          <div className="my-1 border-t border-border" />
+          <label className="flex cursor-pointer items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground">
             <input
               type="checkbox"
               checked={showHeader}
               onChange={(e) => setShowHeader(e.currentTarget.checked)}
+              className="h-3.5 w-3.5 accent-primary cursor-pointer"
             />
             {t("export.examInfoHeader")}
           </label>
@@ -117,12 +130,13 @@ export function ExportMenu() {
             FIELD_KEYS.map((key) => (
               <label
                 key={key}
-                className="flex items-center gap-2 px-2 py-1 pl-5 text-xs text-slate-500"
+                className="flex cursor-pointer items-center gap-2 px-2 py-1 pl-5 text-xs text-muted-foreground"
               >
                 <input
                   type="checkbox"
                   checked={fields[key]}
                   onChange={() => toggleField(key)}
+                  className="h-3.5 w-3.5 accent-primary cursor-pointer"
                 />
                 {t(`examInfo.${key}`)}
               </label>
@@ -133,14 +147,23 @@ export function ExportMenu() {
   );
 }
 
-function MenuItem({ label, onClick }: { label: string; onClick: () => void }) {
+function MenuItem({
+  label,
+  icon,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="block w-full rounded px-2 py-1.5 text-left text-slate-700 hover:bg-slate-100"
+      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
     >
+      {icon}
       {label}
     </button>
   );
@@ -155,7 +178,7 @@ function Section({
 }) {
   return (
     <div className="px-2 py-1">
-      <p className="text-xs font-medium text-slate-400">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <div className="mt-0.5 flex gap-1">{children}</div>
     </div>
   );
@@ -167,7 +190,7 @@ function Variant({ label, onClick }: { label: string; onClick: () => void }) {
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="flex-1 rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100"
+      className="flex-1 rounded border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
     >
       {label}
     </button>

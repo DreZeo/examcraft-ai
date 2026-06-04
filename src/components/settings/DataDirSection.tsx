@@ -1,7 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
+import { FolderOpen, FolderInput } from "lucide-react";
 import { useConfigStore } from "../../stores/configStore";
+import { secondaryBtn } from "../../lib/ui/styles";
 
 /** Data location: show current path, open in file manager, relocate. */
 export function DataDirSection() {
@@ -16,10 +18,10 @@ export function DataDirSection() {
   return (
     <div className="space-y-4 text-sm">
       <div>
-        <p className="font-medium text-slate-700">
+        <p className="font-medium text-foreground">
           {t("settings.dataDirectory")}
         </p>
-        <p className="mt-1 break-all rounded-md bg-slate-50 px-3 py-2 text-slate-600">
+        <p className="mt-1 break-all rounded-md bg-muted px-3 py-2 text-muted-foreground">
           {dataDir ?? "—"}
         </p>
       </div>
@@ -29,15 +31,13 @@ export function DataDirSection() {
           type="button"
           disabled={!dataDir}
           onClick={() => dataDir && void openPath(dataDir)}
-          className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className={secondaryBtn}
         >
+          <FolderOpen className="h-4 w-4" />
           {t("settings.openInExplorer")}
         </button>
-        <button
-          type="button"
-          onClick={relocate}
-          className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50"
-        >
+        <button type="button" onClick={relocate} className={secondaryBtn}>
+          <FolderInput className="h-4 w-4" />
           {t("settings.changeLocation")}
         </button>
       </div>

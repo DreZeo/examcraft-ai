@@ -30,11 +30,11 @@ export function ExamInfoHeader({ paper }: { paper: ExamPaper }) {
   if (!showHeader || items.length === 0) return null;
 
   return (
-    <div className="mb-6 flex flex-wrap justify-center gap-x-8 gap-y-1 border-b border-slate-200 pb-4 text-sm text-slate-600">
+    <div className="mb-6 flex flex-wrap justify-center gap-x-8 gap-y-1 border-b border-border pb-4 text-sm text-muted-foreground">
       {items.map((item, i) => (
         <span key={i} className="inline-flex items-end whitespace-nowrap">
           {item}
-          <span className="ml-1 inline-block min-w-16 border-b border-slate-400" />
+          <span className="ml-1 inline-block min-w-16 border-b border-muted-foreground/60" />
         </span>
       ))}
     </div>

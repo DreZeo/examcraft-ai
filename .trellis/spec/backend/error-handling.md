@@ -109,3 +109,41 @@ streams via events, pick ONE error path on the frontend.
 
 Never log API keys or full request headers. Truncate error bodies; the key is
 passed as a parameter and used only for `bearer_auth`.
+
+### keyring v3 feature flags (CRITICAL)
+
+**Symptom:** API keys saved in settings "disappear" after app restart; chat
+produces false "auth failed" errors even though the key was just saved successfully.
+
+**Root cause:** `Cargo.toml` declares `keyring = "3"` with NO features enabled.
+In keyring v3, OS-native credential stores (Windows Credential Manager, macOS
+Keychain, Linux secret-service) moved behind feature flags. **With no features
+enabled, keyring silently falls back to an in-memory mock store:**
+
+- `set_password` succeeds and returns `Ok(())` — looks like it saved.
+- Nothing persists; the "store" is process RAM.
+- On app restart, `get_password` returns `NoEntry`.
+- Frontend sees `null`, treats it as missing key, pushes `code: "auth"`.
+
+**Why it's insidious:** Save appears to work at dev time; the bug only manifests
+on process restart. If you test save + immediate use in one session, it passes.
+
+**Fix (mandatory):** enable platform features in `Cargo.toml`:
+
+```toml
+keyring = { version = "3", features = [
+  "apple-native",           # macOS Keychain
+  "windows-native",         # Windows Credential Manager
+  "sync-secret-service",    # Linux secret-service
+  "crypto-rust"             # pure-Rust crypto backend for secret-service
+] }
+```
+
+Verify with `cargo check` that the native backends compile. Full validation
+requires runtime: save a key, fully restart the app process, confirm the key
+persists and authenticates.
+
+**Contract test (proactive):** keyring's mock fallback is silent — no compile
+or runtime warning. There's no direct test for "am I using the real native store",
+but you can guard the dependency declaration with a CI step that greps `Cargo.toml`
+for the required features and fails if they're missing.

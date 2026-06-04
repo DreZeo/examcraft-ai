@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
+import { FolderOpen, Loader2 } from "lucide-react";
 import { useConfigStore } from "../../stores/configStore";
 import { defaultDataDir } from "../../lib/storage/tauri";
+import { primaryBtn, secondaryBtn, inputCls } from "../../lib/ui/styles";
 
 /**
  * First-launch screen: the user picks where their data lives. Transparency by
@@ -34,12 +36,12 @@ export function FirstLaunch() {
   }
 
   return (
-    <div className="grid h-full place-items-center bg-slate-100 p-6">
-      <div className="w-full max-w-lg rounded-xl bg-white p-8 shadow-sm">
-        <h1 className="text-xl font-semibold text-slate-800">
+    <div className="grid h-full place-items-center bg-background p-6">
+      <div className="w-full max-w-lg rounded-lg border border-border bg-card p-8 text-card-foreground shadow-sm">
+        <h1 className="text-xl font-semibold text-foreground">
           {t("firstLaunch.title")}
         </h1>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-muted-foreground">
           {t("firstLaunch.description")}
         </p>
 
@@ -48,13 +50,14 @@ export function FirstLaunch() {
             aria-label={t("settings.dataDirectory")}
             value={dir}
             onChange={(e) => setDir(e.currentTarget.value)}
-            className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className={inputCls + " min-w-0 flex-1"}
           />
           <button
             type="button"
             onClick={pick}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={secondaryBtn + " shrink-0"}
           >
+            <FolderOpen className="h-4 w-4" />
             {t("firstLaunch.choose")}
           </button>
         </div>
@@ -63,8 +66,9 @@ export function FirstLaunch() {
           type="button"
           onClick={confirm}
           disabled={!dir || busy}
-          className="mt-6 w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          className={primaryBtn + " mt-6 w-full"}
         >
+          {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {t("firstLaunch.confirm")}
         </button>
       </div>

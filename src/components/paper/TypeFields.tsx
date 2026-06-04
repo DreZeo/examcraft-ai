@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Question } from "../../lib/types/exam";
-import { Field, TextInput, TextArea, ListEditor } from "./editFields";
+import { Field, TextInput, TextArea, ListEditor, inputCls } from "./editFields";
 
 interface TypeFieldsProps {
   draft: Question;
@@ -36,7 +36,7 @@ export function TypeFields({ draft, onChange }: TypeFieldsProps) {
               onChange={(e) =>
                 onChange({ ...draft, correctAnswer: Number(e.currentTarget.value) })
               }
-              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className={inputCls}
             >
               {draft.options.map((_, i) => (
                 <option key={i} value={i}>
@@ -97,7 +97,7 @@ export function TypeFields({ draft, onChange }: TypeFieldsProps) {
             onChange={(e) =>
               onChange({ ...draft, correctAnswer: e.currentTarget.value === "true" })
             }
-            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className={inputCls}
           >
             <option value="true">{t("paper.true")}</option>
             <option value="false">{t("paper.false")}</option>

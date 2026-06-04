@@ -9,9 +9,90 @@
 /* Print / PDF export rules (@media print) */
 @import "./print.css";
 
+/* Dark mode driven by a `.dark` class on <html> (set by the theme store). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Semantic design tokens (shadcn-style). Components reference these via Tailwind
+ * utilities (bg-background, text-foreground, bg-primary, border-border, etc.) —
+ * see the @theme inline mapping below. NEVER hardcode slate or indigo colors in
+ * components. Light values live in :root; dark overrides in .dark. HSL channel
+ * triples so Tailwind slash-opacity keeps working.
+ */
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-    "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%; /* slate-900 */
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 243 75% 59%; /* indigo-600 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96%; /* slate-100 */
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 96%; /* slate-100 */
+  --muted-foreground: 215 16% 47%; /* slate-500 */
+  --accent: 210 40% 96%; /* slate-100 hover bg */
+  --accent-foreground: 222 47% 11%;
+  --destructive: 347 77% 50%; /* rose-600 */
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%; /* slate-200 */
+  --input: 214 32% 91%;
+  --ring: 239 84% 67%; /* indigo-500 */
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 222 47% 7%; /* near slate-950 */
+  --foreground: 210 40% 96%; /* slate-100 */
+  --card: 222 47% 11%; /* slate-900 */
+  --card-foreground: 210 40% 96%;
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 239 84% 67%; /* indigo-500 (brighter on dark) */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 217 33% 17%; /* slate-800 */
+  --secondary-foreground: 210 40% 96%;
+  --muted: 217 33% 17%; /* slate-800 */
+  --muted-foreground: 215 20% 65%; /* slate-400 */
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 96%;
+  --destructive: 347 77% 60%; /* rose-500 */
+  --destructive-foreground: 0 0% 100%;
+  --border: 217 33% 20%; /* slate-800-ish, visible */
+  --input: 217 33% 20%;
+  --ring: 234 89% 74%; /* indigo-400 */
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
+}
+
+:root {
+  font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -22,4 +103,37 @@ body,
 #root {
   height: 100%;
   margin: 0;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Respect reduced-motion: kill all transitions/animations globally. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Subtle fade-in for chat cards / streaming bubbles. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 200ms ease-out;
 }

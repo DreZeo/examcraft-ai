@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  AlertTriangle,
+  PanelRightClose,
+  PanelRightOpen,
+  Send,
+  Sparkles,
+  Square,
+  X,
+} from "lucide-react";
 import { useConfigStore } from "../../stores/configStore";
 import { useAssistantStore, type ChatMessage } from "../../stores/assistantStore";
+import { iconBtn, inputCls } from "../../lib/ui/styles";
 import { Markdown } from "../paper/Markdown";
 import { ConfirmationCard } from "./ConfirmationCard";
 import { ResultCard } from "./ResultCard";
@@ -59,17 +69,17 @@ export function AssistantDrawer({
 
   if (!open) {
     return (
-      <div className="no-print flex w-10 shrink-0 flex-col items-center border-l border-slate-200 bg-white py-3">
+      <div className="no-print flex w-10 shrink-0 flex-col items-center border-l border-border bg-card py-3">
         <button
           type="button"
           aria-label={t("assistant.expand")}
           title={t("assistant.expand")}
           onClick={onToggle}
-          className="rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100"
+          className={iconBtn}
         >
-          ◀
+          <PanelRightOpen className="h-5 w-5" />
         </button>
-        <span className="mt-3 text-xs text-slate-400 [writing-mode:vertical-rl]">
+        <span className="mt-3 text-xs text-muted-foreground [writing-mode:vertical-rl]">
           {t("assistant.title")}
         </span>
       </div>
@@ -77,37 +87,43 @@ export function AssistantDrawer({
   }
 
   return (
-    <aside className="no-print flex w-[380px] shrink-0 flex-col border-l border-slate-200 bg-white transition-all duration-200">
-      <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-700">
-            {t("assistant.title")}
-          </p>
-          {activeConfig && (
-            <p className="truncate text-xs text-slate-400">
-              {activeConfig.name} · {activeConfig.model}
+    <aside className="no-print flex w-[380px] shrink-0 flex-col border-l border-border bg-card transition-all duration-200">
+      <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">
+              {t("assistant.title")}
             </p>
-          )}
+            {activeConfig && (
+              <p className="truncate text-xs text-muted-foreground">
+                {activeConfig.name} · {activeConfig.model}
+              </p>
+            )}
+          </div>
         </div>
         <button
           type="button"
           aria-label={t("assistant.collapse")}
           title={t("assistant.collapse")}
           onClick={onToggle}
-          className="rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100"
+          className={iconBtn}
         >
-          ▶
+          <PanelRightClose className="h-5 w-5" />
         </button>
       </div>
 
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-auto p-3">
         {!activeConfig && (
-          <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
-            <p>{t("assistant.noModel")}</p>
+          <div className="animate-fade-in rounded-md bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            <p className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{t("assistant.noModel")}</span>
+            </p>
             <button
               type="button"
               onClick={onOpenSettings}
-              className="mt-2 rounded-md bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-amber-700 dark:hover:bg-amber-600 cursor-pointer"
             >
               {t("assistant.goToSettings")}
             </button>
@@ -119,27 +135,28 @@ export function AssistantDrawer({
         ))}
 
         {streaming && (
-          <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          <div className="animate-fade-in rounded-lg bg-muted px-3 py-2 text-sm text-foreground">
             {streamBuffer ? (
               <Markdown>{streamBuffer}</Markdown>
             ) : (
-              <span className="text-slate-400">{t("assistant.thinking")}</span>
+              <span className="text-muted-foreground">{t("assistant.thinking")}</span>
             )}
           </div>
         )}
       </div>
 
-      <div className="border-t border-slate-200 p-3">
+      <div className="border-t border-border p-3">
         {focusedQuestion && (
-          <div className="mb-2 flex items-center justify-between rounded-md bg-indigo-50 px-2 py-1 text-xs text-indigo-700">
+          <div className="mb-2 flex items-center justify-between rounded-md bg-primary/10 px-2 py-1 text-xs text-primary">
             <span className="truncate">{t("paper.aiModify")}: {focusedQuestion.type}</span>
             <button
               type="button"
               aria-label={t("settings.cancel")}
+              title={t("settings.cancel")}
               onClick={() => clearFocus()}
-              className="ml-2 shrink-0 rounded px-1 hover:bg-indigo-100"
+              className="ml-2 inline-flex shrink-0 items-center justify-center rounded p-0.5 transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
             >
-              ✕
+              <X className="h-4 w-4" />
             </button>
           </div>
         )}
@@ -150,14 +167,15 @@ export function AssistantDrawer({
           disabled={!activeConfig}
           rows={3}
           placeholder={t("assistant.placeholder")}
-          className="w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50"
+          className={`${inputCls} resize-none`}
         />
         {streaming ? (
           <button
             type="button"
             onClick={() => void stop()}
-            className="mt-2 w-full rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
           >
+            <Square className="h-4 w-4" />
             {t("assistant.stop")}
           </button>
         ) : (
@@ -165,8 +183,9 @@ export function AssistantDrawer({
             type="button"
             onClick={submit}
             disabled={!activeConfig || !draft.trim()}
-            className="mt-2 w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
           >
+            <Send className="h-4 w-4" />
             {t("assistant.send")}
           </button>
         )}
@@ -188,13 +207,13 @@ function MessageItem({
     case "text":
       if (message.role === "user") {
         return (
-          <div className="ml-8 rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white">
+          <div className="ml-8 animate-fade-in rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground">
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
           </div>
         );
       }
       return (
-        <div className="mr-8 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+        <div className="mr-8 animate-fade-in rounded-lg bg-muted px-3 py-2 text-sm text-foreground">
           <Markdown>{message.content}</Markdown>
         </div>
       );

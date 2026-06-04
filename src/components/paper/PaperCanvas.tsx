@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FileText, Plus } from "lucide-react";
 import { usePaperStore } from "../../stores/paperStore";
+import { primaryBtn, secondaryBtn } from "../../lib/ui/styles";
 import { toStudentVersion } from "../../lib/exam/studentVersion";
 import { QuestionBlock } from "./QuestionBlock";
 import { QuestionEditModal } from "./QuestionEditModal";
@@ -28,9 +30,9 @@ export function PaperCanvas() {
 
   return (
     <div className="flex justify-center px-6 py-8">
-      <div className="paper-sheet w-full max-w-3xl rounded-lg bg-white p-10 shadow-sm">
+      <div className="paper-sheet w-full max-w-3xl rounded-lg bg-card p-10 shadow-sm">
         {paper.title && (
-          <h1 className="mb-6 text-center text-2xl font-semibold text-slate-800">
+          <h1 className="mb-6 text-center text-2xl font-semibold text-foreground">
             {paper.title}
           </h1>
         )}
@@ -39,17 +41,19 @@ export function PaperCanvas() {
 
         {display.questions.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-base font-medium text-slate-600">
+            <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/60" />
+            <p className="text-base font-medium text-foreground">
               {t("paper.emptyTitle")}
             </p>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-slate-400">
+            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
               {t("paper.emptySubtitle")}
             </p>
             <button
               type="button"
               onClick={addAndEdit}
-              className="no-print mt-4 rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+              className={`no-print mt-4 ${primaryBtn}`}
             >
+              <Plus className="h-4 w-4" />
               {t("paper.addQuestion")}
             </button>
           </div>
@@ -67,12 +71,13 @@ export function PaperCanvas() {
               ))}
             </ol>
             {view !== "student" && (
-              <div className="no-print mt-6 border-t border-dashed border-slate-200 pt-4 text-center">
+              <div className="no-print mt-6 border-t border-dashed border-border pt-4 text-center">
                 <button
                   type="button"
                   onClick={addAndEdit}
-                  className="rounded-md border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  className={secondaryBtn}
                 >
+                  <Plus className="h-4 w-4" />
                   {t("paper.addQuestion")}
                 </button>
               </div>

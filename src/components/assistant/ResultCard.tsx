@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ChevronDown, ChevronRight, Plus, Undo2 } from "lucide-react";
 import type { Question } from "../../lib/types/exam";
 import { useAssistantStore } from "../../stores/assistantStore";
 import { usePaperStore } from "../../stores/paperStore";
@@ -24,9 +25,9 @@ export function ResultCard({ id, prose, questions, applied }: ResultCardProps) {
   const undoApply = usePaperStore((s) => s.undoApply);
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm">
+    <div className="animate-fade-in rounded-lg border border-border bg-card p-3 text-sm shadow-sm">
       {prose && (
-        <div className="mb-2 text-slate-600">
+        <div className="mb-2 text-muted-foreground">
           <Markdown>{prose}</Markdown>
         </div>
       )}
@@ -34,24 +35,28 @@ export function ResultCard({ id, prose, questions, applied }: ResultCardProps) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between text-left font-medium text-slate-700"
+        className="flex w-full items-center justify-between rounded-md text-left font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
       >
         <span>{t("assistant.generated", { count: questions.length })}</span>
-        <span className="text-slate-400">{open ? "▾" : "▸"}</span>
+        {open ? (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        )}
       </button>
 
       {open && (
-        <ol className="mt-2 space-y-2 border-t border-slate-100 pt-2">
+        <ol className="mt-2 space-y-2 border-t border-border pt-2">
           {questions.map((q, i) => (
-            <li key={q.id} className="rounded-md bg-slate-50 px-2 py-1.5">
+            <li key={q.id} className="rounded-md bg-muted px-2 py-1.5">
               <div className="flex items-baseline gap-2">
-                <span className="select-none text-xs font-medium text-slate-400">
+                <span className="select-none text-xs font-medium text-muted-foreground">
                   {i + 1}.
                 </span>
-                <span className="rounded bg-slate-200 px-1.5 text-xs text-slate-600">
+                <span className="rounded bg-secondary px-1.5 text-xs text-secondary-foreground">
                   {q.type}
                 </span>
-                <span className="ml-auto text-xs text-slate-400">
+                <span className="ml-auto text-xs text-muted-foreground">
                   {q.score}
                 </span>
               </div>
@@ -66,14 +71,15 @@ export function ResultCard({ id, prose, questions, applied }: ResultCardProps) {
       <div className="mt-3 flex items-center gap-2">
         {applied ? (
           <>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-muted-foreground">
               {t("assistant.applied")}
             </span>
             <button
               type="button"
               onClick={() => undoApply()}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
             >
+              <Undo2 className="h-4 w-4" />
               {t("assistant.undo")}
             </button>
           </>
@@ -81,8 +87,9 @@ export function ResultCard({ id, prose, questions, applied }: ResultCardProps) {
           <button
             type="button"
             onClick={() => applyResult(id)}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
           >
+            <Plus className="h-4 w-4" />
             {t("assistant.applyToPaper")}
           </button>
         )}

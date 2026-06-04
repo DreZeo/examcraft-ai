@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useConfigStore } from "./stores/configStore";
 import { usePaperStore } from "./stores/paperStore";
+import { useTheme } from "./hooks/useTheme";
 import { FirstLaunch } from "./components/layout/FirstLaunch";
 import { TopBar } from "./components/layout/TopBar";
 import { PaperCanvas } from "./components/paper/PaperCanvas";
@@ -12,6 +13,8 @@ export default function App() {
   const loadPaper = usePaperStore((s) => s.load);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
+
+  useTheme();
 
   useEffect(() => {
     void init();
@@ -38,7 +41,7 @@ export default function App() {
   }, [settingsOpen]);
 
   if (!loaded) {
-    return <div className="grid h-full place-items-center text-slate-400" />;
+    return <div className="grid h-full place-items-center bg-background text-muted-foreground" />;
   }
 
   if (!dataDir) {
@@ -46,7 +49,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-slate-100 text-slate-800">
+    <div className="flex h-full flex-col bg-background text-foreground">
       <TopBar onOpenSettings={() => setSettingsOpen(true)} />
       <div className="flex min-h-0 flex-1">
         <main className="min-w-0 flex-1 overflow-auto">

@@ -32,6 +32,7 @@
     "delete": "删除",
     "general": "通用",
     "language": "界面语言",
+    "theme": "主题",
     "autoSave": "自动保存",
     "explanationTier": "解析详细程度",
     "customInstructions": "自定义补充指令",
@@ -45,6 +46,11 @@
     "none": "无",
     "brief": "简略",
     "detailed": "详细"
+  },
+  "theme": {
+    "system": "跟随系统",
+    "light": "浅色",
+    "dark": "深色"
   },
   "assistant": {
     "title": "AI 助手",

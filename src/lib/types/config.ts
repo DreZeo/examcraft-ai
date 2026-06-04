@@ -26,9 +26,14 @@ export const ModelConfigSchema = z.object({
 /** Detail level for AI-generated explanations. */
 export const ExplanationTierSchema = z.enum(["none", "brief", "detailed"]);
 
+/** Color theme preference. `system` follows the OS prefers-color-scheme. */
+export const ThemeSchema = z.enum(["system", "light", "dark"]);
+
 export const AppSettingsSchema = z.object({
   /** UI language. */
   language: z.enum(["zh", "en"]).default("zh"),
+  /** Color theme: system (follow OS), light, or dark. */
+  theme: ThemeSchema.default("system"),
   /** Debounced auto-save of the working paper. */
   autoSave: z.boolean().default(true),
   /** Explanation detail level injected into the system prompt as a default. */
@@ -47,6 +52,7 @@ export const AppConfigSchema = z.object({
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;
 export type ExplanationTier = z.infer<typeof ExplanationTierSchema>;
+export type Theme = z.infer<typeof ThemeSchema>;
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
 export type AppConfig = z.infer<typeof AppConfigSchema>;
 

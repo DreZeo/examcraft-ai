@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
+import {
+  RefreshCw,
+  FlaskConical,
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { useConfigStore } from "../../stores/configStore";
 import { getApiKey } from "../../lib/storage/tauri";
+import { primaryBtn, secondaryBtn, inputCls } from "../../lib/ui/styles";
 
 interface ModelConfigFormProps {
   /** Existing config id to edit, or null to add a new one. */
@@ -166,24 +174,34 @@ export function ModelConfigForm({ configId, onDone }: ModelConfigFormProps) {
           type="button"
           onClick={() => void fetchModels()}
           disabled={probing}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className={smallBtn}
         >
+          {probing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
           {t("settings.fetchModels")}
         </button>
         <button
           type="button"
           onClick={() => void testConnection()}
           disabled={probing}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className={smallBtn}
         >
+          {probing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FlaskConical className="h-4 w-4" />
+          )}
           {t("settings.testConnection")}
         </button>
         {status && (
           <span
             className={
               status.kind === "ok"
-                ? "text-xs text-emerald-600"
-                : "text-xs text-red-600"
+                ? "text-xs text-emerald-600 dark:text-emerald-400"
+                : "text-xs text-destructive"
             }
           >
             {status.text}
@@ -194,12 +212,17 @@ export function ModelConfigForm({ configId, onDone }: ModelConfigFormProps) {
       <button
         type="button"
         onClick={() => setShowAdvanced((v) => !v)}
-        className="text-xs text-slate-500 hover:text-slate-700"
+        className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded cursor-pointer"
       >
-        {showAdvanced ? "▾" : "▸"} {t("settings.advanced")}
+        {showAdvanced ? (
+          <ChevronDown className="h-4 w-4" />
+        ) : (
+          <ChevronRight className="h-4 w-4" />
+        )}
+        {t("settings.advanced")}
       </button>
       {showAdvanced && (
-        <div className="space-y-3 rounded-md bg-slate-50 p-3">
+        <div className="space-y-3 rounded-md bg-muted p-3">
           <Field label={t("settings.temperature")}>
             <input
               value={temperature}
@@ -220,19 +243,16 @@ export function ModelConfigForm({ configId, onDone }: ModelConfigFormProps) {
       )}
 
       <div className="flex justify-end gap-2 pt-2">
-        <button
-          type="button"
-          onClick={onDone}
-          className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50"
-        >
+        <button type="button" onClick={onDone} className={secondaryBtn}>
           {t("settings.cancel")}
         </button>
         <button
           type="button"
           onClick={save}
           disabled={!canSave || busy}
-          className="rounded-md bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          className={primaryBtn}
         >
+          {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {t("settings.save")}
         </button>
       </div>
@@ -240,8 +260,11 @@ export function ModelConfigForm({ configId, onDone }: ModelConfigFormProps) {
   );
 }
 
-const inputCls =
-  "w-full rounded-md border border-slate-300 px-3 py-1.5 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+const smallBtn =
+  "inline-flex items-center gap-1.5 rounded-md border border-border bg-transparent " +
+  "px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent " +
+  "hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 " +
+  "focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer";
 
 function Field({
   label,
@@ -252,7 +275,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block font-medium text-slate-700">{label}</span>
+      <span className="mb-1 block font-medium text-foreground">{label}</span>
       {children}
     </label>
   );

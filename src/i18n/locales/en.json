@@ -32,6 +32,7 @@
     "delete": "Delete",
     "general": "General",
     "language": "Language",
+    "theme": "Theme",
     "autoSave": "Auto-save",
     "explanationTier": "Explanation detail",
     "customInstructions": "Custom instructions",
@@ -45,6 +46,11 @@
     "none": "None",
     "brief": "Brief",
     "detailed": "Detailed"
+  },
+  "theme": {
+    "system": "Follow system",
+    "light": "Light",
+    "dark": "Dark"
   },
   "assistant": {
     "title": "AI Assistant",

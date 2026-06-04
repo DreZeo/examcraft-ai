@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Plus, Pencil, Trash2, Check } from "lucide-react";
 import { useConfigStore } from "../../stores/configStore";
+import { primaryBtn } from "../../lib/ui/styles";
 import { ModelConfigForm } from "./ModelConfigForm";
 
 /** Multi-config list with active selection, add, edit, and delete. */
@@ -21,7 +23,7 @@ export function ModelConfigSection() {
   return (
     <div className="space-y-3 text-sm">
       {config.configs.length === 0 && (
-        <p className="text-slate-400">{t("assistant.noModel")}</p>
+        <p className="text-muted-foreground">{t("assistant.noModel")}</p>
       )}
 
       <ul className="space-y-2">
@@ -30,18 +32,19 @@ export function ModelConfigSection() {
           return (
             <li
               key={c.id}
-              className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2"
+              className="flex items-center gap-2 rounded-md border border-border px-3 py-2"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-slate-800">
+                <p className="flex items-center gap-2 truncate font-medium text-foreground">
                   {c.name}
                   {active && (
-                    <span className="ml-2 rounded bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">
+                    <span className="inline-flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">
+                      <Check className="h-3.5 w-3.5" />
                       {t("settings.active")}
                     </span>
                   )}
                 </p>
-                <p className="truncate text-xs text-slate-400">
+                <p className="truncate text-xs text-muted-foreground">
                   {c.baseUrl} · {c.model}
                 </p>
               </div>
@@ -49,24 +52,28 @@ export function ModelConfigSection() {
                 <button
                   type="button"
                   onClick={() => void setActiveConfig(c.id)}
-                  className="rounded-md px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50"
+                  className="rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                 >
                   {t("settings.setActive")}
                 </button>
               )}
               <button
                 type="button"
+                aria-label={t("paper.edit")}
+                title={t("paper.edit")}
                 onClick={() => setEditing(c.id)}
-                className="rounded-md px-2 py-1 text-xs text-slate-600 hover:bg-slate-100"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
               >
-                {t("paper.edit")}
+                <Pencil className="h-4 w-4" />
               </button>
               <button
                 type="button"
+                aria-label={t("settings.delete")}
+                title={t("settings.delete")}
                 onClick={() => void deleteConfig(c.id)}
-                className="rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
               >
-                {t("settings.delete")}
+                <Trash2 className="h-4 w-4" />
               </button>
             </li>
           );
@@ -76,9 +83,10 @@ export function ModelConfigSection() {
       <button
         type="button"
         onClick={() => setEditing("new")}
-        className="rounded-md bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700"
+        className={primaryBtn}
       >
-        + {t("settings.addConfig")}
+        <Plus className="h-4 w-4" />
+        {t("settings.addConfig")}
       </button>
     </div>
   );

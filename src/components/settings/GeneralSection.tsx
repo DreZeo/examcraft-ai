@@ -1,8 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { useConfigStore } from "../../stores/configStore";
-import type { ExplanationTier } from "../../lib/types/config";
+import type { ExplanationTier, Theme } from "../../lib/types/config";
+import { inputCls } from "../../lib/ui/styles";
 
-/** General preferences: language, auto-save, explanation tier, custom instructions. */
+const selectCls = inputCls + " w-auto py-1.5 cursor-pointer";
+
+/** General preferences: language, theme, auto-save, explanation tier, custom instructions. */
 export function GeneralSection() {
   const { t } = useTranslation();
   const { config, updateSettings } = useConfigStore();
@@ -10,8 +13,8 @@ export function GeneralSection() {
 
   return (
     <div className="space-y-5 text-sm">
-      <label className="flex items-center justify-between">
-        <span className="font-medium text-slate-700">
+      <label className="flex items-center justify-between gap-4">
+        <span className="font-medium text-foreground">
           {t("settings.language")}
         </span>
         <select
@@ -21,15 +24,32 @@ export function GeneralSection() {
               language: e.currentTarget.value as "zh" | "en",
             })
           }
-          className="rounded-md border border-slate-300 px-2 py-1"
+          className={selectCls}
         >
           <option value="zh">中文</option>
           <option value="en">English</option>
         </select>
       </label>
 
-      <label className="flex items-center justify-between">
-        <span className="font-medium text-slate-700">
+      <label className="flex items-center justify-between gap-4">
+        <span className="font-medium text-foreground">
+          {t("settings.theme")}
+        </span>
+        <select
+          value={s.theme}
+          onChange={(e) =>
+            void updateSettings({ theme: e.currentTarget.value as Theme })
+          }
+          className={selectCls}
+        >
+          <option value="system">{t("theme.system")}</option>
+          <option value="light">{t("theme.light")}</option>
+          <option value="dark">{t("theme.dark")}</option>
+        </select>
+      </label>
+
+      <label className="flex items-center justify-between gap-4">
+        <span className="font-medium text-foreground">
           {t("settings.autoSave")}
         </span>
         <input
@@ -38,12 +58,12 @@ export function GeneralSection() {
           onChange={(e) =>
             void updateSettings({ autoSave: e.currentTarget.checked })
           }
-          className="h-4 w-4"
+          className="h-4 w-4 accent-primary cursor-pointer"
         />
       </label>
 
-      <label className="flex items-center justify-between">
-        <span className="font-medium text-slate-700">
+      <label className="flex items-center justify-between gap-4">
+        <span className="font-medium text-foreground">
           {t("settings.explanationTier")}
         </span>
         <select
@@ -53,7 +73,7 @@ export function GeneralSection() {
               explanationTier: e.currentTarget.value as ExplanationTier,
             })
           }
-          className="rounded-md border border-slate-300 px-2 py-1"
+          className={selectCls}
         >
           <option value="none">{t("explanationTier.none")}</option>
           <option value="brief">{t("explanationTier.brief")}</option>
@@ -64,7 +84,7 @@ export function GeneralSection() {
       <div>
         <label
           htmlFor="custom-instructions"
-          className="font-medium text-slate-700"
+          className="font-medium text-foreground"
         >
           {t("settings.customInstructions")}
         </label>
@@ -75,7 +95,7 @@ export function GeneralSection() {
           onChange={(e) =>
             void updateSettings({ customInstructions: e.currentTarget.value })
           }
-          className="mt-1 w-full resize-none rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className={inputCls + " mt-1 resize-none"}
         />
       </div>
     </div>

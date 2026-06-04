@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
+import { Settings, FilePlus2 } from "lucide-react";
 import { usePaperStore } from "../../stores/paperStore";
+import { iconBtn, ghostBtn } from "../../lib/ui/styles";
 import { ExportMenu } from "./ExportMenu";
 
 interface TopBarProps {
@@ -16,20 +18,20 @@ export function TopBar({ onOpenSettings }: TopBarProps) {
     usePaperStore();
 
   return (
-    <header className="no-print flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2">
+    <header className="no-print flex items-center gap-3 border-b border-border bg-card px-4 py-2.5">
       <input
         aria-label={t("app.title")}
         value={paper.title}
         placeholder={t("app.untitled")}
         onChange={(e) => setTitle(e.currentTarget.value)}
-        className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none"
+        className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none"
       />
 
-      <span className="shrink-0 text-xs text-slate-400">
+      <span className="shrink-0 text-xs text-muted-foreground">
         {t(`saveStatus.${saveStatus}`)}
       </span>
 
-      <div className="flex shrink-0 overflow-hidden rounded-md border border-slate-300 text-xs">
+      <div className="flex shrink-0 overflow-hidden rounded-md border border-border text-xs">
         <button
           type="button"
           onClick={() => setView("teacher")}
@@ -46,11 +48,8 @@ export function TopBar({ onOpenSettings }: TopBarProps) {
         </button>
       </div>
 
-      <button
-        type="button"
-        onClick={newPaper}
-        className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
-      >
+      <button type="button" onClick={newPaper} className={ghostBtn}>
+        <FilePlus2 className="h-4 w-4" />
         {t("app.newPaper")}
       </button>
 
@@ -59,14 +58,17 @@ export function TopBar({ onOpenSettings }: TopBarProps) {
       <button
         type="button"
         aria-label={t("settings.title")}
+        title={t("settings.title")}
         onClick={onOpenSettings}
-        className="shrink-0 rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100"
+        className={iconBtn}
       >
-        ⚙
+        <Settings className="h-5 w-5" />
       </button>
     </header>
   );
 }
 
-const activeTab = "bg-indigo-600 px-2 py-1 font-medium text-white";
-const inactiveTab = "bg-white px-2 py-1 text-slate-600 hover:bg-slate-50";
+const activeTab =
+  "bg-primary px-2.5 py-1.5 font-medium text-primary-foreground transition-colors cursor-pointer";
+const inactiveTab =
+  "bg-card px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer";

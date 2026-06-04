@@ -45,9 +45,61 @@ export function Foo({ a, b }: FooProps) {
 
 ## Styling Patterns
 
-- **Tailwind utility classes inline.** No CSS modules / styled-components.
-- Shared class strings extracted to a module const (e.g. `inputCls`) when reused
-  across fields.
+### Semantic Design Tokens (mandatory, never hardcode colors)
+
+**What:** All surface/text colors go through semantic token utilities
+(`bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`,
+`bg-primary`, `text-primary-foreground`, `border-border`, `ring-ring`,
+`bg-destructive`, etc.). **Never hardcode** `slate-*`, `indigo-*`, `bg-white`,
+`text-black` in components. Tokens live in `src/styles/index.css` as CSS custom
+properties mapped to Tailwind via `@theme inline`.
+
+**Why:** enables light/dark theme switching (`.dark` class on `<html>` toggled by
+`useTheme` hook), semantic color evolution (change one token value → all surfaces
+adapt), and print integrity (tokens don't leak into `@media print`, which stays
+light).
+
+**Architecture:**
+
+- `:root` — light mode HSL channel values (e.g. `--background: 0 0% 100%`)
+- `.dark` — dark mode overrides (e.g. `--background: 222 47% 7%`)
+- `@theme inline` — maps to Tailwind classes (`--color-background: hsl(var(--background))` → `bg-background`)
+- `AppSettings.theme` (`system` | `light` | `dark`) stored in config
+- `useTheme()` hook reads setting, toggles `.dark`, watches `prefers-color-scheme` in `system` mode
+
+**Allowed exceptions:**
+
+1. **Status hint cards** (amber warning, emerald success, red error) — semantic hue is kept but MUST have a `dark:` variant for contrast:
+   ```tsx
+   <div className="bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+   ```
+2. **Modal scrims** — `bg-black/50` is fine (it's a scrim, not a semantic surface).
+
+**Shared button/input classes** live in `src/lib/ui/styles.ts` (`iconBtn`, `primaryBtn`, `secondaryBtn`, `ghostBtn`, `inputCls`) — import and reuse them. They bake in semantic tokens + focus rings + cursor-pointer.
+
+**Gotcha:** print must stay readable on white paper. The `.paper-sheet` and question/answer blocks use `bg-card` (white in light mode), and `src/styles/print.css` forces `@media print { .paper-sheet { background: #ffffff !important; } }` so dark tokens never leak into PDF output.
+
+### Icons (lucide-react only, no emoji)
+
+All UI control icons use `lucide-react` SVG components. **Never** use emoji or Unicode characters (◀ ▶ ⚙ ✕ ↑ ↓ ✦ ✓) as icons — they render inconsistently across platforms, don't align properly, and can't be styled.
+
+Sizing convention: inline icons `h-4 w-4`, standalone icon buttons `h-5 w-5`. Default `strokeWidth={2}` (lucide default).
+
+```tsx
+import { Settings, PanelRightClose, Trash2 } from "lucide-react";
+<button className={iconBtn} aria-label="Settings" title="Settings">
+  <Settings className="h-5 w-5" />
+</button>
+```
+
+### Micro-interactions & reduced-motion
+
+Hover/focus transitions use `transition-colors` (150–250ms). **Only** animate `transform`/`opacity`, never `width`/`height` (causes layout shift and reflow). Drawer slide, card fade-in can use `animate-fade-in` (defined in index.css).
+
+**Mandatory:** `src/styles/index.css` includes a global `@media (prefers-reduced-motion: reduce)` rule that kills all transitions/animations. Don't override it.
+
+### Print
+
 - **Print:** add `no-print` to any UI chrome that must not appear in PDF export
   (top bar, drawer, hover actions, add-question buttons). Print rules live in
   `src/styles/print.css` (`@media print`). Semantic hooks `paper-sheet`,

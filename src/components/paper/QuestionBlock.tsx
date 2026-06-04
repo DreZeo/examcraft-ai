@@ -1,4 +1,11 @@
 import { useTranslation } from "react-i18next";
+import {
+  Sparkles,
+  Pencil,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+} from "lucide-react";
 import type { Question } from "../../lib/types/exam";
 import { usePaperStore } from "../../stores/paperStore";
 import { useAssistantStore } from "../../stores/assistantStore";
@@ -28,44 +35,44 @@ export function QuestionBlock({
   const focusQuestion = useAssistantStore((s) => s.focusQuestion);
 
   return (
-    <li className="question-block group relative rounded-md border border-transparent px-3 py-2 transition hover:border-slate-200 hover:bg-slate-50/60">
+    <li className="question-block group relative rounded-md border border-transparent px-3 py-2 transition-colors hover:border-border hover:bg-accent/40">
       {!studentView && (
         <div className="no-print absolute right-2 top-2 hidden gap-1 group-hover:flex">
           <ActionButton
             label={t("paper.aiModify")}
             onClick={() => focusQuestion(question)}
           >
-            ✦
+            <Sparkles className="h-4 w-4" />
           </ActionButton>
           <ActionButton
             label={t("paper.edit")}
             onClick={() => onEdit(question.id)}
           >
-            ✎
+            <Pencil className="h-4 w-4" />
           </ActionButton>
           <ActionButton
             label={t("paper.moveUp")}
             onClick={() => reorder(question.id, "up")}
           >
-            ↑
+            <ArrowUp className="h-4 w-4" />
           </ActionButton>
           <ActionButton
             label={t("paper.moveDown")}
             onClick={() => reorder(question.id, "down")}
           >
-            ↓
+            <ArrowDown className="h-4 w-4" />
           </ActionButton>
           <ActionButton
             label={t("paper.delete")}
             onClick={() => deleteQuestion(question.id)}
           >
-            ✕
+            <Trash2 className="h-4 w-4" />
           </ActionButton>
         </div>
       )}
 
       <div className="flex gap-2">
-        <span className="select-none font-medium text-slate-500">
+        <span className="select-none font-medium text-muted-foreground">
           {index + 1}.
         </span>
         <div className="min-w-0 flex-1">
@@ -73,13 +80,13 @@ export function QuestionBlock({
             <div className="min-w-0 flex-1">
               <Markdown>{question.content}</Markdown>
             </div>
-            <span className="shrink-0 text-xs text-slate-400">
+            <span className="shrink-0 text-xs text-muted-foreground">
               ({question.score})
             </span>
           </div>
 
           {"options" in question && (
-            <ol className="mt-1 space-y-0.5 pl-1 text-sm text-slate-700">
+            <ol className="mt-1 space-y-0.5 pl-1 text-sm text-foreground">
               {question.options.map((opt, i) => (
                 <li key={i}>
                   {String.fromCharCode(65 + i)}. {opt}
@@ -104,10 +111,10 @@ function AnswerBlock({ question }: { question: Question }) {
   if (!answer && !explanation) return null;
 
   return (
-    <div className="answer-block mt-2 rounded-md bg-indigo-50/70 px-3 py-2 text-sm text-slate-700">
+    <div className="answer-block mt-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-foreground">
       {answer && (
         <p>
-          <span className="font-medium text-indigo-700">
+          <span className="font-medium text-primary">
             【{t("paper.answer")}】
           </span>{" "}
           {answer}
@@ -115,7 +122,7 @@ function AnswerBlock({ question }: { question: Question }) {
       )}
       {explanation && (
         <p className="mt-1">
-          <span className="font-medium text-indigo-700">
+          <span className="font-medium text-primary">
             【{t("paper.explanation")}】
           </span>{" "}
           {explanation}
@@ -140,7 +147,7 @@ function ActionButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="grid h-6 w-6 place-items-center rounded border border-slate-200 bg-white text-xs text-slate-500 hover:bg-slate-100"
+      className="grid h-7 w-7 place-items-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
     >
       {children}
     </button>
