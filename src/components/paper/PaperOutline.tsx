@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Question } from "../../lib/types/exam";
+import { summarizeMarkdown } from "../../lib/exam/markdownPlainText";
 
 interface PaperOutlineProps {
   questions: Question[];
@@ -123,7 +124,7 @@ export function PaperOutline({
                         {t(`questionType.${question.type}`)}
                       </span>
                       <span className="mt-0.5 line-clamp-2 text-xs leading-4 text-muted-foreground">
-                        {summarizeQuestion(question.content)}
+                        {summarizeMarkdown(question.content)}
                       </span>
                     </span>
                   )}
@@ -141,20 +142,6 @@ function scrollToQuestion(id: string) {
   document
     .getElementById(`question-${id}`)
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function summarizeQuestion(content: string) {
-  const text = content
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
-    .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
-    .replace(/[#>*_\-~|[\]()]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!text) return "…";
-  return text.length > 44 ? `${text.slice(0, 44)}…` : text;
 }
 
 const baseItemCls =

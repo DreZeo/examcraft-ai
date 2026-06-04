@@ -7,6 +7,7 @@ import rehypeHighlight from "rehype-highlight";
 
 interface MarkdownProps {
   children: string;
+  variant?: "default" | "compact";
 }
 
 /**
@@ -14,9 +15,15 @@ interface MarkdownProps {
  * HTML → XSS-safe by construction) + GFM tables + KaTeX math + code highlighting.
  * Memoized so editing one question doesn't re-render the whole paper.
  */
-function MarkdownView({ children }: MarkdownProps) {
+function MarkdownView({ children, variant = "default" }: MarkdownProps) {
   return (
-    <div className="prose prose-slate max-w-none prose-sm">
+    <div
+      className={
+        variant === "compact"
+          ? "markdown-body markdown-body-compact"
+          : "markdown-body"
+      }
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeHighlight]}

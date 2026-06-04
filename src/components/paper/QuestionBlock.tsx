@@ -9,7 +9,6 @@ import {
 import type { Question } from "../../lib/types/exam";
 import { usePaperStore } from "../../stores/paperStore";
 import { useAssistantStore } from "../../stores/assistantStore";
-import { formatAnswer } from "../../lib/exam/answer";
 import { Markdown } from "./Markdown";
 
 interface QuestionBlockProps {
@@ -92,8 +91,13 @@ export function QuestionBlock({
           {"options" in question && (
             <ol className="mt-1 space-y-0.5 pl-1 text-sm text-foreground">
               {question.options.map((opt, i) => (
-                <li key={i}>
-                  {String.fromCharCode(65 + i)}. {opt}
+                <li key={i} className="flex gap-2">
+                  <span className="shrink-0">
+                    {String.fromCharCode(65 + i)}.
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <Markdown variant="compact">{opt}</Markdown>
+                  </div>
                 </li>
               ))}
             </ol>
@@ -108,32 +112,108 @@ export function QuestionBlock({
 
 function AnswerBlock({ question }: { question: Question }) {
   const { t } = useTranslation();
-  const answer = formatAnswer(question);
   const explanation =
     "explanation" in question ? question.explanation : undefined;
 
-  if (!answer && !explanation) return null;
+  const sections = getAnswerSections(question, {
+    answer: t("paper.answer"),
+    solution: t("paper.solution"),
+    scoringPoints: t("paper.scoringPoints"),
+    true: t("paper.true"),
+    false: t("paper.false"),
+  });
+
+  if (!explanation && sections.length === 0) return null;
 
   return (
     <div className="answer-block mt-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-foreground">
-      {answer && (
-        <p>
-          <span className="font-medium text-primary">
-            【{t("paper.answer")}】
-          </span>{" "}
-          {answer}
-        </p>
-      )}
+      {sections.map((section) => (
+        <AnswerSection key={section.label} {...section} />
+      ))}
       {explanation && (
-        <p className="mt-1">
-          <span className="font-medium text-primary">
-            【{t("paper.explanation")}】
-          </span>{" "}
-          {explanation}
-        </p>
+        <AnswerSection
+          label={t("paper.explanation")}
+          content={explanation}
+        />
       )}
     </div>
   );
+}
+
+interface AnswerSectionProps {
+  label: string;
+  content: string;
+}
+
+function AnswerSection({ label, content }: AnswerSectionProps) {
+  if (!content.trim()) return null;
+
+  return (
+    <div className="mt-1 first:mt-0">
+      <span className="font-medium text-primary">【{label}】</span>
+      <div className="mt-0.5">
+        <Markdown variant="compact">{content}</Markdown>
+      </div>
+    </div>
+  );
+}
+
+function getAnswerSections(
+  question: Question,
+  labels: {
+    answer: string;
+    solution: string;
+    scoringPoints: string;
+    true: string;
+    false: string;
+  },
+): AnswerSectionProps[] {
+  switch (question.type) {
+    case "single-choice":
+      return [
+        {
+          label: labels.answer,
+          content: String.fromCharCode(65 + question.correctAnswer),
+        },
+      ];
+    case "multiple-choice":
+      return [
+        {
+          label: labels.answer,
+          content: question.correctAnswers
+            .map((i) => String.fromCharCode(65 + i))
+            .join(", "),
+        },
+      ];
+    case "true-false":
+      return [
+        {
+          label: labels.answer,
+          content: question.correctAnswer ? labels.true : labels.false,
+        },
+      ];
+    case "fill-in-blank":
+      return [{ label: labels.answer, content: question.blanks.join(" / ") }];
+    case "short-answer": {
+      const sections = [
+        { label: labels.answer, content: question.referenceAnswer },
+      ];
+      if (question.scoringPoints?.length) {
+        sections.push({
+          label: labels.scoringPoints,
+          content: question.scoringPoints.map((point) => `- ${point}`).join("\n"),
+        });
+      }
+      return sections;
+    }
+    case "essay":
+      return [{ label: labels.answer, content: question.scoringCriteria }];
+    case "calculation":
+      return [
+        { label: labels.answer, content: question.answer },
+        { label: labels.solution, content: question.solution },
+      ];
+  }
 }
 
 function ActionButton({

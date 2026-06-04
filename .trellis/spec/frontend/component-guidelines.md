@@ -113,6 +113,18 @@ surface has a documented exception.
   `question-block`, `answer-block` drive print layout — keep them on the right
   elements. See export flow in `frontend/directory-structure.md`.
 
+### Markdown Preview
+
+- Render user/AI-authored Markdown through the shared `Markdown` component,
+  never by injecting raw HTML or duplicating a `ReactMarkdown` setup. Use the
+  compact variant for dense surfaces such as answer blocks, options, assistant
+  cards, and inline previews.
+- When a small UI surface needs a one-line summary (for example the paper
+  outline), derive readable plain text with `markdownToPlainText` /
+  `summarizeMarkdown` instead of hand-writing local Markdown-stripping regexes.
+  The outline stays scannable while stems, answers, and explanations keep full
+  safe Markdown rendering in the paper preview.
+
 ---
 
 ## i18n (mandatory from line one)
