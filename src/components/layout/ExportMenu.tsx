@@ -11,6 +11,10 @@ import {
   importJson,
 } from "../../lib/export/exportFile";
 
+interface ExportMenuProps {
+  triggerClassName?: string;
+}
+
 const FIELD_KEYS: (keyof ExamInfoFields)[] = [
   "subject",
   "className",
@@ -25,7 +29,7 @@ const FIELD_KEYS: (keyof ExamInfoFields)[] = [
  * the pure assembler; PDF reuses the live sheet via window.print(), switching
  * the on-screen view first so the printout matches the chosen variant.
  */
-export function ExportMenu() {
+export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -86,7 +90,7 @@ export function ExportMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={ghostBtn}
+        className={triggerClassName}
       >
         <Download className="h-4 w-4" />
         {t("export.title")}

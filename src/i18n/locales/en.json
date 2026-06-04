@@ -63,6 +63,7 @@
     "stop": "Stop",
     "collapse": "Collapse",
     "expand": "Expand",
+    "resize": "Resize assistant",
     "noModel": "Please configure a model in Settings first.",
     "goToSettings": "Go to Settings",
     "confirmGenerate": "Confirm & generate",

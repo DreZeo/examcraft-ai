@@ -63,6 +63,7 @@
     "stop": "停止",
     "collapse": "收起",
     "expand": "展开",
+    "resize": "调整助手宽度",
     "noModel": "请先在设置中配置模型。",
     "goToSettings": "前往设置",
     "confirmGenerate": "确认生成",

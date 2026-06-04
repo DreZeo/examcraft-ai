@@ -24,11 +24,16 @@ interface AssistantDrawerProps {
   onOpenSettings: () => void;
 }
 
+const DEFAULT_DRAWER_WIDTH = 400;
+const MIN_DRAWER_WIDTH = 320;
+const MAX_DRAWER_WIDTH = 560;
+const MAX_VIEWPORT_RATIO = 0.42;
+
 /**
- * Right-side AI assistant drawer. Push-style: when open it occupies a fixed
+ * Right-side AI assistant drawer. Push-style: when open it occupies a resizable
  * width and the paper shrinks; when collapsed it leaves a narrow rail with the
  * expand control. Renders the chat (bubbles + confirmation/result/error cards),
- * the live streaming bubble, and a multi-line composer (Enter = send,
+ * the live streaming bubble, and an inline composer (Enter = send,
  * Shift+Enter = newline) with a stop button while streaming.
  */
 export function AssistantDrawer({
@@ -47,6 +52,8 @@ export function AssistantDrawer({
   const clearFocus = useAssistantStore((s) => s.clearFocus);
 
   const [draft, setDraft] = useState("");
+  const [drawerWidth, setDrawerWidth] = useState(DEFAULT_DRAWER_WIDTH);
+  const [resizing, setResizing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const streaming = status === "streaming";
 
@@ -66,6 +73,39 @@ export function AssistantDrawer({
       e.preventDefault();
       submit();
     }
+  }
+
+  function clampDrawerWidth(width: number) {
+    const viewportMax =
+      typeof window === "undefined"
+        ? MAX_DRAWER_WIDTH
+        : Math.floor(window.innerWidth * MAX_VIEWPORT_RATIO);
+    return Math.min(
+      Math.max(width, MIN_DRAWER_WIDTH),
+      Math.max(MIN_DRAWER_WIDTH, Math.min(MAX_DRAWER_WIDTH, viewportMax)),
+    );
+  }
+
+  function beginResize(e: React.PointerEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    const pointerId = e.pointerId;
+    e.currentTarget.setPointerCapture(pointerId);
+    setResizing(true);
+
+    function onPointerMove(event: PointerEvent) {
+      setDrawerWidth(clampDrawerWidth(window.innerWidth - event.clientX));
+    }
+
+    function onPointerUp() {
+      setResizing(false);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+    }
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
   }
 
   if (!open) {
@@ -88,7 +128,19 @@ export function AssistantDrawer({
   }
 
   return (
-    <aside className="no-print flex w-[400px] shrink-0 flex-col border-l border-border bg-card transition-all duration-200">
+    <aside
+      className="no-print relative flex shrink-0 flex-col border-l border-border bg-card"
+      style={{ width: drawerWidth }}
+    >
+      <button
+        type="button"
+        aria-label={t("assistant.resize")}
+        title={t("assistant.resize")}
+        onPointerDown={beginResize}
+        className={`absolute inset-y-0 left-0 z-10 w-2 -translate-x-1 cursor-col-resize transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+          resizing ? "bg-primary/10" : ""
+        }`}
+      />
       <div className="flex items-center justify-between border-b border-border bg-muted/30 px-3 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
           <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -169,35 +221,39 @@ export function AssistantDrawer({
             </button>
           </div>
         )}
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.currentTarget.value)}
-          onKeyDown={onKeyDown}
-          disabled={!activeConfig}
-          rows={3}
-          placeholder={t("assistant.placeholder")}
-          className={`${inputCls} resize-none bg-background shadow-inner`}
-        />
-        {streaming ? (
-          <button
-            type="button"
-            onClick={() => void stop()}
-            className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
-          >
-            <Square className="h-4 w-4" />
-            {t("assistant.stop")}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!activeConfig || !draft.trim()}
-            className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
-          >
-            <Send className="h-4 w-4" />
-            {t("assistant.send")}
-          </button>
-        )}
+        <div className="flex items-end gap-2">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.currentTarget.value)}
+            onKeyDown={onKeyDown}
+            disabled={!activeConfig}
+            rows={2}
+            placeholder={t("assistant.placeholder")}
+            className={`${inputCls} min-h-14 flex-1 resize-none bg-background shadow-inner`}
+          />
+          {streaming ? (
+            <button
+              type="button"
+              aria-label={t("assistant.stop")}
+              title={t("assistant.stop")}
+              onClick={() => void stop()}
+              className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+            >
+              <Square className="h-5 w-5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              aria-label={t("assistant.send")}
+              title={t("assistant.send")}
+              onClick={submit}
+              disabled={!activeConfig || !draft.trim()}
+              className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+            >
+              <Send className="h-5 w-5" />
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );
