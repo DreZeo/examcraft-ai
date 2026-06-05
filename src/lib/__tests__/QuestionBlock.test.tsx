@@ -1,13 +1,17 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import "../../i18n";
+import { MarkdownFormatProvider } from "../../components/layout/MarkdownFormatContext";
 import { QuestionBlock } from "../../components/paper/QuestionBlock";
 import type { CalculationQuestion, SingleChoiceQuestion } from "../types/exam";
+
+const editQuestion = vi.fn();
 
 vi.mock("../../stores/paperStore", () => ({
   usePaperStore: () => ({
     reorder: vi.fn(),
     deleteQuestion: vi.fn(),
+    editQuestion,
   }),
 }));
 
@@ -16,6 +20,19 @@ vi.mock("../../stores/assistantStore", () => ({
 }));
 
 describe("QuestionBlock", () => {
+  function renderQuestion(question: SingleChoiceQuestion | CalculationQuestion, studentView = false) {
+    return render(
+      <MarkdownFormatProvider>
+        <QuestionBlock
+          question={question}
+          index={0}
+          studentView={studentView}
+          onEdit={vi.fn()}
+        />
+      </MarkdownFormatProvider>,
+    );
+  }
+
   it("renders Markdown in options and teacher answer sections", () => {
     const question: SingleChoiceQuestion = {
       id: "q1",
@@ -27,14 +44,7 @@ describe("QuestionBlock", () => {
       score: 5,
     };
 
-    const { container } = render(
-      <QuestionBlock
-        question={question}
-        index={0}
-        studentView={false}
-        onEdit={vi.fn()}
-      />,
-    );
+    const { container } = renderQuestion(question);
 
     expect(container.querySelector("strong")?.textContent).toBe("one");
     expect(screen.getByText("Bold")).toBeInTheDocument();
@@ -42,6 +52,61 @@ describe("QuestionBlock", () => {
     expect(screen.getByText("bold")).toBeInTheDocument();
     expect(container).toHaveTextContent("Because bold uses Markdown.");
     expect(container.querySelector(".answer-block")).toBeInTheDocument();
+  });
+
+  it("renders custom underline syntax without raw HTML", () => {
+    const question: SingleChoiceQuestion = {
+      id: "q1",
+      type: "single-choice",
+      content: "Mark ++important++ text, ++x++, and <u>raw</u> text",
+      options: ["A", "B"],
+      correctAnswer: 0,
+      score: 5,
+    };
+
+    const { container } = renderQuestion(question);
+
+    expect([...container.querySelectorAll("u")].map((node) => node.textContent))
+      .toEqual(["important", "x"]);
+    expect(container).toHaveTextContent("<u>raw</u>");
+  });
+
+  it("does not render structured options again when content already includes them", () => {
+    const question: SingleChoiceQuestion = {
+      id: "q1",
+      type: "single-choice",
+      content: [
+        "下列物质中，属于弱电解质的是（）",
+        "A. HCl",
+        "B. NaOH",
+        "C. CH3COOH",
+        "D. NaCl",
+      ].join("\n"),
+      options: ["HCl", "NaOH", "CH3COOH", "NaCl"],
+      correctAnswer: 2,
+      score: 4,
+    };
+
+    const { container } = renderQuestion(question);
+
+    expect(container).toHaveTextContent("A. HCl");
+    expect(container.querySelectorAll("ol ol li")).toHaveLength(0);
+  });
+
+  it("does not render structured options again when content includes inline option markers", () => {
+    const question: SingleChoiceQuestion = {
+      id: "q1",
+      type: "single-choice",
+      content: "鸦片战争后，中国被迫开放的第一批通商口岸中，位于最北端的是？ A. 广州 B. 厦门 C. 上海 D. 宁波",
+      options: ["广州", "厦门", "上海", "宁波"],
+      correctAnswer: 2,
+      score: 2,
+    };
+
+    const { container } = renderQuestion(question);
+
+    expect(container).toHaveTextContent("A. 广州");
+    expect(container.querySelectorAll("ol ol li")).toHaveLength(0);
   });
 
   it("renders calculation solution in teacher view and hides it in student view", () => {
@@ -55,14 +120,7 @@ describe("QuestionBlock", () => {
       score: 6,
     };
 
-    const { rerender } = render(
-      <QuestionBlock
-        question={question}
-        index={0}
-        studentView={false}
-        onEdit={vi.fn()}
-      />,
-    );
+    const { rerender } = renderQuestion(question);
 
     expect(screen.getByText((content) => content.includes("解题步骤")))
       .toBeInTheDocument();
@@ -70,12 +128,14 @@ describe("QuestionBlock", () => {
     expect(screen.getByText("Simple arithmetic.")).toBeInTheDocument();
 
     rerender(
-      <QuestionBlock
-        question={question}
-        index={0}
-        studentView={true}
-        onEdit={vi.fn()}
-      />,
+      <MarkdownFormatProvider>
+        <QuestionBlock
+          question={question}
+          index={0}
+          studentView={true}
+          onEdit={vi.fn()}
+        />
+      </MarkdownFormatProvider>,
     );
 
     expect(screen.queryByText((content) => content.includes("解题步骤")))

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import {
@@ -12,6 +12,11 @@ import { iconBtn, primaryBtn, secondaryBtn } from "../../lib/ui/styles";
 import { Markdown } from "./Markdown";
 import { Field, TextArea, inputCls } from "./editFields";
 import { TypeFields } from "./TypeFields";
+import {
+  useMarkdownFormat,
+  type MarkdownFormat,
+} from "../layout/MarkdownFormatContext";
+import { applyMarkdownFormat } from "../layout/markdownFormat";
 
 interface QuestionEditModalProps {
   /** The question to edit (a copy is taken as the local draft). */
@@ -40,8 +45,15 @@ export function QuestionEditModal({
 }: QuestionEditModalProps) {
   const { t } = useTranslation();
   const editQuestion = usePaperStore((s) => s.editQuestion);
+  const { registerTarget: registerMarkdownTarget } = useMarkdownFormat();
   const [draft, setDraft] = useState<Question>(question);
   const [errors, setErrors] = useState<string[]>([]);
+  const contentRef = useRef<HTMLTextAreaElement | null>(null);
+  const draftRef = useRef<Question>(question);
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -69,6 +81,28 @@ export function QuestionEditModal({
     editQuestion(result.data);
     onClose();
   }
+
+  const applyContentFormat = useCallback((format: MarkdownFormat) => {
+    const current = draftRef.current;
+    const textarea = contentRef.current;
+    const result = applyMarkdownFormat(
+      current.content,
+      textarea?.selectionStart ?? current.content.length,
+      textarea?.selectionEnd ?? current.content.length,
+      format,
+    );
+    setDraft({ ...current, content: result.value });
+    requestAnimationFrame(() => {
+      const textarea = contentRef.current;
+      if (!textarea) return;
+      textarea.focus();
+      textarea.setSelectionRange(result.selectionStart, result.selectionEnd);
+    });
+  }, []);
+
+  useEffect(() => {
+    return registerMarkdownTarget({ apply: applyContentFormat });
+  }, [applyContentFormat, registerMarkdownTarget]);
 
   // Every question variant supports an optional explanation, so always offer the
   // field (a blank/just-added question has no `explanation` key yet).
@@ -146,6 +180,7 @@ export function QuestionEditModal({
 
               <Field label={t("paper.contentLabel")}>
                 <TextArea
+                  ref={contentRef}
                   value={draft.content}
                   rows={5}
                   placeholder={t("paper.contentPlaceholder")}

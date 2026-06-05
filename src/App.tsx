@@ -4,6 +4,8 @@ import { usePaperStore } from "./stores/paperStore";
 import { useTheme } from "./hooks/useTheme";
 import { FirstLaunch } from "./components/layout/FirstLaunch";
 import { TopBar } from "./components/layout/TopBar";
+import { PaperToolbar } from "./components/layout/PaperToolbar";
+import { MarkdownFormatProvider } from "./components/layout/MarkdownFormatContext";
 import { PaperOutline } from "./components/paper/PaperOutline";
 import { PaperCanvas } from "./components/paper/PaperCanvas";
 import { AssistantDrawer } from "./components/assistant/AssistantDrawer";
@@ -76,11 +78,13 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-background text-foreground">
+    <MarkdownFormatProvider>
+      <div className="flex h-full flex-col bg-background text-foreground">
       <TopBar
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenPaperManager={() => setPaperManagerOpen(true)}
       />
+      <PaperToolbar />
       <div className="flex min-h-0 flex-1">
         <PaperOutline
           questions={paper.questions}
@@ -102,9 +106,10 @@ export default function App() {
         />
       </div>
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
-      {paperManagerOpen && (
-        <PaperManagerModal onClose={() => setPaperManagerOpen(false)} />
-      )}
-    </div>
+        {paperManagerOpen && (
+          <PaperManagerModal onClose={() => setPaperManagerOpen(false)} />
+        )}
+      </div>
+    </MarkdownFormatProvider>
   );
 }

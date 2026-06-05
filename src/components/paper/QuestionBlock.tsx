@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Sparkles,
@@ -9,6 +10,11 @@ import {
 import type { Question } from "../../lib/types/exam";
 import { usePaperStore } from "../../stores/paperStore";
 import { useAssistantStore } from "../../stores/assistantStore";
+import {
+  useMarkdownFormat,
+  type MarkdownFormatTarget,
+} from "../layout/MarkdownFormatContext";
+import { applyMarkdownFormat } from "../layout/markdownFormat";
 import { Markdown } from "./Markdown";
 
 interface QuestionBlockProps {
@@ -30,8 +36,58 @@ export function QuestionBlock({
   onEdit,
 }: QuestionBlockProps) {
   const { t } = useTranslation();
-  const { reorder, deleteQuestion } = usePaperStore();
+  const { reorder, deleteQuestion, editQuestion } = usePaperStore();
   const focusQuestion = useAssistantStore((s) => s.focusQuestion);
+  const { registerTarget, clearTarget } = useMarkdownFormat();
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const targetRef = useRef<MarkdownFormatTarget | null>(null);
+
+  const registerPreviewSelection = useCallback(() => {
+    if (studentView) return;
+    const selection = window.getSelection();
+    const selected = selection?.toString() ?? "";
+    const contentNode = contentRef.current;
+    if (!selection || !contentNode || !selected.trim()) return;
+    if (!contentNode.contains(selection.anchorNode) || !contentNode.contains(selection.focusNode)) {
+      return;
+    }
+
+    const start = question.content.indexOf(selected);
+    if (start === -1) return;
+    const end = start + selected.length;
+    const target: MarkdownFormatTarget = {
+      apply: (format) => {
+        const result = applyMarkdownFormat(question.content, start, end, format);
+        editQuestion({ ...question, content: result.value });
+        selection.removeAllRanges();
+      },
+    };
+    targetRef.current = target;
+    registerTarget(target);
+  }, [editQuestion, question, registerTarget, studentView]);
+
+  useEffect(() => {
+    const onSelectionChange = () => {
+      const selection = window.getSelection();
+      const contentNode = contentRef.current;
+      const selected = selection?.toString() ?? "";
+      if (!contentNode || !selected.trim()) {
+        if (targetRef.current) clearTarget(targetRef.current);
+        targetRef.current = null;
+        return;
+      }
+      if (!contentNode.contains(selection?.anchorNode ?? null)) {
+        if (targetRef.current) clearTarget(targetRef.current);
+        targetRef.current = null;
+      }
+    };
+
+    document.addEventListener("selectionchange", onSelectionChange);
+    return () => {
+      document.removeEventListener("selectionchange", onSelectionChange);
+      if (targetRef.current) clearTarget(targetRef.current);
+    };
+  }, [clearTarget]);
 
   return (
     <li
@@ -80,7 +136,12 @@ export function QuestionBlock({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <div className="min-w-0 flex-1">
+            <div
+              ref={contentRef}
+              className="min-w-0 flex-1"
+              onMouseUp={registerPreviewSelection}
+              onKeyUp={registerPreviewSelection}
+            >
               <Markdown>{question.content}</Markdown>
             </div>
             <span className="shrink-0 text-xs text-muted-foreground">
@@ -88,7 +149,7 @@ export function QuestionBlock({
             </span>
           </div>
 
-          {"options" in question && (
+          {"options" in question && !contentIncludesOptions(question.content, question.options) && (
             <ol className="mt-1 space-y-0.5 pl-1 text-sm text-foreground">
               {question.options.map((opt, i) => (
                 <li key={i} className="flex gap-2">
@@ -108,6 +169,24 @@ export function QuestionBlock({
       </div>
     </li>
   );
+}
+
+function contentIncludesOptions(content: string, options: string[]): boolean {
+  if (options.length === 0) return false;
+  const optionMarkers = content.match(/(?:^|\s)[A-J][.)、]\s*/g) ?? [];
+  if (optionMarkers.length >= options.length) return true;
+
+  const lines = content
+    .split(/\r?\n/)
+    .map((line) => normalizeOptionText(line.replace(/^\s*[A-J][.)、]\s*/, "")))
+    .filter(Boolean);
+  return options.every((option) =>
+    lines.includes(normalizeOptionText(option)),
+  );
+}
+
+function normalizeOptionText(value: string): string {
+  return value.replace(/\s+/g, "").toLowerCase();
 }
 
 function AnswerBlock({ question }: { question: Question }) {

@@ -81,6 +81,51 @@
     "sans": "Sans / Hei-style",
     "mono": "Monospace"
   },
+  "paperFontSize": {
+    "small": "Small",
+    "standard": "Standard",
+    "large": "Large"
+  },
+  "paperLineHeight": {
+    "compact": "Compact",
+    "standard": "Standard",
+    "relaxed": "Relaxed"
+  },
+  "paperTextAlign": {
+    "left": "Left",
+    "center": "Center",
+    "justify": "Justify"
+  },
+  "paperMargin": {
+    "narrow": "Narrow",
+    "standard": "Standard",
+    "wide": "Wide"
+  },
+  "paperToolbar": {
+    "title": "Paper formatting toolbar",
+    "modeTabs": "Toolbar mode",
+    "layoutTab": "Layout",
+    "markdownTab": "Markdown",
+    "typography": "Font",
+    "paragraph": "Paragraph",
+    "page": "Page",
+    "markdown": "Markdown",
+    "font": "Font",
+    "fontSize": "Font size",
+    "lineHeight": "Line height",
+    "alignment": "Alignment",
+    "margin": "Margins"
+  },
+  "editorToolbar": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "heading": "Heading",
+    "bulletList": "Bulleted list",
+    "orderedList": "Numbered list",
+    "quote": "Quote",
+    "code": "Inline code"
+  },
   "assistant": {
     "title": "AI Assistant",
     "placeholder": "Describe what you need…",

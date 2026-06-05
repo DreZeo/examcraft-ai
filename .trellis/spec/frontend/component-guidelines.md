@@ -125,6 +125,10 @@ surface has a documented exception.
   never by injecting raw HTML or duplicating a `ReactMarkdown` setup. Use the
   compact variant for dense surfaces such as answer blocks, options, assistant
   cards, and inline previews.
+- The shared `Markdown` component owns project-specific Markdown extensions.
+  Underline uses the safe custom syntax `++text++`, rendered as `<u>` after
+  ReactMarkdown has parsed escaped text. Do not enable raw HTML for underline;
+  literal `<u>raw</u>` must remain escaped user text.
 - When a small UI surface needs a one-line summary (for example the paper
   outline), derive readable plain text with `markdownToPlainText` /
   `summarizeMarkdown` instead of hand-writing local Markdown-stripping regexes.

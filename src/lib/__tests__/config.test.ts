@@ -5,9 +5,13 @@ describe("AppConfigSchema", () => {
   it("defaults paper font for fresh config", () => {
     const config = AppConfigSchema.parse({});
     expect(config.settings.paperFont).toBe("default");
+    expect(config.settings.paperFontSize).toBe("standard");
+    expect(config.settings.paperLineHeight).toBe("standard");
+    expect(config.settings.paperTextAlign).toBe("left");
+    expect(config.settings.paperMargin).toBe("standard");
   });
 
-  it("loads old settings without paper font", () => {
+  it("loads old settings without paper layout presets", () => {
     const config = AppConfigSchema.parse({
       settings: {
         language: "en",
@@ -18,15 +22,29 @@ describe("AppConfigSchema", () => {
     });
 
     expect(config.settings.paperFont).toBe("default");
+    expect(config.settings.paperFontSize).toBe("standard");
+    expect(config.settings.paperLineHeight).toBe("standard");
+    expect(config.settings.paperTextAlign).toBe("left");
+    expect(config.settings.paperMargin).toBe("standard");
     expect(config.settings.language).toBe("en");
   });
 
-  it("keeps a configured paper font preset", () => {
+  it("keeps configured paper layout presets", () => {
     const config = AppConfigSchema.parse({
-      settings: { paperFont: "serif" },
+      settings: {
+        paperFont: "serif",
+        paperFontSize: "large",
+        paperLineHeight: "relaxed",
+        paperTextAlign: "justify",
+        paperMargin: "wide",
+      },
     });
 
     expect(config.settings.paperFont).toBe("serif");
+    expect(config.settings.paperFontSize).toBe("large");
+    expect(config.settings.paperLineHeight).toBe("relaxed");
+    expect(config.settings.paperTextAlign).toBe("justify");
+    expect(config.settings.paperMargin).toBe("wide");
   });
 
   it("adds default AI agents when config has none", () => {

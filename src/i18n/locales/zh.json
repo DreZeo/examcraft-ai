@@ -81,6 +81,51 @@
     "sans": "无衬线 / 黑体",
     "mono": "等宽"
   },
+  "paperFontSize": {
+    "small": "小",
+    "standard": "标准",
+    "large": "大"
+  },
+  "paperLineHeight": {
+    "compact": "紧凑",
+    "standard": "标准",
+    "relaxed": "宽松"
+  },
+  "paperTextAlign": {
+    "left": "左对齐",
+    "center": "居中",
+    "justify": "两端对齐"
+  },
+  "paperMargin": {
+    "narrow": "窄",
+    "standard": "标准",
+    "wide": "宽"
+  },
+  "paperToolbar": {
+    "title": "试卷排版工具栏",
+    "modeTabs": "工具栏模式",
+    "layoutTab": "排版",
+    "markdownTab": "Markdown",
+    "typography": "字体",
+    "paragraph": "段落",
+    "page": "页面",
+    "markdown": "Markdown",
+    "font": "字体",
+    "fontSize": "字号",
+    "lineHeight": "行距",
+    "alignment": "对齐",
+    "margin": "页边距"
+  },
+  "editorToolbar": {
+    "bold": "加粗",
+    "italic": "斜体",
+    "underline": "下划线",
+    "heading": "标题",
+    "bulletList": "无序列表",
+    "orderedList": "有序列表",
+    "quote": "引用",
+    "code": "行内代码"
+  },
   "assistant": {
     "title": "AI 助手",
     "placeholder": "描述你的需求…",

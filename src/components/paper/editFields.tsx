@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { forwardRef, type ReactNode } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { inputCls } from "../../lib/ui/styles";
 
@@ -23,19 +23,18 @@ export function Field({
   );
 }
 
-export function TextArea({
-  value,
-  onChange,
-  rows = 3,
-  placeholder,
-}: {
+interface TextAreaProps {
   value: string;
   onChange: (v: string) => void;
   rows?: number;
   placeholder?: string;
-}) {
+}
+
+export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
+  function TextArea({ value, onChange, rows = 3, placeholder }, ref) {
   return (
     <textarea
+      ref={ref}
       value={value}
       rows={rows}
       placeholder={placeholder}
@@ -43,7 +42,8 @@ export function TextArea({
       className={inputCls + " resize-y font-mono"}
     />
   );
-}
+  },
+);
 
 export function TextInput({
   value,

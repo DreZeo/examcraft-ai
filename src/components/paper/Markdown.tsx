@@ -1,4 +1,11 @@
-import { memo } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  memo,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
@@ -31,6 +38,18 @@ function MarkdownView({ children, variant = "default" }: MarkdownProps) {
           a: ({ node: _node, ...props }) => (
             <a {...props} rel="noopener noreferrer" target="_blank" />
           ),
+          p: ({ node: _node, children, ...props }) => (
+            <p {...props}>{renderUnderlineSyntax(children)}</p>
+          ),
+          li: ({ node: _node, children, ...props }) => (
+            <li {...props}>{renderUnderlineSyntax(children)}</li>
+          ),
+          td: ({ node: _node, children, ...props }) => (
+            <td {...props}>{renderUnderlineSyntax(children)}</td>
+          ),
+          th: ({ node: _node, children, ...props }) => (
+            <th {...props}>{renderUnderlineSyntax(children)}</th>
+          ),
         }}
       >
         {children}
@@ -40,3 +59,27 @@ function MarkdownView({ children, variant = "default" }: MarkdownProps) {
 }
 
 export const Markdown = memo(MarkdownView);
+
+function renderUnderlineSyntax(children: ReactNode): ReactNode {
+  return Children.map(children, (child) => {
+    if (typeof child === "string") return renderUnderlineText(child);
+    if (isValidElement(child)) {
+      const element = child as ReactElement<{ children?: ReactNode }>;
+      return cloneElement(element, {
+        children: renderUnderlineSyntax(element.props.children),
+      });
+    }
+    return child;
+  });
+}
+
+function renderUnderlineText(text: string): ReactNode {
+  const parts = text.split(/(\+\+[^\s+\n](?:[\s\S]*?[^\s+\n])?\+\+)/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, index) => {
+    if (part.startsWith("++") && part.endsWith("++")) {
+      return <u key={index}>{part.slice(2, -2)}</u>;
+    }
+    return part;
+  });
+}

@@ -31,10 +31,22 @@ export const ThemeSchema = z.enum(["system", "light", "dark"]);
 
 /** Paper rendering font preset. Uses system font stacks, not bundled font files. */
 export const PaperFontSchema = z.enum(["default", "serif", "sans", "mono"]);
+export const PaperFontSizeSchema = z.enum(["small", "standard", "large"]);
+export const PaperLineHeightSchema = z.enum(["compact", "standard", "relaxed"]);
+export const PaperTextAlignSchema = z.enum(["left", "center", "justify"]);
+export const PaperMarginSchema = z.enum(["narrow", "standard", "wide"]);
 
 export type PaperFont = z.infer<typeof PaperFontSchema>;
+export type PaperFontSize = z.infer<typeof PaperFontSizeSchema>;
+export type PaperLineHeight = z.infer<typeof PaperLineHeightSchema>;
+export type PaperTextAlign = z.infer<typeof PaperTextAlignSchema>;
+export type PaperMargin = z.infer<typeof PaperMarginSchema>;
 
 export const PAPER_FONT_OPTIONS = PaperFontSchema.options;
+export const PAPER_FONT_SIZE_OPTIONS = PaperFontSizeSchema.options;
+export const PAPER_LINE_HEIGHT_OPTIONS = PaperLineHeightSchema.options;
+export const PAPER_TEXT_ALIGN_OPTIONS = PaperTextAlignSchema.options;
+export const PAPER_MARGIN_OPTIONS = PaperMarginSchema.options;
 
 export const PAPER_FONT_STACKS: Record<PaperFont, string> = {
   default: "inherit",
@@ -44,6 +56,24 @@ export const PAPER_FONT_STACKS: Record<PaperFont, string> = {
     'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif',
   mono:
     '"SFMono-Regular", Consolas, "Liberation Mono", "Courier New", "Microsoft YaHei Mono", monospace',
+};
+
+export const PAPER_FONT_SIZE_STYLES: Record<PaperFontSize, string> = {
+  small: "0.92rem",
+  standard: "1rem",
+  large: "1.1rem",
+};
+
+export const PAPER_LINE_HEIGHT_STYLES: Record<PaperLineHeight, number> = {
+  compact: 1.45,
+  standard: 1.65,
+  relaxed: 1.9,
+};
+
+export const PAPER_MARGIN_STYLES: Record<PaperMargin, string> = {
+  narrow: "10mm",
+  standard: "14mm",
+  wide: "20mm",
 };
 
 /** A teacher/persona preset whose instructions can shape AI assistant behavior. */
@@ -93,6 +123,14 @@ export const AppSettingsSchema = z.object({
   explanationTier: ExplanationTierSchema.default("brief"),
   /** Font preset used only for paper rendering. */
   paperFont: PaperFontSchema.default("default"),
+  /** Base font size preset used only for paper rendering. */
+  paperFontSize: PaperFontSizeSchema.default("standard"),
+  /** Line-height preset used only for paper rendering. */
+  paperLineHeight: PaperLineHeightSchema.default("standard"),
+  /** Text alignment preset used only for paper rendering. */
+  paperTextAlign: PaperTextAlignSchema.default("left"),
+  /** Page padding/margin preset used only for paper rendering. */
+  paperMargin: PaperMarginSchema.default("standard"),
   /** Legacy field: migrated into an AI agent and no longer shown in settings. */
   customInstructions: z.string().default(""),
 });
