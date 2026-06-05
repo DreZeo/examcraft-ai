@@ -61,7 +61,7 @@ export function buildPaperBlocks(
   includeAnswers: boolean,
 ): PaperLayoutBlock[] {
   const blocks: PaperLayoutBlock[] = [];
-  if (paper.title.trim()) {
+  if ((paper.title ?? "").trim()) {
     blocks.push({
       kind: "title",
       id: "title",
@@ -249,8 +249,8 @@ function estimateTeacherAnswerLines(question: Question): number {
   }
 }
 
-function estimateTextLines(text: string): number {
-  const lines = text.split(/\r?\n/);
+function estimateTextLines(text: string | undefined): number {
+  const lines = (text ?? "").split(/\r?\n/);
   return lines.reduce((sum, line) => {
     const trimmed = line.trim();
     if (!trimmed) return sum + 1;

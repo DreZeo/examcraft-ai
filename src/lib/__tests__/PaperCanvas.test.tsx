@@ -81,6 +81,26 @@ describe("PaperCanvas", () => {
     expect(container.querySelector(".answer-block")).not.toBeInTheDocument();
   });
 
+  it("does not crash when switching back to teacher view with missing answer fields", () => {
+    paper = makePaperWithMissingTeacherAnswer();
+    view = "student";
+
+    const { container, rerender } = renderCanvas();
+
+    expect(container.querySelector(".answer-block")).not.toBeInTheDocument();
+
+    view = "teacher";
+    expect(() =>
+      rerender(
+        <MarkdownFormatProvider>
+          <PaperCanvas />
+        </MarkdownFormatProvider>,
+      ),
+    ).not.toThrow();
+    expect(container).toHaveTextContent("缺答案字段的作文题");
+    expect(container).not.toHaveTextContent("undefined");
+  });
+
   it("updates estimated pages with measured block heights", async () => {
     paper = makeMeasuredPaper();
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
@@ -198,6 +218,21 @@ function makeMeasuredPaper(): ExamPaper {
         correctAnswer: 1,
         score: 4,
       },
+    ],
+  };
+}
+
+function makePaperWithMissingTeacherAnswer(): ExamPaper {
+  return {
+    version: 1,
+    title: "测试卷",
+    questions: [
+      {
+        id: "legacy-essay",
+        type: "essay",
+        content: "缺答案字段的作文题",
+        score: 20,
+      } as ExamPaper["questions"][number],
     ],
   };
 }

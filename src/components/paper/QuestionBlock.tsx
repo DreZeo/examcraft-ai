@@ -198,17 +198,18 @@ function AnswerBlock({ question }: { question: Question }) {
 
 interface AnswerSectionProps {
   label: string;
-  content: string;
+  content?: string;
 }
 
 function AnswerSection({ label, content }: AnswerSectionProps) {
-  if (!content.trim()) return null;
+  const safeContent = content ?? "";
+  if (!safeContent.trim()) return null;
 
   return (
     <div className="mt-1 first:mt-0">
       <span className="font-medium text-primary">【{label}】</span>
       <div className="mt-0.5">
-        <Markdown variant="compact">{content}</Markdown>
+        <Markdown variant="compact">{safeContent}</Markdown>
       </div>
     </div>
   );
