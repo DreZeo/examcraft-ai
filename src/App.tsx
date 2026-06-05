@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { GraduationCap } from "lucide-react";
 import { useConfigStore } from "./stores/configStore";
 import { usePaperStore } from "./stores/paperStore";
 import { useTheme } from "./hooks/useTheme";
@@ -16,6 +18,7 @@ import { PaperManagerModal } from "./components/paper/PaperManagerModal";
 import { useAssistantStore } from "./stores/assistantStore";
 
 export default function App() {
+  const { t } = useTranslation();
   const { loaded, dataDir, init } = useConfigStore();
   const paper = usePaperStore((s) => s.paper);
   const activePaperId = usePaperStore((s) => s.activePaperId);
@@ -83,6 +86,10 @@ export default function App() {
   return (
     <MarkdownFormatProvider>
       <div className="flex h-full flex-col bg-background text-foreground">
+      <div className="no-print flex h-12 items-center gap-2.5 border-b border-border bg-muted/35 px-5">
+        <GraduationCap className="h-5 w-5 shrink-0 text-primary" />
+        <span className="text-sm font-semibold text-foreground">{t("app.title")}</span>
+      </div>
       <TopBar
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenPaperManager={() => setPaperManagerOpen(true)}
