@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Plus } from "lucide-react";
 import { usePaperStore } from "../../stores/paperStore";
@@ -7,9 +7,15 @@ import {
   PAPER_FONT_SIZE_STYLES,
   PAPER_FONT_STACKS,
   PAPER_LINE_HEIGHT_STYLES,
-  PAPER_MARGIN_STYLES,
-  PAPER_SIZE_STYLES,
 } from "../../lib/types/config";
+import type { AppSettings } from "../../lib/types/config";
+import type { ExamPaper } from "../../lib/types/exam";
+import {
+  buildPaperPages,
+  getPageMetrics,
+  type PageMetrics,
+  type PaperLayoutBlock,
+} from "../../lib/exam/pagination";
 import { primaryBtn, secondaryBtn } from "../../lib/ui/styles";
 import { toStudentVersion } from "../../lib/exam/studentVersion";
 import { QuestionBlock } from "./QuestionBlock";
@@ -37,6 +43,8 @@ export function PaperCanvas({
   const display = view === "student" ? toStudentVersion(paper) : paper;
   const questionIds = display.questions.map((question) => question.id).join("|");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const pageMetrics = getPageMetrics(paperSettings);
+  const pages = buildPaperPages(display, paperSettings, view !== "student");
 
   const editing = editingId
     ? (paper.questions.find((q) => q.id === editingId) ?? null)
@@ -85,57 +93,32 @@ export function PaperCanvas({
 
   return (
     <div className="flex min-w-fit justify-center px-4 py-8 sm:px-6">
-      <div
-        className="paper-sheet w-full rounded-lg bg-card shadow-sm"
-        style={{
-          fontFamily: PAPER_FONT_STACKS[paperSettings.paperFont],
-          fontSize: PAPER_FONT_SIZE_STYLES[paperSettings.paperFontSize],
-          lineHeight: PAPER_LINE_HEIGHT_STYLES[paperSettings.paperLineHeight],
-          padding: PAPER_MARGIN_STYLES[paperSettings.paperMargin],
-          width: PAPER_SIZE_STYLES[paperSettings.paperSize].width,
-          maxWidth: PAPER_SIZE_STYLES[paperSettings.paperSize].width,
-          minHeight: PAPER_SIZE_STYLES[paperSettings.paperSize].minHeight,
-        }}
-      >
-        {paper.title && (
-          <h1 className="mb-6 text-center text-2xl font-semibold text-foreground">
-            {paper.title}
-          </h1>
-        )}
-
-        {display.questions.length > 0 && <ExamInfoHeader paper={display} />}
-
+      <div className="flex flex-col gap-6">
         {display.questions.length === 0 ? (
-          <div className="py-16 text-center">
-            <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/60" />
-            <p className="text-base font-medium text-foreground">
-              {t("paper.emptyTitle")}
-            </p>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-              {t("paper.emptySubtitle")}
-            </p>
-            <button
-              type="button"
-              onClick={addAndEdit}
-              className={`no-print mt-4 ${primaryBtn}`}
-            >
-              <Plus className="h-4 w-4" />
-              {t("paper.addQuestion")}
-            </button>
-          </div>
+          <PaperPageShell paperSettings={paperSettings} pageMetrics={pageMetrics}>
+            <EmptyPaper t={t} addAndEdit={addAndEdit} />
+          </PaperPageShell>
         ) : (
           <>
-            <ol className="space-y-6">
-              {display.questions.map((q, i) => (
-                <QuestionBlock
-                  key={q.id}
-                  question={q}
-                  index={i}
-                  studentView={view === "student"}
-                  onEdit={setEditingId}
-                />
-              ))}
-            </ol>
+            {pages.map((page) => (
+              <PaperPageShell
+                key={page.id}
+                paperSettings={paperSettings}
+                pageMetrics={pageMetrics}
+              >
+                <div className="space-y-5">
+                  {page.blocks.map((block) => (
+                    <PaperBlock
+                      key={block.id}
+                      block={block}
+                      display={display}
+                      studentView={view === "student"}
+                      onEdit={setEditingId}
+                    />
+                  ))}
+                </div>
+              </PaperPageShell>
+            ))}
             {view !== "student" && (
               <div className="no-print mt-6 border-t border-dashed border-border pt-4 text-center">
                 <button
@@ -158,6 +141,103 @@ export function PaperCanvas({
           onClose={() => setEditingId(null)}
         />
       )}
+    </div>
+  );
+}
+
+interface PaperPageShellProps {
+  paperSettings: AppSettings;
+  pageMetrics: PageMetrics;
+  children: ReactNode;
+}
+
+function PaperPageShell({
+  paperSettings,
+  pageMetrics,
+  children,
+}: PaperPageShellProps) {
+  return (
+    <section
+      className="paper-sheet paper-page w-full rounded-lg bg-card shadow-sm"
+      style={{
+        fontFamily: PAPER_FONT_STACKS[paperSettings.paperFont],
+        fontSize: PAPER_FONT_SIZE_STYLES[paperSettings.paperFontSize],
+        lineHeight: PAPER_LINE_HEIGHT_STYLES[paperSettings.paperLineHeight],
+        padding: pageMetrics.padding,
+        width: pageMetrics.width,
+        maxWidth: pageMetrics.width,
+        minHeight: pageMetrics.height,
+      }}
+    >
+      {children}
+    </section>
+  );
+}
+
+function PaperBlock({
+  block,
+  display,
+  studentView,
+  onEdit,
+}: {
+  block: PaperLayoutBlock;
+  display: ExamPaper;
+  studentView: boolean;
+  onEdit: (id: string) => void;
+}) {
+  switch (block.kind) {
+    case "title":
+      return (
+        <h1 className="mb-6 text-center text-2xl font-semibold text-foreground">
+          {block.title}
+        </h1>
+      );
+    case "exam-info":
+      return <ExamInfoHeader paper={display} />;
+    case "section":
+      return (
+        <h2 className="paper-section-title mt-2 border-b border-border pb-1 text-base font-semibold text-foreground">
+          {block.section.title}
+        </h2>
+      );
+    case "question":
+      return (
+        <ol className="space-y-6">
+          <QuestionBlock
+            question={block.question}
+            index={block.number - 1}
+            studentView={studentView}
+            onEdit={onEdit}
+          />
+        </ol>
+      );
+  }
+}
+
+function EmptyPaper({
+  t,
+  addAndEdit,
+}: {
+  t: ReturnType<typeof useTranslation>["t"];
+  addAndEdit: () => void;
+}) {
+  return (
+    <div className="py-16 text-center">
+      <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/60" />
+      <p className="text-base font-medium text-foreground">
+        {t("paper.emptyTitle")}
+      </p>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+        {t("paper.emptySubtitle")}
+      </p>
+      <button
+        type="button"
+        onClick={addAndEdit}
+        className={`no-print mt-4 ${primaryBtn}`}
+      >
+        <Plus className="h-4 w-4" />
+        {t("paper.addQuestion")}
+      </button>
     </div>
   );
 }

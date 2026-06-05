@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Sparkles,
@@ -11,10 +10,9 @@ import type { Question } from "../../lib/types/exam";
 import { usePaperStore } from "../../stores/paperStore";
 import { useAssistantStore } from "../../stores/assistantStore";
 import {
-  useMarkdownFormat,
-  type MarkdownFormatTarget,
-} from "../layout/MarkdownFormatContext";
-import { applyMarkdownFormat } from "../layout/markdownFormat";
+  studentAnswerSpaceLines,
+  studentBlankUnderlineLength,
+} from "../../lib/exam/pagination";
 import { Markdown } from "./Markdown";
 
 interface QuestionBlockProps {
@@ -36,58 +34,8 @@ export function QuestionBlock({
   onEdit,
 }: QuestionBlockProps) {
   const { t } = useTranslation();
-  const { reorder, deleteQuestion, editQuestion } = usePaperStore();
+  const { reorder, deleteQuestion } = usePaperStore();
   const focusQuestion = useAssistantStore((s) => s.focusQuestion);
-  const { registerTarget, clearTarget } = useMarkdownFormat();
-  const contentRef = useRef<HTMLDivElement | null>(null);
-  const targetRef = useRef<MarkdownFormatTarget | null>(null);
-
-  const registerPreviewSelection = useCallback(() => {
-    if (studentView) return;
-    const selection = window.getSelection();
-    const selected = selection?.toString() ?? "";
-    const contentNode = contentRef.current;
-    if (!selection || !contentNode || !selected.trim()) return;
-    if (!contentNode.contains(selection.anchorNode) || !contentNode.contains(selection.focusNode)) {
-      return;
-    }
-
-    const start = question.content.indexOf(selected);
-    if (start === -1) return;
-    const end = start + selected.length;
-    const target: MarkdownFormatTarget = {
-      apply: (format) => {
-        const result = applyMarkdownFormat(question.content, start, end, format);
-        editQuestion({ ...question, content: result.value });
-        selection.removeAllRanges();
-      },
-    };
-    targetRef.current = target;
-    registerTarget(target);
-  }, [editQuestion, question, registerTarget, studentView]);
-
-  useEffect(() => {
-    const onSelectionChange = () => {
-      const selection = window.getSelection();
-      const contentNode = contentRef.current;
-      const selected = selection?.toString() ?? "";
-      if (!contentNode || !selected.trim()) {
-        if (targetRef.current) clearTarget(targetRef.current);
-        targetRef.current = null;
-        return;
-      }
-      if (!contentNode.contains(selection?.anchorNode ?? null)) {
-        if (targetRef.current) clearTarget(targetRef.current);
-        targetRef.current = null;
-      }
-    };
-
-    document.addEventListener("selectionchange", onSelectionChange);
-    return () => {
-      document.removeEventListener("selectionchange", onSelectionChange);
-      if (targetRef.current) clearTarget(targetRef.current);
-    };
-  }, [clearTarget]);
 
   return (
     <li
@@ -137,12 +85,13 @@ export function QuestionBlock({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
             <div
-              ref={contentRef}
               className="min-w-0 flex-1"
-              onMouseUp={registerPreviewSelection}
-              onKeyUp={registerPreviewSelection}
             >
-              <Markdown>{question.content}</Markdown>
+              {studentView && question.type === "fill-in-blank" ? (
+                <FillBlankContent question={question} />
+              ) : (
+                <Markdown>{question.content}</Markdown>
+              )}
             </div>
             <span className="shrink-0 text-xs text-muted-foreground">
               ({question.score})
@@ -165,9 +114,37 @@ export function QuestionBlock({
           )}
 
           {!studentView && <AnswerBlock question={question} />}
+          {studentView && <StudentAnswerSpace question={question} />}
         </div>
       </div>
     </li>
+  );
+}
+
+function FillBlankContent({ question }: { question: Question }) {
+  if (question.type !== "fill-in-blank") {
+    return <Markdown>{question.content}</Markdown>;
+  }
+  const blankLength = studentBlankUnderlineLength(question);
+  const replacement = "_".repeat(blankLength);
+  const content = /_{3,}/.test(question.content)
+    ? question.content.replace(/_{3,}/g, replacement)
+    : `${question.content} ${Array.from(
+        { length: question.blanks.length },
+        () => replacement,
+      ).join(" ")}`;
+  return <Markdown>{content}</Markdown>;
+}
+
+function StudentAnswerSpace({ question }: { question: Question }) {
+  const lines = studentAnswerSpaceLines(question);
+  if (lines === 0) return null;
+  return (
+    <div
+      className="answer-space mt-3 rounded-sm border border-dashed border-border"
+      style={{ height: `${lines * 1.7}em` }}
+      aria-hidden="true"
+    />
   );
 }
 

@@ -51,6 +51,14 @@
     background: #ffffff !important;
   }
 
+  .paper-page {
+    break-after: page;
+  }
+
+  .paper-page:last-of-type {
+    break-after: auto;
+  }
+
   /* Centered exam title. */
   .paper-sheet h1 {
     text-align: center;

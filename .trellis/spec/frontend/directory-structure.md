@@ -59,6 +59,12 @@ on-screen `QuestionBlock` and the Markdown export, so the displayed answer and
 the exported answer can never diverge. Do not re-implement answer formatting,
 answer-stripping (`toStudentVersion`), or paper mutation (`merge.ts`) inline.
 
+Preview/export paper structure must follow the same rule. If screen preview and
+export both need section order, Chinese section labels, ordinals, or numbering
+rules, put that derivation in `lib/exam/` (for example `paperSections.ts`) and
+import it from both places. Do not keep a separate `TYPE_ORDER` / label table in
+the export path and another one in components.
+
 ---
 
 ## Testing

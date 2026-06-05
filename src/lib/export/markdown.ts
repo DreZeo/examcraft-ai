@@ -1,11 +1,11 @@
 import type {
   ExamPaper,
   Question,
-  QuestionType,
 } from "../types/exam";
 import { toStudentVersion } from "../exam/studentVersion";
 import { totalScore } from "../exam/merge";
 import { formatAnswer } from "../exam/answer";
+import { groupQuestionsByType } from "../exam/paperSections";
 
 /**
  * Pure paper -> Markdown assembly. Used by the Markdown file export and as the
@@ -31,44 +31,6 @@ export interface MarkdownExportOptions {
 }
 
 const BLANK = "__________";
-
-/** Display order of sections; types absent from the paper are skipped. */
-const TYPE_ORDER: readonly QuestionType[] = [
-  "single-choice",
-  "multiple-choice",
-  "true-false",
-  "fill-in-blank",
-  "short-answer",
-  "essay",
-  "calculation",
-];
-
-const TYPE_LABEL: Record<QuestionType, string> = {
-  "single-choice": "单选题",
-  "multiple-choice": "多选题",
-  "true-false": "判断题",
-  "fill-in-blank": "填空题",
-  "short-answer": "简答题",
-  essay: "论述题",
-  calculation: "计算题",
-};
-
-const CN_ORDINALS = [
-  "一",
-  "二",
-  "三",
-  "四",
-  "五",
-  "六",
-  "七",
-  "八",
-  "九",
-  "十",
-];
-
-function ordinal(index: number): string {
-  return CN_ORDINALS[index] ?? String(index + 1);
-}
 
 function buildHeader(paper: ExamPaper, flags: ExamInfoFieldFlags): string[] {
   const meta = paper.metadata ?? {};
@@ -134,17 +96,11 @@ export function paperToMarkdown(
   const lines: string[] = [`# ${source.title || "未命名试卷"}`, ""];
   if (options.header) lines.push(...buildHeader(source, options.header));
 
-  let sectionIndex = 0;
-  for (const type of TYPE_ORDER) {
-    const group = source.questions.filter((q) => q.type === type);
-    if (group.length === 0) continue;
-
-    const score = group.reduce((sum, q) => sum + q.score, 0);
-    lines.push(`## ${ordinal(sectionIndex)}、${TYPE_LABEL[type]}（共 ${score} 分）`, "");
-    group.forEach((q, i) => {
+  for (const section of groupQuestionsByType(source)) {
+    lines.push(`## ${section.title}（共 ${section.score} 分）`, "");
+    section.questions.forEach((q, i) => {
       lines.push(...renderQuestion(q, i + 1, includeAnswers));
     });
-    sectionIndex += 1;
   }
 
   return lines.join("\n").trimEnd() + "\n";

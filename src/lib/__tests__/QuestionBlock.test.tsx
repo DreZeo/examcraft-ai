@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import "../../i18n";
 import { MarkdownFormatProvider } from "../../components/layout/MarkdownFormatContext";
 import { QuestionBlock } from "../../components/paper/QuestionBlock";
-import type { CalculationQuestion, SingleChoiceQuestion } from "../types/exam";
+import type {
+  CalculationQuestion,
+  EssayQuestion,
+  FillInBlankQuestion,
+  SingleChoiceQuestion,
+} from "../types/exam";
 
 const editQuestion = vi.fn();
 
@@ -20,7 +25,14 @@ vi.mock("../../stores/assistantStore", () => ({
 }));
 
 describe("QuestionBlock", () => {
-  function renderQuestion(question: SingleChoiceQuestion | CalculationQuestion, studentView = false) {
+  function renderQuestion(
+    question:
+      | SingleChoiceQuestion
+      | CalculationQuestion
+      | FillInBlankQuestion
+      | EssayQuestion,
+    studentView = false,
+  ) {
     return render(
       <MarkdownFormatProvider>
         <QuestionBlock
@@ -142,5 +154,34 @@ describe("QuestionBlock", () => {
       .not.toBeInTheDocument();
     expect(screen.queryByText("Add the terms")).not.toBeInTheDocument();
     expect(screen.queryByText("Simple arithmetic.")).not.toBeInTheDocument();
+  });
+
+  it("renders longer fill-in blank lines in student view", () => {
+    const question: FillInBlankQuestion = {
+      id: "q3",
+      type: "fill-in-blank",
+      content: "水的化学式是 ___。",
+      blanks: ["H2O"],
+      score: 4,
+    };
+
+    const { container } = renderQuestion(question, true);
+
+    expect(container).toHaveTextContent("水的化学式是 __________。");
+  });
+
+  it("adds student answer space for essays", () => {
+    const question: EssayQuestion = {
+      id: "q4",
+      type: "essay",
+      content: "请论述水循环的意义。",
+      scoringCriteria: "观点明确，论证充分。",
+      score: 20,
+    };
+
+    const { container } = renderQuestion(question, true);
+
+    expect(container.querySelector(".answer-space")).toBeInTheDocument();
+    expect(container.querySelector(".answer-block")).not.toBeInTheDocument();
   });
 });
