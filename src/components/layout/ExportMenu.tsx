@@ -22,6 +22,7 @@ const FIELD_KEYS: (keyof ExamInfoFields)[] = [
   "duration",
   "totalScore",
 ];
+const NOTICE_TIMEOUT_MS = 3000;
 
 /**
  * Top-bar export menu: save JSON project, import JSON, export Markdown / PDF in
@@ -32,6 +33,10 @@ const FIELD_KEYS: (keyof ExamInfoFields)[] = [
 export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [notice, setNotice] = useState<{
+    kind: "success" | "error";
+    text: string;
+  } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const paper = usePaperStore((s) => s.paper);
@@ -54,11 +59,16 @@ export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), NOTICE_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
   const header = showHeader ? fields : undefined;
 
   async function doJson() {
-    await exportJson(paper, dataDir);
-    setOpen(false);
+    await runExport(() => exportJson(paper, dataDir), t("export.json"));
   }
 
   async function doImport() {
@@ -72,7 +82,33 @@ export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
   }
 
   async function doMarkdown(includeAnswers: boolean) {
-    await exportMarkdown(paper, dataDir, { includeAnswers, header });
+    const label = includeAnswers
+      ? t("export.markdownTeacher")
+      : t("export.markdownStudent");
+    await runExport(
+      () => exportMarkdown(paper, dataDir, { includeAnswers, header }),
+      label,
+    );
+  }
+
+  async function runExport(
+    action: () => Promise<boolean>,
+    label: string,
+  ): Promise<void> {
+    try {
+      const exported = await action();
+      if (exported) {
+        setNotice({
+          kind: "success",
+          text: t("export.exportSucceeded", { format: label }),
+        });
+      }
+    } catch {
+      setNotice({
+        kind: "error",
+        text: t("export.exportFailed", { format: label }),
+      });
+    }
     setOpen(false);
   }
 
@@ -87,7 +123,10 @@ export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
     <div ref={ref} className="relative shrink-0">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setNotice(null);
+          setOpen((v) => !v);
+        }}
         aria-haspopup="menu"
         aria-expanded={open}
         className={triggerClassName}
@@ -96,6 +135,19 @@ export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
         {t("export.title")}
         <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
+
+      {notice && (
+        <div
+          role="status"
+          className={`absolute right-0 z-20 mt-1 w-60 rounded-md border px-3 py-2 text-xs shadow-lg ${
+            notice.kind === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
+              : "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+          }`}
+        >
+          {notice.text}
+        </div>
+      )}
 
       {open && (
         <div className="absolute right-0 z-20 mt-1 w-60 animate-fade-in rounded-md border border-border bg-popover p-1 text-sm text-popover-foreground shadow-lg">

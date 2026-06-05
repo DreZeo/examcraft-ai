@@ -253,7 +253,11 @@
     "version": "版本",
     "teacher": "教师版",
     "student": "学生版",
+    "markdownTeacher": "Markdown 教师版",
+    "markdownStudent": "Markdown 学生版",
     "examInfoHeader": "试卷信息栏",
+    "exportSucceeded": "{{format}} 已导出",
+    "exportFailed": "{{format}} 导出失败，请检查保存位置或权限。",
     "importFailed": "导入失败：文件不是有效的试卷。"
   },
   "examInfo": {

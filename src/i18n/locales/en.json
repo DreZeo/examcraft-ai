@@ -253,7 +253,11 @@
     "version": "Version",
     "teacher": "Teacher version",
     "student": "Student version",
+    "markdownTeacher": "Markdown teacher version",
+    "markdownStudent": "Markdown student version",
     "examInfoHeader": "Exam info header",
+    "exportSucceeded": "{{format}} exported",
+    "exportFailed": "{{format}} export failed. Check the save location or permissions.",
     "importFailed": "Import failed: the file is not a valid paper."
   },
   "examInfo": {

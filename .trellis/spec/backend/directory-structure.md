@@ -102,3 +102,35 @@ and out of network/logging code. See `error-handling.md`.
 Plugin permissions are declared in `src-tauri/capabilities/default.json`
 (`dialog:default`, `fs:default`, `opener:default` added on top of `core:default`).
 A new plugin needs both `.plugin(...)` in lib.rs AND its permission here.
+
+### Gotcha: `fs:default` does not grant file writes
+
+`fs:default` only covers app-specific directory reads and directory creation. If
+frontend code uses `@tauri-apps/plugin-fs` to read or write user-selected files,
+grant the exact command permission in `src-tauri/capabilities/default.json`.
+
+Good:
+
+```json
+{
+  "permissions": [
+    "dialog:default",
+    "fs:default",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file"
+  ]
+}
+```
+
+Bad:
+
+```json
+{
+  "permissions": ["dialog:default", "fs:default"]
+}
+```
+
+Why: `dialog.open()` / `dialog.save()` add the selected path to the runtime fs
+scope, but the `read_text_file` / `write_text_file` commands still need to be
+enabled. Without the command permission, export/import flows can look like
+no-ops unless the UI surfaces the rejected promise.

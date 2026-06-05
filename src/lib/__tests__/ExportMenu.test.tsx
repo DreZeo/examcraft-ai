@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "../../i18n";
@@ -78,5 +78,51 @@ describe("ExportMenu", () => {
 
     expect(mocks.setView).toHaveBeenCalledWith("student");
     await waitFor(() => expect(window.print).toHaveBeenCalled());
+  });
+
+  it("shows success feedback after JSON export writes a file", async () => {
+    mocks.exportJson.mockResolvedValue(true);
+    vi.useFakeTimers();
+    render(<ExportMenu />);
+
+    fireEvent.click(screen.getByRole("button", { name: /导出/ }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("menuitem", { name: "JSON 项目" }));
+    });
+
+    expect(mocks.exportJson).toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent("JSON 项目 已导出");
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("stays quiet when a JSON export is cancelled", async () => {
+    mocks.exportJson.mockResolvedValue(false);
+    const user = userEvent.setup();
+    render(<ExportMenu />);
+
+    await user.click(screen.getByRole("button", { name: /导出/ }));
+    await user.click(screen.getByRole("menuitem", { name: "JSON 项目" }));
+
+    await waitFor(() => expect(mocks.exportJson).toHaveBeenCalled());
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("shows error feedback when Markdown export fails", async () => {
+    mocks.exportMarkdown.mockRejectedValue(new Error("denied"));
+    const user = userEvent.setup();
+    render(<ExportMenu />);
+
+    await user.click(screen.getByRole("button", { name: /导出/ }));
+    const teacherButtons = screen.getAllByRole("menuitem", { name: "教师版" });
+    await user.click(teacherButtons[1]);
+
+    expect(mocks.exportMarkdown).toHaveBeenCalled();
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Markdown 教师版 导出失败",
+    );
   });
 });

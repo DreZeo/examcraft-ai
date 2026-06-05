@@ -65,6 +65,14 @@ rules, put that derivation in `lib/exam/` (for example `paperSections.ts`) and
 import it from both places. Do not keep a separate `TYPE_ORDER` / label table in
 the export path and another one in components.
 
+Markdown export is a text rendering of the paper preview, not a separate backup
+format with its own layout rules. It should reuse preview-aligned helpers for:
+section order, per-section question numbering, option de-duplication when the
+stem already contains A/B/C markers, student fill-in-blank underlines, and
+subjective answer-space placeholders. When exact CSS cannot be represented in
+plain Markdown, choose the closest Markdown-native structure and cover it with
+`exportMarkdown.test.ts`.
+
 ---
 
 ## Testing

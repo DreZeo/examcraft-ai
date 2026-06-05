@@ -19,7 +19,7 @@ function makePaper(): ExamPaper {
       {
         id: "q2",
         type: "single-choice",
-        content: "Capital of France?",
+        content: "Capital of France?\nA. Berlin\nB. Paris",
         options: ["Berlin", "Paris"],
         correctAnswer: 1,
         score: 5,
@@ -51,8 +51,10 @@ describe("paperToMarkdown", () => {
     expect(md).toContain("B"); // single-choice index 1 -> B
     expect(md).toContain("oxygen"); // fill-in-blank answer
     expect(md).toContain("A force of attraction"); // reference answer
-    expect(md).toContain("【解析】** Basic addition.");
-    expect(md).toContain("【评分点】** mentions force；mentions mass");
+    expect(md).toContain("> **【解析】**");
+    expect(md).toContain("> Basic addition.");
+    expect(md).toContain("> **【评分要点】**");
+    expect(md).toContain("> - mentions force");
   });
 
   it("excludes answers and explanations in the student variant", () => {
@@ -64,6 +66,8 @@ describe("paperToMarkdown", () => {
     expect(md).not.toContain("A force of attraction");
     // Options still render so students can answer.
     expect(md).toContain("B. Paris");
+    expect(md).toContain("__________"); // fill-in blanks render as answer lines.
+    expect(md).toContain("> "); // subjective answer-space placeholders.
   });
 
   it("groups questions by type with CN ordinal numbered sections", () => {
@@ -101,8 +105,25 @@ describe("paperToMarkdown", () => {
     });
     expect(md).toContain("科目：Math");
     expect(md).toContain("班级：5A");
-    expect(md).toContain("时长：90 分钟");
+    expect(md).toContain("时长：90");
     // total score falls back to the sum of question scores (5+5+4+8 = 22)
-    expect(md).toContain("总分：22 分");
+    expect(md).toContain("总分：22");
+    expect(md).toContain("---");
+  });
+
+  it("does not duplicate options already written in the question stem", () => {
+    const md = paperToMarkdown(makePaper(), { includeAnswers: false });
+
+    expect(md.match(/A\. Berlin/g)).toHaveLength(1);
+    expect(md.match(/B\. Paris/g)).toHaveLength(1);
+  });
+
+  it("renders preview-like teacher answer blocks", () => {
+    const md = paperToMarkdown(makePaper(), { includeAnswers: true });
+
+    expect(md).toContain("> **【答案】**");
+    expect(md).toContain("> B");
+    expect(md).toContain("> **【评分要点】**");
+    expect(md).toContain("> - mentions mass");
   });
 });
