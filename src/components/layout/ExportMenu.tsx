@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Download, ChevronDown, FileJson, Upload } from "lucide-react";
+import { Download, ChevronDown, FileJson, Upload, Printer } from "lucide-react";
 import { usePaperStore } from "../../stores/paperStore";
 import { useConfigStore } from "../../stores/configStore";
 import { useExportStore, type ExamInfoFields } from "../../stores/exportStore";
@@ -110,14 +110,17 @@ export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
             onClick={doImport}
           />
 
-          <Section label={t("export.markdown")}>
-            <Variant label={t("export.teacher")} onClick={() => doMarkdown(true)} />
-            <Variant label={t("export.student")} onClick={() => doMarkdown(false)} />
-          </Section>
-
-          <Section label={t("export.pdf")}>
+          <Section
+            label={t("export.pdfWysiwyg")}
+            icon={<Printer className="h-4 w-4" />}
+          >
             <Variant label={t("export.teacher")} onClick={() => doPdf(true)} />
             <Variant label={t("export.student")} onClick={() => doPdf(false)} />
+          </Section>
+
+          <Section label={t("export.markdownBackup")}>
+            <Variant label={t("export.teacher")} onClick={() => doMarkdown(true)} />
+            <Variant label={t("export.student")} onClick={() => doMarkdown(false)} />
           </Section>
 
           <div className="my-1 border-t border-border" />
@@ -175,14 +178,19 @@ function MenuItem({
 
 function Section({
   label,
+  icon,
   children,
 }: {
   label: string;
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="px-2 py-1">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {icon}
+        {label}
+      </p>
       <div className="mt-0.5 flex gap-1">{children}</div>
     </div>
   );

@@ -7,9 +7,9 @@
  */
 
 @media print {
-  /* Page setup: margins + footer page numbers. */
+  /* Page setup: the live .paper-page owns size and padding for WYSIWYG export. */
   @page {
-    margin: 18mm 16mm;
+    margin: 0;
     @bottom-center {
       content: counter(page) " / " counter(pages);
     }
@@ -40,12 +40,14 @@
     flex: none !important;
   }
 
-  /* The paper sheet fills the page, no shadow / rounded card framing. */
-  .paper-sheet {
-    max-width: none !important;
-    width: 100% !important;
-    margin: 0 !important;
+  main > div {
+    display: block !important;
     padding: 0 !important;
+  }
+
+  /* Preserve preview dimensions/padding; remove only screen chrome styling. */
+  .paper-sheet {
+    margin: 0 !important;
     box-shadow: none !important;
     border-radius: 0 !important;
     background: #ffffff !important;
@@ -53,6 +55,7 @@
 
   .paper-page {
     break-after: page;
+    overflow: hidden;
   }
 
   .paper-page:last-of-type {
