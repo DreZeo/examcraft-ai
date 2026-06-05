@@ -133,7 +133,7 @@ function SettingsGroup({
         <span className="text-muted-foreground">{icon}</span>
         <h4>{title}</h4>
       </div>
-      <div className="overflow-hidden rounded-md border border-border divide-y divide-border">
+      <div className="rounded-md border border-border divide-y divide-border">
         {children}
       </div>
     </section>
