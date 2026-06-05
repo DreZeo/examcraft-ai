@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ChevronDown,
   ChevronRight,
   MessageSquarePlus,
   Pencil,
   Trash2,
 } from "lucide-react";
 import { useAssistantStore } from "../../stores/assistantStore";
-import { iconBtn, inputCls } from "../../lib/ui/styles";
+import { inputCls } from "../../lib/ui/styles";
 
 /** Paper-scoped assistant session list with create, switch, rename, and delete. */
 export function ChatHistoryPanel() {
@@ -39,8 +38,8 @@ export function ChatHistoryPanel() {
   }
 
   return (
-    <div className="border-b border-border bg-card px-3 py-2">
-      <div className="flex items-center gap-2">
+    <div className="border-b border-border px-3 py-1.5">
+      <div className="flex items-center gap-1">
         <button
           type="button"
           aria-label={
@@ -50,17 +49,13 @@ export function ChatHistoryPanel() {
             open ? t("assistant.collapseHistory") : t("assistant.expandHistory")
           }
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+          className="inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
         >
-          {open ? (
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
-          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+          <ChevronRight className={`h-3.5 w-3.5 shrink-0 text-muted-foreground/60 transition-transform duration-200 ${open ? "rotate-90" : ""}`} />
+          <span className="shrink-0 text-xs text-muted-foreground/70">
             {t("assistant.history")}
           </span>
-          <span className="min-w-0 truncate text-xs text-foreground">
+          <span className="min-w-0 truncate text-xs font-medium text-foreground">
             {activeTitle}
           </span>
         </button>
@@ -69,7 +64,7 @@ export function ChatHistoryPanel() {
           aria-label={t("assistant.newChat")}
           title={t("assistant.newChat")}
           onClick={() => void newSession()}
-          className={iconBtn}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
         >
           <MessageSquarePlus className="h-4 w-4" />
         </button>
