@@ -2,6 +2,33 @@ import { describe, expect, it } from "vitest";
 import { AppConfigSchema, DEFAULT_AGENTS } from "../types/config";
 
 describe("AppConfigSchema", () => {
+  it("defaults paper font for fresh config", () => {
+    const config = AppConfigSchema.parse({});
+    expect(config.settings.paperFont).toBe("default");
+  });
+
+  it("loads old settings without paper font", () => {
+    const config = AppConfigSchema.parse({
+      settings: {
+        language: "en",
+        theme: "dark",
+        autoSave: false,
+        explanationTier: "detailed",
+      },
+    });
+
+    expect(config.settings.paperFont).toBe("default");
+    expect(config.settings.language).toBe("en");
+  });
+
+  it("keeps a configured paper font preset", () => {
+    const config = AppConfigSchema.parse({
+      settings: { paperFont: "serif" },
+    });
+
+    expect(config.settings.paperFont).toBe("serif");
+  });
+
   it("adds default AI agents when config has none", () => {
     const config = AppConfigSchema.parse({});
     expect(config.agents.map((agent) => agent.id)).toEqual(

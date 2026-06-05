@@ -29,6 +29,23 @@ export const ExplanationTierSchema = z.enum(["none", "brief", "detailed"]);
 /** Color theme preference. `system` follows the OS prefers-color-scheme. */
 export const ThemeSchema = z.enum(["system", "light", "dark"]);
 
+/** Paper rendering font preset. Uses system font stacks, not bundled font files. */
+export const PaperFontSchema = z.enum(["default", "serif", "sans", "mono"]);
+
+export type PaperFont = z.infer<typeof PaperFontSchema>;
+
+export const PAPER_FONT_OPTIONS = PaperFontSchema.options;
+
+export const PAPER_FONT_STACKS: Record<PaperFont, string> = {
+  default: "inherit",
+  serif:
+    'Georgia, "Times New Roman", "Noto Serif CJK SC", "Songti SC", SimSun, serif',
+  sans:
+    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif',
+  mono:
+    '"SFMono-Regular", Consolas, "Liberation Mono", "Courier New", "Microsoft YaHei Mono", monospace',
+};
+
 /** A teacher/persona preset whose instructions can shape AI assistant behavior. */
 export const AgentConfigSchema = z.object({
   id: z.string().min(1),
@@ -74,6 +91,8 @@ export const AppSettingsSchema = z.object({
   autoSave: z.boolean().default(true),
   /** Explanation detail level injected into the system prompt as a default. */
   explanationTier: ExplanationTierSchema.default("brief"),
+  /** Font preset used only for paper rendering. */
+  paperFont: PaperFontSchema.default("default"),
   /** Legacy field: migrated into an AI agent and no longer shown in settings. */
   customInstructions: z.string().default(""),
 });

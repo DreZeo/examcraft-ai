@@ -2,6 +2,8 @@ import { useEffect, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Plus } from "lucide-react";
 import { usePaperStore } from "../../stores/paperStore";
+import { useConfigStore } from "../../stores/configStore";
+import { PAPER_FONT_STACKS } from "../../lib/types/config";
 import { primaryBtn, secondaryBtn } from "../../lib/ui/styles";
 import { toStudentVersion } from "../../lib/exam/studentVersion";
 import { QuestionBlock } from "./QuestionBlock";
@@ -25,6 +27,7 @@ export function PaperCanvas({
 }: PaperCanvasProps) {
   const { t } = useTranslation();
   const { paper, view, addBlankQuestion } = usePaperStore();
+  const paperFont = useConfigStore((s) => s.config.settings.paperFont);
   const display = view === "student" ? toStudentVersion(paper) : paper;
   const questionIds = display.questions.map((question) => question.id).join("|");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -76,7 +79,10 @@ export function PaperCanvas({
 
   return (
     <div className="flex min-w-fit justify-center px-4 py-8 sm:px-6">
-      <div className="paper-sheet min-h-[297mm] w-full max-w-[210mm] rounded-lg bg-card p-6 shadow-sm sm:p-[14mm]">
+      <div
+        className="paper-sheet min-h-[297mm] w-full max-w-[210mm] rounded-lg bg-card p-6 shadow-sm sm:p-[14mm]"
+        style={{ fontFamily: PAPER_FONT_STACKS[paperFont] }}
+      >
         {paper.title && (
           <h1 className="mb-6 text-center text-2xl font-semibold text-foreground">
             {paper.title}

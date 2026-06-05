@@ -35,10 +35,14 @@
     "setActive": "设为当前",
     "delete": "删除",
     "general": "通用",
-    "generalDescription": "调整语言、主题、自动保存和 AI 生成偏好。",
+    "generalDescription": "调整语言、主题、试卷排版和 AI 生成偏好。",
+    "interfacePreferences": "界面偏好",
+    "paperLayout": "试卷排版",
+    "aiGenerationPreferences": "AI 生成偏好",
     "language": "界面语言",
     "theme": "主题",
     "autoSave": "自动保存",
+    "paperFont": "试卷字体",
     "explanationTier": "解析详细程度",
     "customInstructions": "自定义补充指令",
     "dataDirectory": "数据目录",
@@ -70,6 +74,12 @@
     "system": "跟随系统",
     "light": "浅色",
     "dark": "深色"
+  },
+  "paperFont": {
+    "default": "默认",
+    "serif": "衬线 / 宋体",
+    "sans": "无衬线 / 黑体",
+    "mono": "等宽"
   },
   "assistant": {
     "title": "AI 助手",

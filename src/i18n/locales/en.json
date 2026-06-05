@@ -35,10 +35,14 @@
     "setActive": "Set active",
     "delete": "Delete",
     "general": "General",
-    "generalDescription": "Adjust language, theme, auto-save, and AI generation preferences.",
+    "generalDescription": "Adjust language, theme, paper layout, and AI generation preferences.",
+    "interfacePreferences": "Interface preferences",
+    "paperLayout": "Paper layout",
+    "aiGenerationPreferences": "AI generation preferences",
     "language": "Language",
     "theme": "Theme",
     "autoSave": "Auto-save",
+    "paperFont": "Paper font",
     "explanationTier": "Explanation detail",
     "customInstructions": "Custom instructions",
     "dataDirectory": "Data directory",
@@ -70,6 +74,12 @@
     "system": "Follow system",
     "light": "Light",
     "dark": "Dark"
+  },
+  "paperFont": {
+    "default": "Default",
+    "serif": "Serif / Song-style",
+    "sans": "Sans / Hei-style",
+    "mono": "Monospace"
   },
   "assistant": {
     "title": "AI Assistant",
