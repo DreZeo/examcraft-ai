@@ -44,6 +44,7 @@
     "theme": "Theme",
     "autoSave": "Auto-save",
     "paperFont": "Paper font",
+    "globalFont": "Global font",
     "explanationTier": "Explanation detail",
     "customInstructions": "Custom instructions",
     "dataDirectory": "Data directory",

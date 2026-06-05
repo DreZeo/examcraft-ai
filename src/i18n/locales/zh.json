@@ -44,6 +44,7 @@
     "theme": "主题",
     "autoSave": "自动保存",
     "paperFont": "试卷字体",
+    "globalFont": "全局字体",
     "explanationTier": "解析详细程度",
     "customInstructions": "自定义补充指令",
     "dataDirectory": "数据目录",

@@ -8,6 +8,7 @@ import {
   Sparkles,
   Type,
 } from "lucide-react";
+
 import { useConfigStore } from "../../stores/configStore";
 import {
   PAPER_FONT_OPTIONS,
@@ -78,23 +79,21 @@ export function GeneralSection() {
           />
         </SettingRow>
 
-        <SettingRow icon={<Save className="h-4 w-4" />} label={t("settings.autoSave")}>
-          <Toggle
-            checked={s.autoSave}
-            onChange={(v) => void updateSettings({ autoSave: v })}
-          />
-        </SettingRow>
-      </SettingsGroup>
-
-      <SettingsGroup icon={<Type className="h-4 w-4" />} title={t("settings.paperLayout")}>
-        <SettingRow icon={<Type className="h-4 w-4" />} label={t("settings.paperFont")}>
+        <SettingRow icon={<Type className="h-4 w-4" />} label={t("settings.globalFont")}>
           <SelectControl
             icon={<Type className="h-3.5 w-3.5" />}
-            label={t("settings.paperFont")}
+            label={t("settings.globalFont")}
             value={s.paperFont}
             options={PAPER_FONT_OPTIONS}
             optionKeyPrefix="paperFont"
             onChange={(v) => void updateSettings({ paperFont: v as PaperFont })}
+          />
+        </SettingRow>
+
+        <SettingRow icon={<Save className="h-4 w-4" />} label={t("settings.autoSave")}>
+          <Toggle
+            checked={s.autoSave}
+            onChange={(v) => void updateSettings({ autoSave: v })}
           />
         </SettingRow>
       </SettingsGroup>
