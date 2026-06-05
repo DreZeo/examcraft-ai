@@ -147,8 +147,8 @@ export function PaperManagerModal({ onClose }: PaperManagerModalProps) {
 
           <section className="min-h-0 overflow-auto p-4 sm:p-6">
             {selected ? (
-              <div className="space-y-5">
-                <div className="rounded-md border border-border bg-background p-4">
+              <div className="space-y-4">
+                <div>
                   <label className="block text-sm font-medium text-foreground">
                     {t("paperLibrary.paperTitle")}
                   </label>
@@ -161,7 +161,7 @@ export function PaperManagerModal({ onClose }: PaperManagerModalProps) {
                     <button
                       type="button"
                       onClick={() => void saveTitle()}
-                      className={secondaryBtn}
+                      className={`${secondaryBtn} whitespace-nowrap`}
                     >
                       <Pencil className="h-4 w-4" />
                       {t("settings.save")}
@@ -169,10 +169,19 @@ export function PaperManagerModal({ onClose }: PaperManagerModalProps) {
                   </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Info label={t("paperLibrary.questions")} value={String(selected.questionCount)} />
-                  <Info label={t("paperLibrary.createdAt")} value={formatDate(selected.createdAt)} />
-                  <Info label={t("paperLibrary.updatedAt")} value={formatDate(selected.updatedAt)} />
+                <div className="grid grid-cols-3 divide-x divide-border rounded-md border border-border bg-background">
+                  <div className="p-3">
+                    <p className="text-xs text-muted-foreground">{t("paperLibrary.questions")}</p>
+                    <p className="mt-1 truncate text-sm font-medium text-foreground">{String(selected.questionCount)}</p>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs text-muted-foreground">{t("paperLibrary.createdAt")}</p>
+                    <p className="mt-1 truncate text-sm font-medium text-foreground">{formatDate(selected.createdAt)}</p>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs text-muted-foreground">{t("paperLibrary.updatedAt")}</p>
+                    <p className="mt-1 truncate text-sm font-medium text-foreground">{formatDate(selected.updatedAt)}</p>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2 border-t border-border pt-4">
@@ -215,15 +224,6 @@ export function PaperManagerModal({ onClose }: PaperManagerModalProps) {
           </section>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-border bg-background p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 truncate text-sm font-medium text-foreground">{value}</p>
     </div>
   );
 }
