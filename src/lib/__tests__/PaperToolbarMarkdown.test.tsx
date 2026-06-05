@@ -56,20 +56,23 @@ async function openMarkdownTab() {
 }
 
 describe("PaperToolbar Markdown tab", () => {
-  it("uses Word-like paper layout controls without text alignment", () => {
+  it("uses Word-like paper layout controls without text alignment", async () => {
     renderToolbarWithEditor();
 
-    expect(screen.getByLabelText("字号")).toHaveDisplayValue("小四");
-    expect(screen.getByLabelText("字体")).toHaveTextContent("宋体");
-    expect(screen.getByLabelText("字体")).toHaveTextContent("微软雅黑");
-    expect(screen.getByLabelText("纸张大小")).toHaveDisplayValue("A4");
+    expect(screen.getByLabelText("字号")).toHaveTextContent("小四");
+    expect(screen.getByLabelText("字体")).toHaveTextContent("默认");
+    await userEvent.click(screen.getByRole("button", { name: "字体" }));
+    expect(screen.getByRole("option", { name: "宋体" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "微软雅黑" })).toBeInTheDocument();
+    expect(screen.getByLabelText("纸张大小")).toHaveTextContent("A4");
     expect(screen.queryByRole("group", { name: "对齐" })).not.toBeInTheDocument();
   });
 
   it("updates the Word-like paper size setting", async () => {
     renderToolbarWithEditor();
 
-    await userEvent.selectOptions(screen.getByLabelText("纸张大小"), "b5");
+    await userEvent.click(screen.getByRole("button", { name: "纸张大小" }));
+    await userEvent.click(screen.getByRole("option", { name: "B5" }));
 
     expect(updateSettings).toHaveBeenCalledWith({ paperSize: "b5" });
   });
