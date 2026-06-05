@@ -33,6 +33,8 @@ export interface PaperPage {
   blocks: PaperLayoutBlock[];
 }
 
+export type BlockHeightMap = Record<string, number>;
+
 export interface PageMetrics {
   width: string;
   height: string;
@@ -104,6 +106,20 @@ export function paginateBlocks(
   blocks: PaperLayoutBlock[],
   contentHeightMm: number,
 ): PaperPage[] {
+  return paginateMeasuredBlocks(
+    blocks,
+    contentHeightMm,
+    Object.fromEntries(
+      blocks.map((block) => [block.id, Math.max(1, block.estimatedHeightMm)]),
+    ),
+  );
+}
+
+export function paginateMeasuredBlocks(
+  blocks: PaperLayoutBlock[],
+  contentHeightMm: number,
+  heights: BlockHeightMap,
+): PaperPage[] {
   if (blocks.length === 0) return [];
 
   const pages: PaperPage[] = [];
@@ -112,19 +128,21 @@ export function paginateBlocks(
 
   for (let index = 0; index < blocks.length; index += 1) {
     const block = blocks[index];
-    const height = Math.max(1, block.estimatedHeightMm);
+    const height = blockHeight(block, heights);
     const next = blocks[index + 1];
     const sectionWithFirstQuestion =
       block.kind === "section" && next?.kind === "question"
-        ? height + Math.max(1, next.estimatedHeightMm)
+        ? height + blockHeight(next, heights)
         : height;
     const followsCurrentSection =
       block.kind === "question" &&
       current.length === 1 &&
       current[0].kind === "section";
+    const isOversized = height > contentHeightMm;
     const shouldStartNewPage =
       current.length > 0 &&
-      used + sectionWithFirstQuestion > contentHeightMm &&
+      used + sectionWithFirstQuestion > contentHeightMm + 1 &&
+      !isOversized &&
       !followsCurrentSection;
 
     if (shouldStartNewPage) {
@@ -251,4 +269,8 @@ function parseMm(value: string): number {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function blockHeight(block: PaperLayoutBlock, heights: BlockHeightMap): number {
+  return Math.max(1, heights[block.id] ?? block.estimatedHeightMm);
 }

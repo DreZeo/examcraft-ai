@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "../../i18n";
 import { PaperCanvas } from "../../components/paper/PaperCanvas";
@@ -32,6 +32,7 @@ vi.mock("../../stores/configStore", () => ({
 
 describe("PaperCanvas", () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     view = "teacher";
     paper = {
       version: 1,
@@ -61,7 +62,7 @@ describe("PaperCanvas", () => {
     expect(container).toHaveTextContent("一、单选题");
     expect(container).toHaveTextContent("二、填空题");
     expect(container).toHaveTextContent("三、论述题");
-    expect([...container.querySelectorAll(".question-block > div > span")]
+    expect([...visiblePages(container)[0].querySelectorAll(".question-block > div > span")]
       .map((node) => node.textContent)).toEqual(["1.", "1.", "1."]);
   });
 
@@ -74,6 +75,35 @@ describe("PaperCanvas", () => {
     expect(container.querySelector(".answer-space")).toBeInTheDocument();
     expect(container).toHaveTextContent("__________");
     expect(container.querySelector(".answer-block")).not.toBeInTheDocument();
+  });
+
+  it("updates estimated pages with measured block heights", async () => {
+    paper = makeMeasuredPaper();
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function getRect(this: HTMLElement) {
+        const id = this.dataset.layoutBlockId;
+        const height = id === "question-choice-2" ? 24 : 12;
+        return {
+          width: 100,
+          height,
+          top: 0,
+          right: 0,
+          bottom: height,
+          left: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      },
+    );
+
+    const { container } = render(<PaperCanvas />);
+
+    await waitFor(() => {
+      const pages = visiblePages(container);
+      expect(pages).toHaveLength(1);
+      expect(pages[0]).toHaveTextContent("第二题");
+    });
   });
 });
 
@@ -106,4 +136,35 @@ function makePaper(): ExamPaper {
       },
     ],
   };
+}
+
+function makeMeasuredPaper(): ExamPaper {
+  return {
+    version: 1,
+    title: "测试卷",
+    questions: [
+      {
+        id: "choice-1",
+        type: "single-choice",
+        content: "第一题 ".repeat(220),
+        options: ["A", "B", "C", "D"],
+        correctAnswer: 0,
+        score: 4,
+      },
+      {
+        id: "choice-2",
+        type: "single-choice",
+        content: "第二题",
+        options: ["A", "B", "C", "D"],
+        correctAnswer: 1,
+        score: 4,
+      },
+    ],
+  };
+}
+
+function visiblePages(container: HTMLElement): HTMLElement[] {
+  return [...container.querySelectorAll<HTMLElement>(".paper-page")].filter(
+    (page) => !page.closest("[aria-hidden='true']"),
+  );
 }

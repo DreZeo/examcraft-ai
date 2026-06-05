@@ -1,4 +1,12 @@
-import { useEffect, useState, type RefObject, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Plus } from "lucide-react";
 import { usePaperStore } from "../../stores/paperStore";
@@ -12,9 +20,12 @@ import type { AppSettings } from "../../lib/types/config";
 import type { ExamPaper } from "../../lib/types/exam";
 import {
   buildPaperPages,
+  buildPaperBlocks,
   getPageMetrics,
+  paginateMeasuredBlocks,
   type PageMetrics,
   type PaperLayoutBlock,
+  type PaperPage,
 } from "../../lib/exam/pagination";
 import { primaryBtn, secondaryBtn } from "../../lib/ui/styles";
 import { toStudentVersion } from "../../lib/exam/studentVersion";
@@ -43,8 +54,19 @@ export function PaperCanvas({
   const display = view === "student" ? toStudentVersion(paper) : paper;
   const questionIds = display.questions.map((question) => question.id).join("|");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const measureRef = useRef<HTMLDivElement | null>(null);
   const pageMetrics = getPageMetrics(paperSettings);
-  const pages = buildPaperPages(display, paperSettings, view !== "student");
+  const includeAnswers = view !== "student";
+  const blocks = useMemo(
+    () => buildPaperBlocks(display, paperSettings, includeAnswers),
+    [display, paperSettings, includeAnswers],
+  );
+  const estimatedPages = useMemo(
+    () => buildPaperPages(display, paperSettings, includeAnswers),
+    [display, paperSettings, includeAnswers],
+  );
+  const [measuredPages, setMeasuredPages] = useState<PaperPage[] | null>(null);
+  const pages = measuredPages ?? estimatedPages;
 
   const editing = editingId
     ? (paper.questions.find((q) => q.id === editingId) ?? null)
@@ -53,6 +75,31 @@ export function PaperCanvas({
   function addAndEdit() {
     setEditingId(addBlankQuestion());
   }
+
+  useLayoutEffect(() => {
+    if (blocks.length === 0) return;
+    const root = measureRef.current;
+    if (!root) return;
+
+    const heights: Record<string, number> = {};
+    root.querySelectorAll<HTMLElement>("[data-layout-block-id]").forEach((node) => {
+      const id = node.dataset.layoutBlockId;
+      if (!id) return;
+      heights[id] = pxToMm(node.getBoundingClientRect().height);
+    });
+
+    if (Object.keys(heights).length !== blocks.length) return;
+    const next = paginateMeasuredBlocks(
+      blocks,
+      pageMetrics.contentHeightMm,
+      heights,
+    );
+    setMeasuredPages((current) =>
+      samePages(current, next) || samePages(estimatedPages, next)
+        ? current
+        : next,
+    );
+  }, [blocks, estimatedPages, pageMetrics.contentHeightMm]);
 
   useEffect(() => {
     if (!onActiveQuestionChange) return;
@@ -119,6 +166,14 @@ export function PaperCanvas({
                 </div>
               </PaperPageShell>
             ))}
+            <MeasurementLayer
+              refNode={measureRef}
+              blocks={blocks}
+              display={display}
+              studentView={view === "student"}
+              paperSettings={paperSettings}
+              pageMetrics={pageMetrics}
+            />
             {view !== "student" && (
               <div className="no-print mt-6 border-t border-dashed border-border pt-4 text-center">
                 <button
@@ -141,6 +196,46 @@ export function PaperCanvas({
           onClose={() => setEditingId(null)}
         />
       )}
+    </div>
+  );
+}
+
+function MeasurementLayer({
+  refNode,
+  blocks,
+  display,
+  studentView,
+  paperSettings,
+  pageMetrics,
+}: {
+  refNode: RefObject<HTMLDivElement | null>;
+  blocks: PaperLayoutBlock[];
+  display: ExamPaper;
+  studentView: boolean;
+  paperSettings: AppSettings;
+  pageMetrics: PageMetrics;
+}) {
+  return (
+    <div
+      ref={refNode}
+      aria-hidden="true"
+      className="no-print pointer-events-none fixed left-0 top-0 -z-10 opacity-0"
+      style={{ width: pageMetrics.width }}
+    >
+      <PaperPageShell paperSettings={paperSettings} pageMetrics={pageMetrics}>
+        <div className="space-y-5">
+          {blocks.map((block) => (
+            <PaperBlock
+              key={block.id}
+              block={block}
+              display={display}
+              studentView={studentView}
+              onEdit={() => undefined}
+              measuring
+            />
+          ))}
+        </div>
+      </PaperPageShell>
     </div>
   );
 }
@@ -179,35 +274,48 @@ function PaperBlock({
   display,
   studentView,
   onEdit,
+  measuring = false,
 }: {
   block: PaperLayoutBlock;
   display: ExamPaper;
   studentView: boolean;
   onEdit: (id: string) => void;
+  measuring?: boolean;
 }) {
+  const attrs = { "data-layout-block-id": block.id };
   switch (block.kind) {
     case "title":
       return (
-        <h1 className="mb-6 text-center text-2xl font-semibold text-foreground">
+        <h1
+          {...attrs}
+          className="mb-6 text-center text-2xl font-semibold text-foreground"
+        >
           {block.title}
         </h1>
       );
     case "exam-info":
-      return <ExamInfoHeader paper={display} />;
+      return (
+        <div {...attrs}>
+          <ExamInfoHeader paper={display} />
+        </div>
+      );
     case "section":
       return (
-        <h2 className="paper-section-title mt-2 border-b border-border pb-1 text-base font-semibold text-foreground">
+        <h2
+          {...attrs}
+          className="paper-section-title mt-2 border-b border-border pb-1 text-base font-semibold text-foreground"
+        >
           {block.section.title}
         </h2>
       );
     case "question":
       return (
-        <ol className="space-y-6">
+        <ol {...attrs} className="space-y-6">
           <QuestionBlock
             question={block.question}
             index={block.number - 1}
             studentView={studentView}
-            onEdit={onEdit}
+            onEdit={measuring ? () => undefined : onEdit}
           />
         </ol>
       );
@@ -239,5 +347,18 @@ function EmptyPaper({
         {t("paper.addQuestion")}
       </button>
     </div>
+  );
+}
+
+function pxToMm(px: number): number {
+  return px * 0.264583;
+}
+
+function samePages(a: PaperPage[] | null, b: PaperPage[]): boolean {
+  if (!a || a.length !== b.length) return false;
+  return a.every(
+    (page, index) =>
+      page.blocks.map((block) => block.id).join("|") ===
+      b[index].blocks.map((block) => block.id).join("|"),
   );
 }

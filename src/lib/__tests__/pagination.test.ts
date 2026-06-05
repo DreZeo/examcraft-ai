@@ -3,6 +3,7 @@ import { defaultAppConfig } from "../types/config";
 import { ExamPaperSchema, type ExamPaper } from "../types/exam";
 import {
   buildPaperBlocks,
+  paginateMeasuredBlocks,
   paginateBlocks,
   studentAnswerSpaceLines,
   studentBlankUnderlineLength,
@@ -58,6 +59,22 @@ describe("pagination", () => {
       page.blocks.some((block) => block.id === "section-single-choice"),
     );
     expect(sectionPage?.blocks.map((block) => block.id)).toContain("question-q1");
+  });
+
+  it("uses measured heights to avoid premature page breaks with useful space left", () => {
+    const blocks = buildPaperBlocks(makePaper(), settings, false);
+    const heights = Object.fromEntries(
+      blocks.map((block) => [block.id, block.estimatedHeightMm]),
+    );
+    const q2 = blocks.find((block) => block.id === "question-q2");
+    expect(q2?.kind).toBe("question");
+    heights["question-q1"] = 30;
+    heights["section-essay"] = 8;
+    heights["question-q2"] = 35;
+
+    const pages = paginateMeasuredBlocks(blocks, 120, heights);
+
+    expect(pages[0].blocks.map((block) => block.id)).toContain("question-q2");
   });
 
   it("estimates larger student answer space for essays than short answers", () => {
