@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Bold,
   CaseSensitive,
+  ChevronDown,
   Code,
   Columns3,
   Eraser,
@@ -66,10 +67,10 @@ export function PaperToolbar() {
   return (
     <section
       aria-label={t("paperToolbar.title")}
-      className="no-print relative z-10 flex flex-wrap items-center gap-2 border-b border-border bg-card/90 px-4 py-2"
+      className="no-print relative z-10 flex flex-wrap items-center gap-1 border-b border-border bg-card px-4 py-1.5"
     >
       <div
-        className="inline-flex h-9 overflow-hidden rounded-md border border-border bg-background/70 p-1"
+        className="inline-flex h-8 overflow-hidden rounded-md border border-border p-0.5"
         role="tablist"
         aria-label={t("paperToolbar.modeTabs")}
       >
@@ -106,6 +107,8 @@ export function PaperToolbar() {
             />
           </ToolbarGroup>
 
+          <div className="h-5 w-px bg-border" />
+
           <ToolbarGroup label={t("paperToolbar.paragraph")}>
             <SelectControl<PaperLineHeight>
               icon={<Pilcrow className="h-4 w-4" />}
@@ -116,6 +119,8 @@ export function PaperToolbar() {
               onChange={(value) => update("paperLineHeight", value)}
             />
           </ToolbarGroup>
+
+          <div className="h-5 w-px bg-border" />
 
           <ToolbarGroup label={t("paperToolbar.page")}>
             <SelectControl<PaperSize>
@@ -241,11 +246,10 @@ function ToolbarGroup({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 items-stretch gap-2 rounded-md border border-border bg-background/70 p-1.5">
-      <div className="hidden items-center border-r border-border px-1.5 text-xs font-medium text-muted-foreground sm:flex">
-        {label}
-      </div>
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5">{children}</div>
+    <div className="flex min-w-0 items-center gap-1.5 px-1">
+      <span className="hidden text-xs font-medium text-muted-foreground/60 sm:inline">{label}</span>
+      <div className="hidden h-4 w-px bg-border sm:block" />
+      <div className="flex min-w-0 flex-wrap items-center gap-0.5">{children}</div>
     </div>
   );
 }
@@ -286,25 +290,52 @@ function SelectControl<T extends string>({
   onChange,
 }: SelectControlProps<T>) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
 
   return (
-    <label
-      className="inline-flex h-8 min-w-0 items-center gap-1.5 rounded border border-border bg-card px-2 text-xs text-foreground"
-      title={label}
-    >
-      <span className="text-muted-foreground">{icon}</span>
-      <span className="sr-only">{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value as T)}
-        className="max-w-32 cursor-pointer bg-transparent text-xs text-foreground focus:outline-none"
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={label}
+        title={label}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex h-8 items-center gap-1.5 rounded border border-border bg-card px-2 text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
       >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {t(`${optionKeyPrefix}.${option}`)}
-          </option>
-        ))}
-      </select>
-    </label>
+        <span className="text-muted-foreground">{icon}</span>
+        <span className="max-w-20 truncate">{t(`${optionKeyPrefix}.${value}`)}</span>
+        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          aria-label={label}
+          className="absolute left-0 z-20 mt-1 min-w-[8rem] animate-fade-in rounded-md border border-border bg-popover p-1 text-sm text-popover-foreground shadow-lg"
+        >
+          {options.map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="option"
+              aria-selected={option === value}
+              onClick={() => { onChange(option); setOpen(false); }}
+              className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer ${option === value ? "text-primary font-medium" : ""}`}
+            >
+              {t(`${optionKeyPrefix}.${option}`)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

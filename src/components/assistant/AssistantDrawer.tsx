@@ -231,15 +231,15 @@ export function AssistantDrawer({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-2">
+          <div className="flex items-center gap-2">
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.currentTarget.value)}
               onKeyDown={onKeyDown}
               disabled={!activeConfig}
-              rows={2}
+              rows={1}
               placeholder={t("assistant.placeholder")}
-              className={`${inputCls} min-h-14 flex-1 resize-none bg-background shadow-inner`}
+              className={`${inputCls} min-h-9 flex-1 resize-none bg-background shadow-inner`}
             />
             {streaming ? (
               <button
@@ -247,9 +247,9 @@ export function AssistantDrawer({
                 aria-label={t("assistant.stop")}
                 title={t("assistant.stop")}
                 onClick={() => void stop()}
-                className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
               >
-                <Square className="h-5 w-5" />
+                <Square className="h-4 w-4" />
               </button>
             ) : (
               <button
@@ -258,9 +258,9 @@ export function AssistantDrawer({
                 title={t("assistant.send")}
                 onClick={submit}
                 disabled={!activeConfig || !draft.trim()}
-                className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4" />
               </button>
             )}
           </div>

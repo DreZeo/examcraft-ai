@@ -28,8 +28,9 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
   const StatusIcon = statusIcon[saveStatus];
 
   return (
-    <header className="no-print flex flex-wrap items-center gap-2 border-b border-border bg-card/95 px-4 py-2.5">
-      <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-background/70 px-2.5 py-1.5">
+    <header className="no-print flex items-center gap-3 border-b border-border bg-card px-4 py-2">
+      {/* Title input */}
+      <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
         <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
           aria-label={t("app.title")}
@@ -40,47 +41,49 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
         />
       </div>
 
-      <div className="flex min-w-0 shrink-0 items-center gap-2 rounded-md border border-border bg-background/60 p-1">
-        <span className={statusPill[saveStatus]}>
-          <StatusIcon
-            className={
-              saveStatus === "saving" ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"
-            }
-          />
-          <span className="hidden sm:inline">{t(`saveStatus.${saveStatus}`)}</span>
-        </span>
+      <div className="h-5 w-px shrink-0 bg-border" />
 
-        <div className="flex overflow-hidden rounded border border-border bg-card text-xs">
-          <button
-            type="button"
-            onClick={() => setView("teacher")}
-            className={view === "teacher" ? activeTab : inactiveTab}
-          >
-            {t("paper.teacherView")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("student")}
-            className={view === "student" ? activeTab : inactiveTab}
-          >
-            {t("paper.studentPreview")}
-          </button>
-        </div>
+      {/* Save status */}
+      <span className={statusPill[saveStatus]}>
+        <StatusIcon
+          className={saveStatus === "saving" ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
+        />
+        <span className="hidden sm:inline">{t(`saveStatus.${saveStatus}`)}</span>
+      </span>
+
+      <div className="h-5 w-px shrink-0 bg-border" />
+
+      {/* View toggle */}
+      <div className="flex overflow-hidden rounded-md border border-border text-xs">
+        <button
+          type="button"
+          onClick={() => setView("teacher")}
+          className={view === "teacher" ? activeTab : inactiveTab}
+        >
+          {t("paper.teacherView")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("student")}
+          className={view === "student" ? activeTab : inactiveTab}
+        >
+          {t("paper.studentPreview")}
+        </button>
       </div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-1 rounded-md border border-border bg-background/60 p-1">
+      <div className="h-5 w-px shrink-0 bg-border" />
+
+      {/* Actions */}
+      <div className="flex shrink-0 items-center gap-0.5">
         <button type="button" onClick={() => void newPaper()} className={actionBtn}>
           <FilePlus2 className="h-4 w-4" />
           <span className="hidden sm:inline">{t("app.newPaper")}</span>
         </button>
-
         <button type="button" onClick={onOpenPaperManager} className={actionBtn}>
           <FolderOpen className="h-4 w-4" />
           <span className="hidden sm:inline">{t("paperLibrary.title")}</span>
         </button>
-
         <ExportMenu triggerClassName={actionBtn} />
-
         <button
           type="button"
           aria-label={t("settings.title")}
@@ -96,12 +99,12 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
 }
 
 const actionBtn =
-  ghostBtn + " h-8 whitespace-nowrap px-2.5";
+  ghostBtn + " h-8 whitespace-nowrap";
 
 const activeTab =
-  "bg-primary px-2.5 py-1.5 font-medium text-primary-foreground transition-colors cursor-pointer";
+  "bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors cursor-pointer";
 const inactiveTab =
-  "bg-card px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer";
+  "px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer";
 
 const statusIcon = {
   saved: CheckCircle2,

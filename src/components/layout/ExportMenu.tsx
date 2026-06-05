@@ -94,7 +94,7 @@ export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
       >
         <Download className="h-4 w-4" />
         {t("export.title")}
-        <ChevronDown className="h-4 w-4" />
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
