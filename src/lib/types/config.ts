@@ -70,7 +70,7 @@ export const PAPER_MARGIN_OPTIONS = PaperMarginSchema.options;
 export const PAPER_SIZE_OPTIONS = PaperSizeSchema.options;
 
 export const PAPER_FONT_STACKS: Record<PaperFont, string> = {
-  default: "inherit",
+  default: '"Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif',
   simsun:
     'SimSun, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif',
   simhei:
