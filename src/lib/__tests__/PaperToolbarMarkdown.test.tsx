@@ -74,13 +74,15 @@ describe("PaperToolbar Markdown tab", () => {
     expect(updateSettings).toHaveBeenCalledWith({ paperSize: "b5" });
   });
 
-  it("keeps the toolbar below modal overlays", () => {
-    renderToolbarWithEditor();
+  it("covers the toolbar while the question editor modal is open", () => {
+    renderToolbarWithEditor(true);
 
     const toolbar = screen.getByRole("region", { name: "试卷排版工具栏" });
+    const overlay = screen.getByRole("dialog", { name: "编辑题目" })
+      .parentElement;
 
     expect(toolbar).toHaveClass("z-10");
-    expect(toolbar).not.toHaveClass("z-[60]");
+    expect(overlay).toHaveClass("z-50");
   });
 
   it("disables Markdown buttons when no question editor is open", async () => {

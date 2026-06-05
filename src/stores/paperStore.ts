@@ -54,6 +54,8 @@ interface PaperState {
   undoApply: () => void;
 
   editQuestion: (question: Question) => void;
+  /** Append a fully edited question to the end of the paper. */
+  appendQuestion: (question: Question) => void;
   /** Append a blank question (default single-choice) and return its new id. */
   addBlankQuestion: (type?: QuestionType) => string;
   deleteQuestion: (id: string) => void;
@@ -303,6 +305,9 @@ export const usePaperStore = create<PaperState>((set, get) => {
     },
 
     editQuestion: (question) => mutate(updateQuestion(get().paper, question)),
+
+    appendQuestion: (question) =>
+      mutate(appendQuestions(get().paper, [question])),
 
     addBlankQuestion: (type = "single-choice") => {
       const question = createBlankQuestion(type, uuid());

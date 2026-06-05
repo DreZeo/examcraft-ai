@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { v4 as uuid } from "uuid";
 import { FileText, Plus } from "lucide-react";
 import { usePaperStore } from "../../stores/paperStore";
 import { useConfigStore } from "../../stores/configStore";
@@ -17,7 +18,7 @@ import {
   PAPER_LINE_HEIGHT_STYLES,
 } from "../../lib/types/config";
 import type { AppSettings } from "../../lib/types/config";
-import type { ExamPaper } from "../../lib/types/exam";
+import type { ExamPaper, Question } from "../../lib/types/exam";
 import {
   buildPaperPages,
   buildPaperBlocks,
@@ -29,6 +30,7 @@ import {
 } from "../../lib/exam/pagination";
 import { primaryBtn, secondaryBtn } from "../../lib/ui/styles";
 import { toStudentVersion } from "../../lib/exam/studentVersion";
+import { createBlankQuestion } from "../../lib/exam/blankQuestion";
 import { QuestionBlock } from "./QuestionBlock";
 import { QuestionEditModal } from "./QuestionEditModal";
 import { ExamInfoHeader } from "./ExamInfoHeader";
@@ -49,11 +51,12 @@ export function PaperCanvas({
   onActiveQuestionChange,
 }: PaperCanvasProps) {
   const { t } = useTranslation();
-  const { paper, view, addBlankQuestion } = usePaperStore();
+  const { paper, view, appendQuestion } = usePaperStore();
   const paperSettings = useConfigStore((s) => s.config.settings);
   const display = view === "student" ? toStudentVersion(paper) : paper;
   const questionIds = display.questions.map((question) => question.id).join("|");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [newQuestionDraft, setNewQuestionDraft] = useState<Question | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
   const pageMetrics = getPageMetrics(paperSettings);
   const includeAnswers = view !== "student";
@@ -73,7 +76,7 @@ export function PaperCanvas({
     : null;
 
   function addAndEdit() {
-    setEditingId(addBlankQuestion());
+    setNewQuestionDraft(createBlankQuestion("single-choice", uuid()));
   }
 
   useLayoutEffect(() => {
@@ -194,6 +197,13 @@ export function PaperCanvas({
         <QuestionEditModal
           question={editing}
           onClose={() => setEditingId(null)}
+        />
+      )}
+      {newQuestionDraft && (
+        <QuestionEditModal
+          question={newQuestionDraft}
+          onClose={() => setNewQuestionDraft(null)}
+          onSave={appendQuestion}
         />
       )}
     </div>

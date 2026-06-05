@@ -1,17 +1,20 @@
-import { render, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "../../i18n";
+import { MarkdownFormatProvider } from "../../components/layout/MarkdownFormatContext";
 import { PaperCanvas } from "../../components/paper/PaperCanvas";
 import type { ExamPaper } from "../types/exam";
 
 let paper: ExamPaper;
 let view: "teacher" | "student";
+const appendQuestion = vi.fn();
 
 vi.mock("../../stores/paperStore", () => ({
   usePaperStore: () => ({
     paper,
     view,
-    addBlankQuestion: vi.fn(),
+    appendQuestion,
   }),
 }));
 
@@ -33,6 +36,7 @@ vi.mock("../../stores/configStore", () => ({
 describe("PaperCanvas", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    appendQuestion.mockReset();
     view = "teacher";
     paper = {
       version: 1,
@@ -42,7 +46,7 @@ describe("PaperCanvas", () => {
   });
 
   it("applies Word-like paper size and font size styles", () => {
-    const { container } = render(<PaperCanvas />);
+    const { container } = renderCanvas();
     const sheet = container.querySelector(".paper-page");
 
     expect(sheet).toHaveStyle({
@@ -57,7 +61,7 @@ describe("PaperCanvas", () => {
   it("renders type sections with numbering restarted inside each section", () => {
     paper = makePaper();
 
-    const { container } = render(<PaperCanvas />);
+    const { container } = renderCanvas();
 
     expect(container).toHaveTextContent("一、单选题");
     expect(container).toHaveTextContent("二、填空题");
@@ -70,7 +74,7 @@ describe("PaperCanvas", () => {
     paper = makePaper();
     view = "student";
 
-    const { container } = render(<PaperCanvas />);
+    const { container } = renderCanvas();
 
     expect(container.querySelector(".answer-space")).toBeInTheDocument();
     expect(container).toHaveTextContent("__________");
@@ -97,7 +101,7 @@ describe("PaperCanvas", () => {
       },
     );
 
-    const { container } = render(<PaperCanvas />);
+    const { container } = renderCanvas();
 
     await waitFor(() => {
       const pages = visiblePages(container);
@@ -105,7 +109,42 @@ describe("PaperCanvas", () => {
       expect(pages[0]).toHaveTextContent("第二题");
     });
   });
+
+  it("does not append a blank question when the new-question modal is canceled", async () => {
+    renderCanvas();
+
+    await userEvent.click(screen.getByRole("button", { name: "添加题目" }));
+    await userEvent.click(screen.getAllByRole("button", { name: "取消" })[1]);
+
+    expect(appendQuestion).not.toHaveBeenCalled();
+  });
+
+  it("appends a new question only after saving the modal draft", async () => {
+    renderCanvas();
+
+    await userEvent.click(screen.getByRole("button", { name: "添加题目" }));
+    await userEvent.type(
+      screen.getByPlaceholderText("输入题干，支持 Markdown 与 $公式$"),
+      "新题干",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(appendQuestion).toHaveBeenCalledTimes(1);
+    expect(appendQuestion.mock.calls[0][0]).toMatchObject({
+      type: "single-choice",
+      content: "新题干",
+      score: 5,
+    });
+  });
 });
+
+function renderCanvas() {
+  return render(
+    <MarkdownFormatProvider>
+      <PaperCanvas />
+    </MarkdownFormatProvider>,
+  );
+}
 
 function makePaper(): ExamPaper {
   return {

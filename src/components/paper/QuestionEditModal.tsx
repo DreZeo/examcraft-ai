@@ -22,6 +22,7 @@ interface QuestionEditModalProps {
   /** The question to edit (a copy is taken as the local draft). */
   question: Question;
   onClose: () => void;
+  onSave?: (question: Question) => void;
 }
 
 const TYPE_KEYS: QuestionType[] = [
@@ -42,6 +43,7 @@ const TYPE_KEYS: QuestionType[] = [
 export function QuestionEditModal({
   question,
   onClose,
+  onSave,
 }: QuestionEditModalProps) {
   const { t } = useTranslation();
   const editQuestion = usePaperStore((s) => s.editQuestion);
@@ -80,7 +82,11 @@ export function QuestionEditModal({
       );
       return;
     }
-    editQuestion(result.data);
+    if (onSave) {
+      onSave(result.data);
+    } else {
+      editQuestion(result.data);
+    }
     onClose();
   }
 
@@ -116,7 +122,7 @@ export function QuestionEditModal({
 
   return (
     <div
-      className="fixed inset-0 z-[5] grid place-items-center bg-black/40 p-6"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6"
       onClick={onClose}
     >
       <div
