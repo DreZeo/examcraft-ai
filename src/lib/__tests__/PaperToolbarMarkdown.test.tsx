@@ -8,6 +8,7 @@ import { QuestionEditModal } from "../../components/paper/QuestionEditModal";
 import type { SingleChoiceQuestion } from "../types/exam";
 
 const editQuestion = vi.fn();
+const updateSettings = vi.fn();
 
 vi.mock("../../stores/configStore", () => ({
   useConfigStore: (selector: (state: unknown) => unknown) =>
@@ -15,13 +16,13 @@ vi.mock("../../stores/configStore", () => ({
       config: {
         settings: {
           paperFont: "default",
-          paperFontSize: "standard",
+          paperFontSize: "xiaosi",
           paperLineHeight: "standard",
-          paperTextAlign: "left",
           paperMargin: "standard",
+          paperSize: "a4",
         },
       },
-      updateSettings: vi.fn(),
+      updateSettings,
     }),
 }));
 
@@ -51,10 +52,37 @@ function renderToolbarWithEditor(editorOpen = false) {
 }
 
 async function openMarkdownTab() {
-  await userEvent.click(screen.getByRole("tab", { name: "Markdown" }));
+  await userEvent.click(screen.getByRole("tab", { name: "标记" }));
 }
 
 describe("PaperToolbar Markdown tab", () => {
+  it("uses Word-like paper layout controls without text alignment", () => {
+    renderToolbarWithEditor();
+
+    expect(screen.getByLabelText("字号")).toHaveDisplayValue("小四");
+    expect(screen.getByLabelText("字体")).toHaveTextContent("宋体");
+    expect(screen.getByLabelText("字体")).toHaveTextContent("微软雅黑");
+    expect(screen.getByLabelText("纸张大小")).toHaveDisplayValue("A4");
+    expect(screen.queryByRole("group", { name: "对齐" })).not.toBeInTheDocument();
+  });
+
+  it("updates the Word-like paper size setting", async () => {
+    renderToolbarWithEditor();
+
+    await userEvent.selectOptions(screen.getByLabelText("纸张大小"), "b5");
+
+    expect(updateSettings).toHaveBeenCalledWith({ paperSize: "b5" });
+  });
+
+  it("keeps the toolbar below modal overlays", () => {
+    renderToolbarWithEditor();
+
+    const toolbar = screen.getByRole("region", { name: "试卷排版工具栏" });
+
+    expect(toolbar).toHaveClass("z-10");
+    expect(toolbar).not.toHaveClass("z-[60]");
+  });
+
   it("disables Markdown buttons when no question editor is open", async () => {
     renderToolbarWithEditor();
 
@@ -71,7 +99,7 @@ describe("PaperToolbar Markdown tab", () => {
     expect(screen.getByRole("button", { name: "加粗" })).not.toBeDisabled();
   });
 
-  it("wraps selected editor text with Markdown syntax from the top toolbar", async () => {
+  it("toggles selected editor text Markdown syntax from the top toolbar", async () => {
     renderToolbarWithEditor(true);
     const textarea = screen.getByPlaceholderText("输入题干，支持 Markdown 与 $公式$");
     textarea.focus();
@@ -83,8 +111,43 @@ describe("PaperToolbar Markdown tab", () => {
     expect(textarea).toHaveValue("**choose** one");
 
     (textarea as HTMLTextAreaElement).setSelectionRange(2, 8);
+    await userEvent.click(screen.getByRole("button", { name: "加粗" }));
+
+    expect(textarea).toHaveValue("choose one");
+  });
+
+  it("keeps Markdown buttons usable after refocusing the question editor", async () => {
+    renderToolbarWithEditor(true);
+    const textarea = screen.getByPlaceholderText("输入题干，支持 Markdown 与 $公式$");
+
+    await openMarkdownTab();
+    expect(screen.getByRole("button", { name: "加粗" })).not.toBeDisabled();
+
+    textarea.focus();
+    (textarea as HTMLTextAreaElement).setSelectionRange(7, 10);
+
+    expect(screen.getByRole("button", { name: "下划线" })).not.toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "下划线" }));
+
+    expect(textarea).toHaveValue("choose ++one++");
+  });
+
+  it("clears Markdown syntax from selected editor text", async () => {
+    renderToolbarWithEditor(true);
+    const textarea = screen.getByPlaceholderText("输入题干，支持 Markdown 与 $公式$");
+
+    textarea.focus();
+    (textarea as HTMLTextAreaElement).setSelectionRange(0, 6);
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "加粗" }));
+    (textarea as HTMLTextAreaElement).setSelectionRange(2, 8);
     await userEvent.click(screen.getByRole("button", { name: "下划线" }));
 
     expect(textarea).toHaveValue("**++choose++** one");
+
+    (textarea as HTMLTextAreaElement).setSelectionRange(4, 10);
+    await userEvent.click(screen.getByRole("button", { name: "清除格式" }));
+
+    expect(textarea).toHaveValue("choose one");
   });
 });

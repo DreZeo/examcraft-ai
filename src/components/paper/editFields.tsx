@@ -26,18 +26,20 @@ export function Field({
 interface TextAreaProps {
   value: string;
   onChange: (v: string) => void;
+  onFocus?: () => void;
   rows?: number;
   placeholder?: string;
 }
 
 export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
-  function TextArea({ value, onChange, rows = 3, placeholder }, ref) {
+  function TextArea({ value, onChange, onFocus, rows = 3, placeholder }, ref) {
   return (
     <textarea
       ref={ref}
       value={value}
       rows={rows}
       placeholder={placeholder}
+      onFocus={onFocus}
       onChange={(e) => onChange(e.currentTarget.value)}
       className={inputCls + " resize-y font-mono"}
     />

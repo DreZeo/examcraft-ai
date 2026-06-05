@@ -30,38 +30,59 @@ export const ExplanationTierSchema = z.enum(["none", "brief", "detailed"]);
 export const ThemeSchema = z.enum(["system", "light", "dark"]);
 
 /** Paper rendering font preset. Uses system font stacks, not bundled font files. */
-export const PaperFontSchema = z.enum(["default", "serif", "sans", "mono"]);
-export const PaperFontSizeSchema = z.enum(["small", "standard", "large"]);
+export const PaperFontSchema = z.enum([
+  "default",
+  "simsun",
+  "simhei",
+  "kaiti",
+  "fangsong",
+  "yahei",
+  "dengxian",
+  "times",
+  "mono",
+]);
+export const PaperFontSizeSchema = z.enum(["wuhao", "xiaosi", "sihao", "sanhao"]);
 export const PaperLineHeightSchema = z.enum(["compact", "standard", "relaxed"]);
-export const PaperTextAlignSchema = z.enum(["left", "center", "justify"]);
 export const PaperMarginSchema = z.enum(["narrow", "standard", "wide"]);
+export const PaperSizeSchema = z.enum(["a4", "a3", "b5", "letter"]);
 
 export type PaperFont = z.infer<typeof PaperFontSchema>;
 export type PaperFontSize = z.infer<typeof PaperFontSizeSchema>;
 export type PaperLineHeight = z.infer<typeof PaperLineHeightSchema>;
-export type PaperTextAlign = z.infer<typeof PaperTextAlignSchema>;
 export type PaperMargin = z.infer<typeof PaperMarginSchema>;
+export type PaperSize = z.infer<typeof PaperSizeSchema>;
 
 export const PAPER_FONT_OPTIONS = PaperFontSchema.options;
 export const PAPER_FONT_SIZE_OPTIONS = PaperFontSizeSchema.options;
 export const PAPER_LINE_HEIGHT_OPTIONS = PaperLineHeightSchema.options;
-export const PAPER_TEXT_ALIGN_OPTIONS = PaperTextAlignSchema.options;
 export const PAPER_MARGIN_OPTIONS = PaperMarginSchema.options;
+export const PAPER_SIZE_OPTIONS = PaperSizeSchema.options;
 
 export const PAPER_FONT_STACKS: Record<PaperFont, string> = {
   default: "inherit",
-  serif:
-    'Georgia, "Times New Roman", "Noto Serif CJK SC", "Songti SC", SimSun, serif',
-  sans:
-    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif',
+  simsun:
+    'SimSun, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif',
+  simhei:
+    'SimHei, "Microsoft JhengHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif',
+  kaiti:
+    'KaiTi, "Kaiti SC", STKaiti, "Noto Serif CJK SC", serif',
+  fangsong:
+    'FangSong, STFangsong, "Noto Serif CJK SC", serif',
+  yahei:
+    '"Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif',
+  dengxian:
+    'DengXian, "Microsoft YaHei UI", "Noto Sans CJK SC", system-ui, sans-serif',
+  times:
+    '"Times New Roman", Times, SimSun, serif',
   mono:
     '"SFMono-Regular", Consolas, "Liberation Mono", "Courier New", "Microsoft YaHei Mono", monospace',
 };
 
 export const PAPER_FONT_SIZE_STYLES: Record<PaperFontSize, string> = {
-  small: "0.92rem",
-  standard: "1rem",
-  large: "1.1rem",
+  wuhao: "10.5pt",
+  xiaosi: "12pt",
+  sihao: "14pt",
+  sanhao: "16pt",
 };
 
 export const PAPER_LINE_HEIGHT_STYLES: Record<PaperLineHeight, number> = {
@@ -75,6 +96,26 @@ export const PAPER_MARGIN_STYLES: Record<PaperMargin, string> = {
   standard: "14mm",
   wide: "20mm",
 };
+
+export const PAPER_SIZE_STYLES: Record<PaperSize, { width: string; minHeight: string }> = {
+  a4: { width: "210mm", minHeight: "297mm" },
+  a3: { width: "297mm", minHeight: "420mm" },
+  b5: { width: "176mm", minHeight: "250mm" },
+  letter: { width: "216mm", minHeight: "279mm" },
+};
+
+const LegacyPaperFontSizeSchema = z.preprocess((value) => {
+  if (value === "small") return "wuhao";
+  if (value === "standard") return "xiaosi";
+  if (value === "large") return "sihao";
+  return value;
+}, PaperFontSizeSchema);
+
+const LegacyPaperFontSchema = z.preprocess((value) => {
+  if (value === "serif") return "simsun";
+  if (value === "sans") return "yahei";
+  return value;
+}, PaperFontSchema);
 
 /** A teacher/persona preset whose instructions can shape AI assistant behavior. */
 export const AgentConfigSchema = z.object({
@@ -122,15 +163,15 @@ export const AppSettingsSchema = z.object({
   /** Explanation detail level injected into the system prompt as a default. */
   explanationTier: ExplanationTierSchema.default("brief"),
   /** Font preset used only for paper rendering. */
-  paperFont: PaperFontSchema.default("default"),
+  paperFont: LegacyPaperFontSchema.default("default"),
   /** Base font size preset used only for paper rendering. */
-  paperFontSize: PaperFontSizeSchema.default("standard"),
+  paperFontSize: LegacyPaperFontSizeSchema.default("xiaosi"),
   /** Line-height preset used only for paper rendering. */
   paperLineHeight: PaperLineHeightSchema.default("standard"),
-  /** Text alignment preset used only for paper rendering. */
-  paperTextAlign: PaperTextAlignSchema.default("left"),
   /** Page padding/margin preset used only for paper rendering. */
   paperMargin: PaperMarginSchema.default("standard"),
+  /** Word-like paper size preset used only for paper rendering. */
+  paperSize: PaperSizeSchema.default("a4"),
   /** Legacy field: migrated into an AI agent and no longer shown in settings. */
   customInstructions: z.string().default(""),
 });

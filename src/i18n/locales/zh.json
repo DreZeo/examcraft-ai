@@ -77,43 +77,50 @@
   },
   "paperFont": {
     "default": "默认",
-    "serif": "衬线 / 宋体",
-    "sans": "无衬线 / 黑体",
+    "simsun": "宋体",
+    "simhei": "黑体",
+    "kaiti": "楷体",
+    "fangsong": "仿宋",
+    "yahei": "微软雅黑",
+    "dengxian": "等线",
+    "times": "Times New Roman",
     "mono": "等宽"
   },
   "paperFontSize": {
-    "small": "小",
-    "standard": "标准",
-    "large": "大"
+    "wuhao": "五号",
+    "xiaosi": "小四",
+    "sihao": "四号",
+    "sanhao": "三号"
   },
   "paperLineHeight": {
     "compact": "紧凑",
     "standard": "标准",
     "relaxed": "宽松"
   },
-  "paperTextAlign": {
-    "left": "左对齐",
-    "center": "居中",
-    "justify": "两端对齐"
-  },
   "paperMargin": {
     "narrow": "窄",
     "standard": "标准",
     "wide": "宽"
   },
+  "paperSize": {
+    "a4": "A4",
+    "a3": "A3",
+    "b5": "B5",
+    "letter": "Letter"
+  },
   "paperToolbar": {
     "title": "试卷排版工具栏",
     "modeTabs": "工具栏模式",
     "layoutTab": "排版",
-    "markdownTab": "Markdown",
+    "markdownTab": "标记",
     "typography": "字体",
     "paragraph": "段落",
     "page": "页面",
-    "markdown": "Markdown",
+    "markdown": "标记",
     "font": "字体",
     "fontSize": "字号",
     "lineHeight": "行距",
-    "alignment": "对齐",
+    "paperSize": "纸张大小",
     "margin": "页边距"
   },
   "editorToolbar": {
@@ -124,7 +131,8 @@
     "bulletList": "无序列表",
     "orderedList": "有序列表",
     "quote": "引用",
-    "code": "行内代码"
+    "code": "行内代码",
+    "clear": "清除格式"
   },
   "assistant": {
     "title": "AI 助手",

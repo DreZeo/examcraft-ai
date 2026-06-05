@@ -50,6 +50,8 @@ export function QuestionEditModal({
   const [errors, setErrors] = useState<string[]>([]);
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
   const draftRef = useRef<Question>(question);
+  const targetRef = useRef({ apply: (format: MarkdownFormat) => applyContentFormatRef.current(format) });
+  const applyContentFormatRef = useRef<(format: MarkdownFormat) => void>(() => {});
 
   useEffect(() => {
     draftRef.current = draft;
@@ -101,8 +103,12 @@ export function QuestionEditModal({
   }, []);
 
   useEffect(() => {
-    return registerMarkdownTarget({ apply: applyContentFormat });
-  }, [applyContentFormat, registerMarkdownTarget]);
+    applyContentFormatRef.current = applyContentFormat;
+  }, [applyContentFormat]);
+
+  useEffect(() => {
+    return registerMarkdownTarget(targetRef.current);
+  }, [registerMarkdownTarget]);
 
   // Every question variant supports an optional explanation, so always offer the
   // field (a blank/just-added question has no `explanation` key yet).
@@ -110,7 +116,7 @@ export function QuestionEditModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6"
+      className="fixed inset-0 z-[5] grid place-items-center bg-black/40 p-6"
       onClick={onClose}
     >
       <div
@@ -184,6 +190,7 @@ export function QuestionEditModal({
                   value={draft.content}
                   rows={5}
                   placeholder={t("paper.contentPlaceholder")}
+                  onFocus={() => registerMarkdownTarget(targetRef.current)}
                   onChange={(content) => setDraft({ ...draft, content })}
                 />
               </Field>

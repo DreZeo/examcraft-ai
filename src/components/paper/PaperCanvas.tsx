@@ -8,6 +8,7 @@ import {
   PAPER_FONT_STACKS,
   PAPER_LINE_HEIGHT_STYLES,
   PAPER_MARGIN_STYLES,
+  PAPER_SIZE_STYLES,
 } from "../../lib/types/config";
 import { primaryBtn, secondaryBtn } from "../../lib/ui/styles";
 import { toStudentVersion } from "../../lib/exam/studentVersion";
@@ -85,13 +86,15 @@ export function PaperCanvas({
   return (
     <div className="flex min-w-fit justify-center px-4 py-8 sm:px-6">
       <div
-        className="paper-sheet min-h-[297mm] w-full max-w-[210mm] rounded-lg bg-card shadow-sm"
+        className="paper-sheet w-full rounded-lg bg-card shadow-sm"
         style={{
           fontFamily: PAPER_FONT_STACKS[paperSettings.paperFont],
           fontSize: PAPER_FONT_SIZE_STYLES[paperSettings.paperFontSize],
           lineHeight: PAPER_LINE_HEIGHT_STYLES[paperSettings.paperLineHeight],
           padding: PAPER_MARGIN_STYLES[paperSettings.paperMargin],
-          textAlign: paperSettings.paperTextAlign,
+          width: PAPER_SIZE_STYLES[paperSettings.paperSize].width,
+          maxWidth: PAPER_SIZE_STYLES[paperSettings.paperSize].width,
+          minHeight: PAPER_SIZE_STYLES[paperSettings.paperSize].minHeight,
         }}
       >
         {paper.title && (

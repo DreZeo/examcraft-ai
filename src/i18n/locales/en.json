@@ -77,29 +77,36 @@
   },
   "paperFont": {
     "default": "Default",
-    "serif": "Serif / Song-style",
-    "sans": "Sans / Hei-style",
+    "simsun": "SimSun",
+    "simhei": "SimHei",
+    "kaiti": "KaiTi",
+    "fangsong": "FangSong",
+    "yahei": "Microsoft YaHei",
+    "dengxian": "DengXian",
+    "times": "Times New Roman",
     "mono": "Monospace"
   },
   "paperFontSize": {
-    "small": "Small",
-    "standard": "Standard",
-    "large": "Large"
+    "wuhao": "No. 5",
+    "xiaosi": "Small 4",
+    "sihao": "No. 4",
+    "sanhao": "No. 3"
   },
   "paperLineHeight": {
     "compact": "Compact",
     "standard": "Standard",
     "relaxed": "Relaxed"
   },
-  "paperTextAlign": {
-    "left": "Left",
-    "center": "Center",
-    "justify": "Justify"
-  },
   "paperMargin": {
     "narrow": "Narrow",
     "standard": "Standard",
     "wide": "Wide"
+  },
+  "paperSize": {
+    "a4": "A4",
+    "a3": "A3",
+    "b5": "B5",
+    "letter": "Letter"
   },
   "paperToolbar": {
     "title": "Paper formatting toolbar",
@@ -113,7 +120,7 @@
     "font": "Font",
     "fontSize": "Font size",
     "lineHeight": "Line height",
-    "alignment": "Alignment",
+    "paperSize": "Paper size",
     "margin": "Margins"
   },
   "editorToolbar": {
@@ -124,7 +131,8 @@
     "bulletList": "Bulleted list",
     "orderedList": "Numbered list",
     "quote": "Quote",
-    "code": "Inline code"
+    "code": "Inline code",
+    "clear": "Clear formatting"
   },
   "assistant": {
     "title": "AI Assistant",

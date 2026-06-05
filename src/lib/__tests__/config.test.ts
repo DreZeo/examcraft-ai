@@ -5,10 +5,10 @@ describe("AppConfigSchema", () => {
   it("defaults paper font for fresh config", () => {
     const config = AppConfigSchema.parse({});
     expect(config.settings.paperFont).toBe("default");
-    expect(config.settings.paperFontSize).toBe("standard");
+    expect(config.settings.paperFontSize).toBe("xiaosi");
     expect(config.settings.paperLineHeight).toBe("standard");
-    expect(config.settings.paperTextAlign).toBe("left");
     expect(config.settings.paperMargin).toBe("standard");
+    expect(config.settings.paperSize).toBe("a4");
   });
 
   it("loads old settings without paper layout presets", () => {
@@ -22,29 +22,51 @@ describe("AppConfigSchema", () => {
     });
 
     expect(config.settings.paperFont).toBe("default");
-    expect(config.settings.paperFontSize).toBe("standard");
+    expect(config.settings.paperFontSize).toBe("xiaosi");
     expect(config.settings.paperLineHeight).toBe("standard");
-    expect(config.settings.paperTextAlign).toBe("left");
     expect(config.settings.paperMargin).toBe("standard");
+    expect(config.settings.paperSize).toBe("a4");
     expect(config.settings.language).toBe("en");
   });
 
   it("keeps configured paper layout presets", () => {
     const config = AppConfigSchema.parse({
       settings: {
-        paperFont: "serif",
-        paperFontSize: "large",
+        paperFont: "fangsong",
+        paperFontSize: "sanhao",
         paperLineHeight: "relaxed",
-        paperTextAlign: "justify",
         paperMargin: "wide",
+        paperSize: "b5",
       },
     });
 
-    expect(config.settings.paperFont).toBe("serif");
-    expect(config.settings.paperFontSize).toBe("large");
+    expect(config.settings.paperFont).toBe("fangsong");
+    expect(config.settings.paperFontSize).toBe("sanhao");
     expect(config.settings.paperLineHeight).toBe("relaxed");
-    expect(config.settings.paperTextAlign).toBe("justify");
     expect(config.settings.paperMargin).toBe("wide");
+    expect(config.settings.paperSize).toBe("b5");
+  });
+
+  it("maps old paper font size presets and ignores old text alignment", () => {
+    const config = AppConfigSchema.parse({
+      settings: {
+        paperFontSize: "large",
+        paperTextAlign: "justify",
+      },
+    });
+
+    expect(config.settings.paperFontSize).toBe("sihao");
+    expect(config.settings.paperSize).toBe("a4");
+    expect("paperTextAlign" in config.settings).toBe(false);
+  });
+
+  it("maps old paper font presets to practical Chinese fonts", () => {
+    expect(
+      AppConfigSchema.parse({ settings: { paperFont: "serif" } }).settings.paperFont,
+    ).toBe("simsun");
+    expect(
+      AppConfigSchema.parse({ settings: { paperFont: "sans" } }).settings.paperFont,
+    ).toBe("yahei");
   });
 
   it("adds default AI agents when config has none", () => {

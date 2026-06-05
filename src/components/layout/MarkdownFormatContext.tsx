@@ -15,7 +15,8 @@ export type MarkdownFormat =
   | "bulletList"
   | "orderedList"
   | "quote"
-  | "code";
+  | "code"
+  | "clear";
 
 export interface MarkdownFormatTarget {
   apply: (format: MarkdownFormat) => void;

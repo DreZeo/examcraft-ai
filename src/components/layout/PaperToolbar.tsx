@@ -1,20 +1,18 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  AlignCenter,
-  AlignJustify,
-  AlignLeft,
   Bold,
   CaseSensitive,
   Code,
   Columns3,
+  Eraser,
+  FileText,
   Heading2,
   Italic,
   List,
   ListOrdered,
   Pilcrow,
   Quote,
-  TextCursorInput,
   Type,
   Underline,
 } from "lucide-react";
@@ -28,21 +26,21 @@ import {
   PAPER_FONT_SIZE_OPTIONS,
   PAPER_LINE_HEIGHT_OPTIONS,
   PAPER_MARGIN_OPTIONS,
-  PAPER_TEXT_ALIGN_OPTIONS,
+  PAPER_SIZE_OPTIONS,
   type AppSettings,
   type PaperFont,
   type PaperFontSize,
   type PaperLineHeight,
   type PaperMargin,
-  type PaperTextAlign,
+  type PaperSize,
 } from "../../lib/types/config";
 
 type SettingKey =
   | "paperFont"
   | "paperFontSize"
   | "paperLineHeight"
-  | "paperTextAlign"
-  | "paperMargin";
+  | "paperMargin"
+  | "paperSize";
 
 interface SelectControlProps<T extends string> {
   icon: ReactNode;
@@ -68,7 +66,7 @@ export function PaperToolbar() {
   return (
     <section
       aria-label={t("paperToolbar.title")}
-      className="no-print relative z-[60] flex flex-wrap items-center gap-2 border-b border-border bg-card/90 px-4 py-2"
+      className="no-print relative z-10 flex flex-wrap items-center gap-2 border-b border-border bg-card/90 px-4 py-2"
     >
       <div
         className="inline-flex h-9 overflow-hidden rounded-md border border-border bg-background/70 p-1"
@@ -117,21 +115,17 @@ export function PaperToolbar() {
               optionKeyPrefix="paperLineHeight"
               onChange={(value) => update("paperLineHeight", value)}
             />
-            <SegmentedControl<PaperTextAlign>
-              label={t("paperToolbar.alignment")}
-              value={settings.paperTextAlign}
-              options={PAPER_TEXT_ALIGN_OPTIONS}
-              optionKeyPrefix="paperTextAlign"
-              icons={{
-                left: <AlignLeft className="h-4 w-4" />,
-                center: <AlignCenter className="h-4 w-4" />,
-                justify: <AlignJustify className="h-4 w-4" />,
-              }}
-              onChange={(value) => update("paperTextAlign", value)}
-            />
           </ToolbarGroup>
 
           <ToolbarGroup label={t("paperToolbar.page")}>
+            <SelectControl<PaperSize>
+              icon={<FileText className="h-4 w-4" />}
+              label={t("paperToolbar.paperSize")}
+              value={settings.paperSize}
+              options={PAPER_SIZE_OPTIONS}
+              optionKeyPrefix="paperSize"
+              onChange={(value) => update("paperSize", value)}
+            />
             <SelectControl<PaperMargin>
               icon={<Columns3 className="h-4 w-4" />}
               label={t("paperToolbar.margin")}
@@ -197,6 +191,13 @@ export function PaperToolbar() {
             format="code"
             icon={<Code className="h-4 w-4" />}
             label={t("editorToolbar.code")}
+            disabled={!hasTarget}
+            onFormat={applyFormat}
+          />
+          <MarkdownButton
+            format="clear"
+            icon={<Eraser className="h-4 w-4" />}
+            label={t("editorToolbar.clear")}
             disabled={!hasTarget}
             onFormat={applyFormat}
           />
@@ -305,52 +306,5 @@ function SelectControl<T extends string>({
         ))}
       </select>
     </label>
-  );
-}
-
-function SegmentedControl<T extends string>({
-  label,
-  value,
-  options,
-  optionKeyPrefix,
-  icons,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: readonly T[];
-  optionKeyPrefix: string;
-  icons: Record<T, ReactNode>;
-  onChange: (value: T) => void;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <div
-      className="inline-flex h-8 overflow-hidden rounded border border-border bg-card"
-      role="group"
-      aria-label={label}
-      title={label}
-    >
-      <span className="flex items-center px-2 text-muted-foreground">
-        <TextCursorInput className="h-4 w-4" />
-      </span>
-      {options.map((option) => (
-        <button
-          key={option}
-          type="button"
-          aria-label={t(`${optionKeyPrefix}.${option}`)}
-          title={t(`${optionKeyPrefix}.${option}`)}
-          onClick={() => onChange(option)}
-          className={
-            value === option
-              ? "inline-flex w-8 items-center justify-center bg-primary text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
-              : "inline-flex w-8 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
-          }
-        >
-          {icons[option]}
-        </button>
-      ))}
-    </div>
   );
 }
