@@ -81,6 +81,12 @@
     "light": "浅色",
     "dark": "深色"
   },
+  "globalFont": {
+    "system": "跟随系统",
+    "sans": "黑体（无衬线）",
+    "serif": "宋体（衬线）",
+    "mono": "等宽"
+  },
   "paperFont": {
     "default": "默认",
     "simsun": "宋体",

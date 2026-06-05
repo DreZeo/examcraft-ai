@@ -81,6 +81,12 @@
     "light": "Light",
     "dark": "Dark"
   },
+  "globalFont": {
+    "system": "Follow system",
+    "sans": "Sans-serif",
+    "serif": "Serif",
+    "mono": "Monospace"
+  },
   "paperFont": {
     "default": "Default",
     "simsun": "SimSun",

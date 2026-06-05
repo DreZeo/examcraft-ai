@@ -11,9 +11,9 @@ import {
 
 import { useConfigStore } from "../../stores/configStore";
 import {
-  PAPER_FONT_OPTIONS,
+  GLOBAL_FONT_OPTIONS,
   type ExplanationTier,
-  type PaperFont,
+  type GlobalFont,
   type Theme,
 } from "../../lib/types/config";
 import { SelectControl } from "../ui/SelectControl";
@@ -21,6 +21,7 @@ import { SelectControl } from "../ui/SelectControl";
 const LANGUAGES = ["zh", "en"] as const;
 const THEMES = ["system", "light", "dark"] as const;
 const EXPLANATION_TIERS = ["none", "brief", "detailed"] as const;
+const GLOBAL_FONTS = GLOBAL_FONT_OPTIONS;
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -83,10 +84,10 @@ export function GeneralSection() {
           <SelectControl
             icon={<Type className="h-3.5 w-3.5" />}
             label={t("settings.globalFont")}
-            value={s.paperFont}
-            options={PAPER_FONT_OPTIONS}
-            optionKeyPrefix="paperFont"
-            onChange={(v) => void updateSettings({ paperFont: v as PaperFont })}
+            value={s.globalFont}
+            options={GLOBAL_FONTS}
+            optionKeyPrefix="globalFont"
+            onChange={(v) => void updateSettings({ globalFont: v as GlobalFont })}
           />
         </SettingRow>
 

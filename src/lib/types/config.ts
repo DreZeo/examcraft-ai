@@ -29,6 +29,17 @@ export const ExplanationTierSchema = z.enum(["none", "brief", "detailed"]);
 /** Color theme preference. `system` follows the OS prefers-color-scheme. */
 export const ThemeSchema = z.enum(["system", "light", "dark"]);
 
+/** UI global font preset. Overrides --font-sans CSS variable on <html>. */
+export const GlobalFontSchema = z.enum(["system", "sans", "serif", "mono"]);
+export type GlobalFont = z.infer<typeof GlobalFontSchema>;
+export const GLOBAL_FONT_OPTIONS = GlobalFontSchema.options;
+export const GLOBAL_FONT_STACKS: Record<GlobalFont, string> = {
+  system: "",
+  sans: '"Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif',
+  serif: 'SimSun, "Songti SC", "Noto Serif CJK SC", serif',
+  mono: '"SFMono-Regular", Consolas, "Liberation Mono", "Courier New", monospace',
+};
+
 /** Paper rendering font preset. Uses system font stacks, not bundled font files. */
 export const PaperFontSchema = z.enum([
   "default",
@@ -162,6 +173,8 @@ export const AppSettingsSchema = z.object({
   autoSave: z.boolean().default(true),
   /** Explanation detail level injected into the system prompt as a default. */
   explanationTier: ExplanationTierSchema.default("brief"),
+  /** Global UI font preset. Overrides --font-sans on <html>. */
+  globalFont: GlobalFontSchema.default("system"),
   /** Font preset used only for paper rendering. */
   paperFont: LegacyPaperFontSchema.default("default"),
   /** Base font size preset used only for paper rendering. */

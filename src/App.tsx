@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useConfigStore } from "./stores/configStore";
 import { usePaperStore } from "./stores/paperStore";
 import { useTheme } from "./hooks/useTheme";
+import { useGlobalFont } from "./hooks/useGlobalFont";
 import { FirstLaunch } from "./components/layout/FirstLaunch";
 import { TopBar } from "./components/layout/TopBar";
 import { PaperToolbar } from "./components/layout/PaperToolbar";
@@ -28,6 +29,7 @@ export default function App() {
   const paperScrollRef = useRef<HTMLElement | null>(null);
 
   useTheme();
+  useGlobalFont();
 
   useEffect(() => {
     void init();
