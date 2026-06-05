@@ -8,6 +8,7 @@ import { PaperToolbar } from "./components/layout/PaperToolbar";
 import { MarkdownFormatProvider } from "./components/layout/MarkdownFormatContext";
 import { PaperOutline } from "./components/paper/PaperOutline";
 import { PaperCanvas } from "./components/paper/PaperCanvas";
+import { PaperErrorBoundary } from "./components/paper/PaperErrorBoundary";
 import { AssistantDrawer } from "./components/assistant/AssistantDrawer";
 import { SettingsModal } from "./components/settings/SettingsModal";
 import { PaperManagerModal } from "./components/paper/PaperManagerModal";
@@ -94,10 +95,12 @@ export default function App() {
           onActiveQuestionChange={setActiveQuestionId}
         />
         <main ref={paperScrollRef} className="min-w-0 flex-1 overflow-auto">
-          <PaperCanvas
-            scrollRootRef={paperScrollRef}
-            onActiveQuestionChange={setActiveQuestionId}
-          />
+          <PaperErrorBoundary key={activePaperId ?? "none"}>
+            <PaperCanvas
+              scrollRootRef={paperScrollRef}
+              onActiveQuestionChange={setActiveQuestionId}
+            />
+          </PaperErrorBoundary>
         </main>
         <AssistantDrawer
           open={drawerOpen}
