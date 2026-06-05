@@ -5,6 +5,7 @@ import {
   FilePlus2,
   FileText,
   FolderOpen,
+  GraduationCap,
   Loader2,
   Settings,
 } from "lucide-react";
@@ -30,6 +31,13 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
 
   return (
     <header className="no-print flex items-center gap-3 border-b border-border bg-card px-4 py-2">
+      {/* App brand */}
+      <div className="flex shrink-0 items-center gap-2">
+        <GraduationCap className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">{t("app.title")}</span>
+      </div>
+      <div className="h-5 w-px shrink-0 bg-border" />
+
       {/* Title input */}
       <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
         <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
