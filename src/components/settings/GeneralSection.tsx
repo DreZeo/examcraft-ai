@@ -15,9 +15,11 @@ import {
   type PaperFont,
   type Theme,
 } from "../../lib/types/config";
-import { inputCls } from "../../lib/ui/styles";
+import { SelectControl } from "../ui/SelectControl";
 
-const selectCls = inputCls + " py-2 cursor-pointer";
+const LANGUAGES = ["zh", "en"] as const;
+const THEMES = ["system", "light", "dark"] as const;
+const EXPLANATION_TIERS = ["none", "brief", "detailed"] as const;
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -55,26 +57,25 @@ export function GeneralSection() {
         title={t("settings.interfacePreferences")}
       >
         <SettingRow icon={<Languages className="h-4 w-4" />} label={t("settings.language")}>
-          <select
+          <SelectControl
+            icon={<Languages className="h-3.5 w-3.5" />}
+            label={t("settings.language")}
             value={s.language}
-            onChange={(e) => void updateSettings({ language: e.currentTarget.value as "zh" | "en" })}
-            className={selectCls}
-          >
-            <option value="zh">中文</option>
-            <option value="en">English</option>
-          </select>
+            options={LANGUAGES}
+            optionKeyPrefix="language"
+            onChange={(v) => void updateSettings({ language: v })}
+          />
         </SettingRow>
 
         <SettingRow icon={<Palette className="h-4 w-4" />} label={t("settings.theme")}>
-          <select
+          <SelectControl
+            icon={<Palette className="h-3.5 w-3.5" />}
+            label={t("settings.theme")}
             value={s.theme}
-            onChange={(e) => void updateSettings({ theme: e.currentTarget.value as Theme })}
-            className={selectCls}
-          >
-            <option value="system">{t("theme.system")}</option>
-            <option value="light">{t("theme.light")}</option>
-            <option value="dark">{t("theme.dark")}</option>
-          </select>
+            options={THEMES}
+            optionKeyPrefix="theme"
+            onChange={(v) => void updateSettings({ theme: v as Theme })}
+          />
         </SettingRow>
 
         <SettingRow icon={<Save className="h-4 w-4" />} label={t("settings.autoSave")}>
@@ -87,15 +88,14 @@ export function GeneralSection() {
 
       <SettingsGroup icon={<Type className="h-4 w-4" />} title={t("settings.paperLayout")}>
         <SettingRow icon={<Type className="h-4 w-4" />} label={t("settings.paperFont")}>
-          <select
+          <SelectControl
+            icon={<Type className="h-3.5 w-3.5" />}
+            label={t("settings.paperFont")}
             value={s.paperFont}
-            onChange={(e) => void updateSettings({ paperFont: e.currentTarget.value as PaperFont })}
-            className={selectCls}
-          >
-            {PAPER_FONT_OPTIONS.map((font) => (
-              <option key={font} value={font}>{t(`paperFont.${font}`)}</option>
-            ))}
-          </select>
+            options={PAPER_FONT_OPTIONS}
+            optionKeyPrefix="paperFont"
+            onChange={(v) => void updateSettings({ paperFont: v as PaperFont })}
+          />
         </SettingRow>
       </SettingsGroup>
 
@@ -104,15 +104,14 @@ export function GeneralSection() {
         title={t("settings.aiGenerationPreferences")}
       >
         <SettingRow icon={<Sparkles className="h-4 w-4" />} label={t("settings.explanationTier")}>
-          <select
+          <SelectControl
+            icon={<Sparkles className="h-3.5 w-3.5" />}
+            label={t("settings.explanationTier")}
             value={s.explanationTier}
-            onChange={(e) => void updateSettings({ explanationTier: e.currentTarget.value as ExplanationTier })}
-            className={selectCls}
-          >
-            <option value="none">{t("explanationTier.none")}</option>
-            <option value="brief">{t("explanationTier.brief")}</option>
-            <option value="detailed">{t("explanationTier.detailed")}</option>
-          </select>
+            options={EXPLANATION_TIERS}
+            optionKeyPrefix="explanationTier"
+            onChange={(v) => void updateSettings({ explanationTier: v as ExplanationTier })}
+          />
         </SettingRow>
       </SettingsGroup>
     </div>
@@ -151,12 +150,12 @@ function SettingRow({
   children: ReactNode;
 }) {
   return (
-    <label className="grid gap-3 bg-background px-4 py-3 sm:grid-cols-[minmax(8rem,11rem)_minmax(0,1fr)] sm:items-center">
+    <div className="grid gap-3 bg-background px-4 py-3 sm:grid-cols-[minmax(8rem,11rem)_minmax(0,1fr)] sm:items-center">
       <span className="inline-flex items-center gap-2 text-foreground">
         <span className="text-muted-foreground">{icon}</span>
         <span className="font-medium">{label}</span>
       </span>
       <span className="flex min-w-0 justify-start sm:justify-end">{children}</span>
-    </label>
+    </div>
   );
 }

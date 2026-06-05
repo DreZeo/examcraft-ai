@@ -71,6 +71,10 @@
     "brief": "简略",
     "detailed": "详细"
   },
+  "language": {
+    "zh": "中文",
+    "en": "English"
+  },
   "theme": {
     "system": "跟随系统",
     "light": "浅色",
