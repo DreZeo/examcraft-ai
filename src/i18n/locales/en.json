@@ -2,7 +2,8 @@
   "app": {
     "title": "AI Exam Generator",
     "newPaper": "New Paper",
-    "untitled": "Untitled Paper"
+    "untitled": "Untitled Paper",
+    "newPaperDisabled": "Current paper is empty"
   },
   "saveStatus": {
     "saved": "Saved",

@@ -26,6 +26,7 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
   const { paper, setTitle, saveStatus, view, setView, newPaper } =
     usePaperStore();
   const StatusIcon = statusIcon[saveStatus];
+  const isBlank = !paper.title.trim() && paper.questions.length === 0;
 
   return (
     <header className="no-print flex items-center gap-3 border-b border-border bg-card px-4 py-2">
@@ -75,7 +76,13 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
 
       {/* Actions */}
       <div className="flex shrink-0 items-center gap-0.5">
-        <button type="button" onClick={() => void newPaper()} className={actionBtn}>
+        <button
+          type="button"
+          onClick={() => void newPaper()}
+          disabled={isBlank}
+          title={isBlank ? t("app.newPaperDisabled") : t("app.newPaper")}
+          className={actionBtn + " disabled:pointer-events-none disabled:opacity-40"}
+        >
           <FilePlus2 className="h-4 w-4" />
           <span className="hidden sm:inline">{t("app.newPaper")}</span>
         </button>
