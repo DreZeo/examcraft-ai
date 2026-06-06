@@ -139,18 +139,22 @@ Tailwind v4's `@tailwindcss/vite` plugin -- the rules never reach the browser.
 
 ### Font Synthesis for Italic in Paper Preview
 
-**What:** Use `font-synthesis: weight` (not `none`) on `:root` in `@layer base`. This disables bold synthesis only while allowing the browser to synthesize an oblique face when `font-style: italic` or `font-style: oblique` is requested.
+**What:** Keep `font-synthesis: weight` on `:root` in `@layer base` for the general app, then explicitly set `font-synthesis: weight style` on `.markdown-body` in `@layer components`.
 
-**Why:** Chinese fonts in the stack (PingFang SC, Microsoft YaHei) have no native italic faces. Italic rendering relies on browser synthesis of an oblique slant. `font-synthesis: none` blocks this globally; use `font-synthesis: weight` instead.
+**Why:** Chinese paper fonts in the stack (PingFang SC, Microsoft YaHei, SimSun, KaiTi, etc.) often have no native italic faces. Italic rendering relies on browser synthesis of an oblique slant. `font-synthesis: weight` allows only bold synthesis and blocks style synthesis when inherited by `<em>`, so Markdown containers must opt back into `style`.
 
-**The `.markdown-body em` rule:**
+**The required Markdown rules:**
 ```css
+.markdown-body {
+  font-synthesis: weight style;
+}
+
 .markdown-body em {
   font-style: italic;
   font-style: oblique 12deg;
 }
 ```
-The double `font-style` provides a fallback: `oblique 12deg` is used by modern browsers; `italic` is the fallback. No `font-synthesis-style` override is needed when `:root` uses `font-synthesis: weight`.
+The double `font-style` provides a fallback: `oblique 12deg` is used by modern browsers; `italic` is the fallback. Add a raw CSS regression test whenever this contract changes, because jsdom component tests can prove `<em>` exists but cannot prove real browser font synthesis is visually enabled.
 
 
 

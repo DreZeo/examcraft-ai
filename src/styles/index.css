@@ -199,6 +199,7 @@
   .markdown-body {
     max-width: none;
     color: inherit;
+    font-synthesis: weight style;
     overflow-wrap: anywhere;
   }
 
