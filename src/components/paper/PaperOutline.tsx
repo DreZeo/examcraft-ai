@@ -1,5 +1,5 @@
 import {
-  FileText,
+  ListChecks,
   ListTree,
   PanelLeftClose,
   PanelLeftOpen,
@@ -72,7 +72,7 @@ export function PaperOutline({
               : "flex flex-1 items-start justify-center pt-4"
           }
         >
-          <FileText className="h-7 w-7 text-muted-foreground/70" />
+          <ListChecks className="h-7 w-7 text-muted-foreground/70" />
           {open && (
             <p className="motion-panel-content mt-2 w-44 overflow-hidden text-xs leading-5 text-muted-foreground">
               {t("paper.outlineEmpty")}

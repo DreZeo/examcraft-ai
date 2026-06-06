@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuid } from "uuid";
-import { FileText, Plus } from "lucide-react";
+import { NotebookPen, Plus } from "lucide-react";
 import { usePaperStore } from "../../stores/paperStore";
 import { useConfigStore } from "../../stores/configStore";
 import {
@@ -378,7 +378,7 @@ function EmptyPaper({
 }) {
   return (
     <div className="py-16 text-center">
-      <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/60" />
+      <NotebookPen className="mx-auto mb-4 h-10 w-10 text-muted-foreground/60" />
       <p className="text-base font-medium text-foreground">
         {t("paper.emptyTitle")}
       </p>
