@@ -21,6 +21,13 @@ const baseFields = {
   /** Markdown question stem (supports KaTeX math, GFM tables, code blocks). */
   content: z.string(),
   score: z.number().positive(),
+  /** Optional subject-specific section/group metadata for preview/export. */
+  examSection: z.object({
+    kind: z.string().min(1),
+    groupId: z.string().min(1).optional(),
+    title: z.string().min(1).optional(),
+    passage: z.string().min(1).optional(),
+  }).optional(),
 };
 
 export const SingleChoiceSchema = z.object({

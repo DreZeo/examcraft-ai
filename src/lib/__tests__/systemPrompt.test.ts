@@ -119,9 +119,14 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toMatch(/question type strategy/i);
     expect(prompt).toContain("English language paper");
     expect(prompt).toContain("Default-excluded question types");
-    expect(prompt).toContain("short-answer");
+    expect(prompt).toContain("true-false");
+    expect(prompt).toContain("fill-in-blank");
+    expect(prompt).toContain("english-cloze");
+    expect(prompt).toContain("english-reading");
+    expect(prompt).toContain("examSection.passage");
     expect(prompt).toContain("完形填空");
-    expect(prompt).toContain("阅读理解判断");
+    expect(prompt).toContain("阅读理解");
     expect(prompt).toContain("作文");
+    expect(prompt).not.toContain("阅读理解判断");
   });
 });

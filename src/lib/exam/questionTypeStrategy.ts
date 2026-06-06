@@ -14,6 +14,8 @@ export interface QuestionTypeStrategy {
   preferredTypes: readonly QuestionType[];
   defaultExcludedTypes: readonly QuestionType[];
   sectionLabels?: Partial<Record<QuestionType, string>>;
+  sectionKinds?: readonly string[];
+  sectionKindLabels?: Partial<Record<string, string>>;
   guidance: readonly string[];
 }
 
@@ -53,27 +55,37 @@ export const QUESTION_TYPE_STRATEGIES: readonly QuestionTypeStrategy[] = [
     ],
     preferredTypes: [
       "single-choice",
-      "multiple-choice",
-      "true-false",
-      "fill-in-blank",
+      "short-answer",
       "essay",
     ],
-    defaultExcludedTypes: ["short-answer", "calculation"],
+    defaultExcludedTypes: ["true-false", "fill-in-blank", "calculation"],
     sectionLabels: {
       "single-choice": "语法与词汇单选",
-      "multiple-choice": "多项选择",
-      "true-false": "阅读理解判断",
-      "fill-in-blank": "完形填空",
+      "short-answer": "翻译",
       essay: "作文",
     },
+    sectionKinds: [
+      "english-vocabulary-choice",
+      "english-cloze",
+      "english-reading",
+      "english-translation",
+      "english-composition",
+    ],
+    sectionKindLabels: {
+      "english-vocabulary-choice": "语法与词汇单选",
+      "english-cloze": "完形填空",
+      "english-reading": "阅读理解",
+      "english-translation": "翻译",
+      "english-composition": "作文",
+    },
     guidance: [
-      "Default to English exam sections: grammar/vocabulary choice, cloze, reading comprehension, and composition.",
+      "Default to English exam sections: grammar/vocabulary choice, cloze, reading comprehension, translation, and composition.",
       "For grammar/vocabulary choice, keep each item as a short stem with options in the options array; do not embed A/B/C/D in content.",
-      "When using fill-in-blank, make it a cloze-style passage task rather than isolated generic blanks.",
-      "When using true-false, make it part of a reading-comprehension passage with statements judged from the text.",
-      "For reading comprehension with choices, keep the passage/question in content and put answers in options, rather than writing options inline.",
+      "For cloze, use single-choice questions with examSection.kind='english-cloze', the same groupId, and the shared cloze passage in examSection.passage; each blank should be a numbered choice item with options in the options array.",
+      "For reading comprehension, use single-choice questions with examSection.kind='english-reading', the same groupId, and the shared reading passage in examSection.passage; do not model reading comprehension as true-false unless the user explicitly asks for judging statements.",
+      "For translation, use short-answer questions with examSection.kind='english-translation' and a referenceAnswer.",
       "Use essay as English composition or written expression, with clear scoring criteria.",
-      "Use short-answer only when the user explicitly asks for written reading-comprehension answers or open-response tasks.",
+      "Use fill-in-blank only when the user explicitly asks for isolated blank-filling; default cloze should be grouped single-choice instead.",
       "Never use calculation unless the user explicitly asks for a cross-subject math-in-English task.",
     ],
   },
@@ -183,11 +195,13 @@ const EXPLICIT_TYPE_KEYWORDS: Record<QuestionType, readonly string[]> = {
   "single-choice": ["单选", "选择题", "single choice", "multiple choice"],
   "multiple-choice": ["多选", "multiple choice"],
   "true-false": ["判断", "true false", "true/false"],
-  "fill-in-blank": ["填空", "完形填空", "cloze", "fill in"],
+  "fill-in-blank": ["填空", "fill in"],
   "short-answer": [
     "简答",
     "问答",
     "回答问题",
+    "翻译",
+    "translation",
     "written answer",
     "short answer",
     "open response",
@@ -233,6 +247,7 @@ export function formatQuestionTypeStrategy(
     `Preferred question types: ${strategy.preferredTypes.join(", ")}.`,
     `Default-excluded question types: ${strategy.defaultExcludedTypes.join(", ")}.`,
     "Use default-excluded types only when the user explicitly asks for that type or task format.",
+    formatSectionKinds(strategy),
     formatSectionLabels(strategy),
     ...strategy.guidance.map((line) => `- ${line}`),
   ]
@@ -300,5 +315,15 @@ function formatSectionLabels(strategy: QuestionTypeStrategy): string {
   if (labels.length === 0) return "";
   return `Contextual section labels: ${labels
     .map(([type, label]) => `${type}=${label}`)
+    .join(", ")}.`;
+}
+
+function formatSectionKinds(strategy: QuestionTypeStrategy): string {
+  if (!strategy.sectionKinds?.length) return "";
+  return `Subject-specific examSection kinds: ${strategy.sectionKinds
+    .map((kind) => {
+      const label = strategy.sectionKindLabels?.[kind];
+      return label ? `${kind}=${label}` : kind;
+    })
     .join(", ")}.`;
 }

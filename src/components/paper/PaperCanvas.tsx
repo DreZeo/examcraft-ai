@@ -34,6 +34,7 @@ import { createBlankQuestion } from "../../lib/exam/blankQuestion";
 import { QuestionBlock } from "./QuestionBlock";
 import { QuestionEditModal } from "./QuestionEditModal";
 import { ExamInfoHeader } from "./ExamInfoHeader";
+import { Markdown } from "./Markdown";
 
 interface PaperCanvasProps {
   scrollRootRef?: RefObject<HTMLElement | null>;
@@ -311,12 +312,16 @@ function PaperBlock({
       );
     case "section":
       return (
-        <h2
-          {...attrs}
-          className="paper-section-title mt-2 border-b border-border pb-1 text-base font-semibold text-foreground"
-        >
-          {block.section.title}
-        </h2>
+        <div {...attrs}>
+          <h2 className="paper-section-title mt-2 border-b border-border pb-1 text-base font-semibold text-foreground">
+            {block.section.title}
+          </h2>
+          {block.section.passage && (
+            <div className="mt-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground">
+              <Markdown>{block.section.passage}</Markdown>
+            </div>
+          )}
+        </div>
       );
     case "question":
       return (

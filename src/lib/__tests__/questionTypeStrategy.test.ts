@@ -69,8 +69,10 @@ describe("question type strategy", () => {
     });
 
     expect(match?.strategy.id).toBe("english-language");
-    expect(match?.strategy.defaultExcludedTypes).toContain("short-answer");
+    expect(match?.strategy.defaultExcludedTypes).toContain("true-false");
+    expect(match?.strategy.defaultExcludedTypes).toContain("fill-in-blank");
     expect(match?.strategy.defaultExcludedTypes).not.toContain("essay");
+    expect(match?.strategy.defaultExcludedTypes).not.toContain("short-answer");
   });
 
   it("formats prompt guidance for the active strategy", () => {
@@ -88,32 +90,35 @@ describe("question type strategy", () => {
       requestText: "帮我生成一份六年级英语试卷",
     });
     const result = validateQuestionTypeStrategy(
-      append(question("single-choice"), question("short-answer")),
+      append(question("single-choice"), question("true-false")),
       match,
     );
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain("English language paper");
-      expect(result.error).toContain("short-answer");
+      expect(result.error).toContain("true-false");
     }
   });
 
-  it("allows English composition by default", () => {
+  it("allows English translation and composition by default", () => {
     const match = inferQuestionTypeStrategy({
       requestText: "帮我生成一份六年级英语试卷",
     });
-    const result = validateQuestionTypeStrategy(append(question("essay")), match);
+    const result = validateQuestionTypeStrategy(
+      append(question("short-answer"), question("essay")),
+      match,
+    );
 
     expect(result.ok).toBe(true);
   });
 
   it("allows excluded types when the user explicitly asks for them", () => {
     const match = inferQuestionTypeStrategy({
-      requestText: "帮我生成一份英语阅读理解简答题专项试卷",
+      requestText: "帮我生成一份英语阅读理解判断题专项试卷",
     });
     const result = validateQuestionTypeStrategy(
-      append(question("short-answer")),
+      append(question("true-false")),
       match,
     );
 

@@ -19,11 +19,11 @@ const essayQuestion = {
   score: 10,
 };
 
-const shortAnswerQuestion = {
-  id: "short-1",
-  type: "short-answer",
-  content: "Answer briefly.",
-  referenceAnswer: "Reference answer.",
+const trueFalseQuestion = {
+  id: "tf-1",
+  type: "true-false",
+  content: "Judge the statement.",
+  correctAnswer: true,
   score: 6,
 };
 
@@ -95,7 +95,7 @@ describe("validatePaperOperations", () => {
 
   it("rejects generated question types that violate the active strategy", () => {
     const reply = JSON.stringify({
-      operations: [{ type: "appendQuestions", questions: [shortAnswerQuestion] }],
+      operations: [{ type: "appendQuestions", questions: [trueFalseQuestion] }],
     });
 
     const result = validatePaperOperations(
@@ -107,7 +107,7 @@ describe("validatePaperOperations", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain("English language paper");
-      expect(result.error).toContain("short-answer");
+      expect(result.error).toContain("true-false");
     }
   });
 

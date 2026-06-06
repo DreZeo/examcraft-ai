@@ -80,7 +80,7 @@ export function buildPaperBlocks(
   for (const section of groupQuestionsByType(paper)) {
     blocks.push({
       kind: "section",
-      id: `section-${section.type}`,
+      id: `section-${section.key}`,
       section,
       estimatedHeightMm: 12,
     });

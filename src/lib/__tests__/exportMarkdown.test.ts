@@ -80,22 +80,42 @@ describe("paperToMarkdown", () => {
     expect(md).not.toContain("计算题");
   });
 
-  it("uses contextual English section labels in Markdown export", () => {
+  it("uses structured English sections and shared passages in Markdown export", () => {
     const paper = ExamPaperSchema.parse({
       title: "六年级英语试卷",
       questions: [
         {
-          id: "tf-1",
-          type: "true-false",
-          content: "Read the passage and judge the statement.",
-          correctAnswer: true,
+          id: "cloze-1",
+          type: "single-choice",
+          content: "1. ( )",
+          options: ["was", "is"],
+          correctAnswer: 1,
+          examSection: {
+            kind: "english-cloze",
+            groupId: "cloze-a",
+            passage: "Tom ___ a student.",
+          },
+          score: 6,
+        },
+        {
+          id: "read-1",
+          type: "single-choice",
+          content: "What does Tom like?",
+          options: ["Books", "Sports"],
+          correctAnswer: 0,
+          examSection: {
+            kind: "english-reading",
+            groupId: "reading-a",
+            passage: "Tom likes books.",
+          },
           score: 4,
         },
         {
-          id: "fill-1",
-          type: "fill-in-blank",
-          content: "Complete the cloze passage: ___.",
-          blanks: ["word"],
+          id: "translation-1",
+          type: "short-answer",
+          content: "Translate: 我喜欢英语。",
+          referenceAnswer: "I like English.",
+          examSection: { kind: "english-translation" },
           score: 6,
         },
         {
@@ -103,6 +123,7 @@ describe("paperToMarkdown", () => {
           type: "essay",
           content: "Write about your weekend.",
           scoringCriteria: "Clear structure and correct grammar.",
+          examSection: { kind: "english-composition" },
           score: 15,
         },
       ],
@@ -110,9 +131,15 @@ describe("paperToMarkdown", () => {
 
     const md = paperToMarkdown(paper, { includeAnswers: true });
 
-    expect(md).toContain("## 一、阅读理解判断");
-    expect(md).toContain("## 二、完形填空");
-    expect(md).toContain("## 三、作文");
+    expect(md).toContain("## 一、完形填空");
+    expect(md).toContain("Tom ___ a student.");
+    expect(md.match(/Tom ___ a student\./g)).toHaveLength(1);
+    expect(md).toContain("## 二、阅读理解");
+    expect(md).toContain("Tom likes books.");
+    expect(md.match(/Tom likes books\./g)).toHaveLength(1);
+    expect(md).toContain("## 三、翻译");
+    expect(md).toContain("## 四、作文");
+    expect(md).not.toContain("阅读理解判断");
   });
 
   it("restarts question numbering within each section", () => {

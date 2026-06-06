@@ -48,6 +48,25 @@ describe("QuestionSchema", () => {
     };
     expect(QuestionSchema.safeParse(q).success).toBe(true);
   });
+
+  it("accepts optional exam section metadata for grouped English sections", () => {
+    const q = {
+      id: "reading-1",
+      type: "single-choice",
+      content: "What does Tom like?",
+      options: ["Books", "Sports"],
+      correctAnswer: 0,
+      score: 5,
+      examSection: {
+        kind: "english-reading",
+        groupId: "reading-a",
+        title: "阅读理解",
+        passage: "Tom likes books.",
+      },
+    };
+
+    expect(QuestionSchema.safeParse(q).success).toBe(true);
+  });
 });
 
 describe("ExamPaperSchema", () => {

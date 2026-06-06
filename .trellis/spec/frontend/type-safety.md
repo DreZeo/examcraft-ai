@@ -35,6 +35,26 @@ The 7 question types share a `baseFields` spread (`id`, `content`, `score`) and
 discriminate on `type`. Objective types carry checkable answers; subjective
 carry reference/criteria.
 
+Questions may also carry optional `examSection` metadata for subject-specific
+paper sections and grouped passages:
+
+```ts
+examSection?: {
+  kind: string;
+  groupId?: string;
+  title?: string;
+  passage?: string;
+}
+```
+
+Use this metadata when a subject needs structure more specific than the seven
+canonical question types. For English papers, `english-cloze` and
+`english-reading` are grouped single-choice sections with a shared
+`examSection.passage`; do not encode cloze as generic `fill-in-blank` or reading
+comprehension as generic `true-false` unless the user explicitly requested that
+format. Preview and Markdown export must render the shared passage once at the
+section level.
+
 When adding a question type: add the variant schema, add it to the union, and
 extend `OBJECTIVE_TYPES`/`formatAnswer`/`toStudentVersion`/`TypeFields` —
 `tsc` + the discriminated-union exhaustiveness will flag the switch sites.

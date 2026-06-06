@@ -78,7 +78,12 @@ involved in this turn (new ones to append, or edited replacements) — never a
 full-paper snapshot unless reordering references existing ids. Every question
 has: "id" (string; reuse the given id when editing, otherwise invent a unique
 one), "type", "content" (Markdown stem; inline math as $...$, block math as
-$$...$$), and "score" (positive number).
+$$...$$), and "score" (positive number). Questions may include optional
+"examSection" metadata for subject-specific paper sections:
+{"kind":"...", "groupId"?: "...", "title"?: "...", "passage"?: "..."}.
+Use examSection when multiple questions share a passage or belong to a
+subject-specific section; keep the shared passage in examSection.passage, not
+duplicated in every question content.
 Per type:
 - "single-choice": "options" (string[], 2–10), "correctAnswer" (index into options), "explanation"?
 - "multiple-choice": "options" (string[], 2–10), "correctAnswers" (index[]), "explanation"?
@@ -89,7 +94,12 @@ Per type:
 - "calculation": "solution" (step-by-step, Markdown+LaTeX), "answer" (string), "explanation"?
 For choice questions, put ONLY the stem/passage/question text in "content";
 put every A/B/C/D option in the "options" array. Do not duplicate option labels
-inside "content". Do not pre-number questions in "content"; the app numbers them.`;
+inside "content". Do not pre-number questions in "content"; the app numbers them.
+For English papers, use these examSection.kind values when applicable:
+"english-vocabulary-choice", "english-cloze", "english-reading",
+"english-translation", "english-composition". English cloze and reading
+comprehension should be grouped single-choice questions sharing the same
+groupId and passage; reading comprehension is NOT true-false by default.`;
 
 const OPERATIONS = `# Paper operation JSON schema
 In Phase 2, return an object: {"operations": [ ...Operation ]}.

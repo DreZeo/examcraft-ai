@@ -204,6 +204,9 @@ export function paperToMarkdown(
 
   for (const section of groupQuestionsByType(source)) {
     lines.push(`## ${section.title}`, "");
+    if (section.passage?.trim()) {
+      lines.push(section.passage.trim(), "");
+    }
     section.questions.forEach((q, i) => {
       lines.push(...renderQuestion(q, i + 1, includeAnswers));
     });

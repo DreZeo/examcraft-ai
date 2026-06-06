@@ -125,6 +125,28 @@ describe("QuestionBlock", () => {
     expect(container.querySelector("ol")).toHaveClass("grid");
   });
 
+  it("does not duplicate grouped English passages inside each question block", () => {
+    const question: SingleChoiceQuestion = {
+      id: "read-1",
+      type: "single-choice",
+      content: "What does Tom like?",
+      options: ["Books", "Sports"],
+      correctAnswer: 0,
+      score: 4,
+      examSection: {
+        kind: "english-reading",
+        groupId: "reading-a",
+        passage: "Tom likes books.",
+      },
+    };
+
+    const { container } = renderQuestion(question);
+
+    expect(container).toHaveTextContent("What does Tom like?");
+    expect(container).not.toHaveTextContent("Tom likes books.");
+    expect(container.querySelectorAll("ol li")).toHaveLength(2);
+  });
+
   it("renders calculation solution in teacher view and hides it in student view", () => {
     const question: CalculationQuestion = {
       id: "q2",

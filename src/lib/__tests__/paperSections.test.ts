@@ -54,22 +54,51 @@ describe("paperSections", () => {
     expect(cnOrdinal(10)).toBe("11");
   });
 
-  it("uses contextual English exam section labels", () => {
+  it("uses structured English exam sections and shared passages", () => {
     const paper = ExamPaperSchema.parse({
       title: "六年级英语试卷",
       questions: [
         {
-          id: "tf-1",
-          type: "true-false",
-          content: "Read the passage and judge.",
-          correctAnswer: true,
+          id: "choice-1",
+          type: "single-choice",
+          content: "Choose the best answer.",
+          options: ["A", "B"],
+          correctAnswer: 0,
+          examSection: { kind: "english-vocabulary-choice" },
           score: 4,
         },
         {
-          id: "fill-1",
-          type: "fill-in-blank",
-          content: "Complete the cloze passage: ___.",
-          blanks: ["word"],
+          id: "cloze-1",
+          type: "single-choice",
+          content: "1. ( )",
+          options: ["was", "is"],
+          correctAnswer: 1,
+          examSection: {
+            kind: "english-cloze",
+            groupId: "cloze-a",
+            passage: "Tom ___ a student.",
+          },
+          score: 4,
+        },
+        {
+          id: "read-1",
+          type: "single-choice",
+          content: "What does Tom like?",
+          options: ["Books", "Sports"],
+          correctAnswer: 0,
+          examSection: {
+            kind: "english-reading",
+            groupId: "reading-a",
+            passage: "Tom likes books.",
+          },
+          score: 4,
+        },
+        {
+          id: "translation-1",
+          type: "short-answer",
+          content: "Translate: 我喜欢英语。",
+          referenceAnswer: "I like English.",
+          examSection: { kind: "english-translation" },
           score: 6,
         },
         {
@@ -77,15 +106,34 @@ describe("paperSections", () => {
           type: "essay",
           content: "Write about your weekend.",
           scoringCriteria: "Clear structure and correct grammar.",
+          examSection: { kind: "english-composition" },
           score: 15,
         },
       ],
     });
 
-    expect(groupQuestionsByType(paper).map((section) => section.title)).toEqual([
-      "一、阅读理解判断",
+    const sections = groupQuestionsByType(paper);
+
+    expect(sections.map((section) => section.title)).toEqual([
+      "一、语法与词汇单选",
       "二、完形填空",
-      "三、作文",
+      "三、阅读理解",
+      "四、翻译",
+      "五、作文",
+    ]);
+    expect(sections.map((section) => section.passage)).toEqual([
+      undefined,
+      "Tom ___ a student.",
+      "Tom likes books.",
+      undefined,
+      undefined,
+    ]);
+    expect(sections.map((section) => section.type)).toEqual([
+      "single-choice",
+      "single-choice",
+      "single-choice",
+      "short-answer",
+      "essay",
     ]);
   });
 });
