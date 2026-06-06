@@ -110,6 +110,50 @@ Scrollbar styling is global in `src/styles/index.css`: thin, low-contrast,
 white-gray/light-neutral tracks and thumbs, using semantic HSL tokens. Do not
 add one-off scrollbar styles inside components unless a specific embedded
 surface has a documented exception.
+### Tailwind v4 CSS Layering (mandatory after `@import "tailwindcss"`)
+
+**What:** All custom CSS rules following `@import "tailwindcss"` in `src/styles/index.css`
+MUST be wrapped in `@layer base { ... }` or `@layer components { ... }`. Top-level
+custom CSS (outside any `@layer`) is silently dropped from the compiled output by
+Tailwind v4's `@tailwindcss/vite` plugin -- the rules never reach the browser.
+
+**Layer assignments in `src/styles/index.css`:**
+
+| CSS | Layer | Rationale |
+|-----|-------|-----------|
+| `:root`, `html`, `body`, `*` resets | `@layer base` | Document-level defaults |
+| `::-webkit-scrollbar` rules | `@layer base` | Global scrollbar styling |
+| `@media (prefers-reduced-motion)` | `@layer base` | Accessibility override |
+| `@keyframes fade-in`, `.animate-fade-in` | `@layer components` | Reusable animation |
+| `.motion-panel-shell`, `.motion-panel-content` | `@layer components` | Layout components |
+| `.markdown-body`, `.markdown-body-compact` + all child rules | `@layer components` | Markdown rendering |
+
+**UNLAYERED (must stay outside any `@layer`):**
+- `:root` / `.dark` custom property blocks (design tokens)
+- `@custom-variant dark (...)`
+- `@theme inline { ... }`
+
+**Why:** Tailwind v4 uses native CSS cascade layers internally (`@layer theme, base, components, utilities`). The `@tailwindcss/vite` plugin only preserves custom CSS that it can place into a layer. Unlayered class-based rules (`.markdown-body`, `.motion-panel-shell`) are treated as orphan content and silently dropped.
+
+**Verification:** After CSS changes, always run `npm run build` and grep for key classes (`.markdown-body`, `::-webkit-scrollbar`) in `dist/assets/index-*.css` to confirm they survived.
+
+### Font Synthesis for Italic in Paper Preview
+
+**What:** Use `font-synthesis: weight` (not `none`) on `:root` in `@layer base`. This disables bold synthesis only while allowing the browser to synthesize an oblique face when `font-style: italic` or `font-style: oblique` is requested.
+
+**Why:** Chinese fonts in the stack (PingFang SC, Microsoft YaHei) have no native italic faces. Italic rendering relies on browser synthesis of an oblique slant. `font-synthesis: none` blocks this globally; use `font-synthesis: weight` instead.
+
+**The `.markdown-body em` rule:**
+```css
+.markdown-body em {
+  font-style: italic;
+  font-style: oblique 12deg;
+}
+```
+The double `font-style` provides a fallback: `oblique 12deg` is used by modern browsers; `italic` is the fallback. No `font-synthesis-style` override is needed when `:root` uses `font-synthesis: weight`.
+
+
+
 
 ### Print
 

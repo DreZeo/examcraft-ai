@@ -91,262 +91,267 @@
     "PingFang SC", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
 }
 
-:root {
-  font-family: var(--font-sans);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-}
+/* ---- layer: base ---- */
+@layer base {
+  :root {
+    font-family: var(--font-sans);
+    font-synthesis: weight;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
 
-html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
-}
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
 
-body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-}
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
 
-/* Thin, low-contrast scrollbars across the workbench. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) hsl(var(--background) / 0.35);
-}
+  /* Thin, low-contrast scrollbars across the workbench. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) hsl(var(--background) / 0.35);
+  }
 
-*::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
-}
+  *::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
 
-*::-webkit-scrollbar-track {
-  background: hsl(var(--background) / 0.35);
-}
+  *::-webkit-scrollbar-track {
+    background: hsl(var(--background) / 0.35);
+  }
 
-*::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: hsl(var(--border));
-}
+  *::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: hsl(var(--border));
+  }
 
-*::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.45);
-}
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.45);
+  }
 
-/* Respect reduced-motion: kill all transitions/animations globally. */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  /* Respect reduced-motion: kill all transitions/animations globally. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
-/* Subtle fade-in for chat cards / streaming bubbles. */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
+/* ---- layer: components ---- */
+@layer components {
+  /* Subtle fade-in for chat cards / streaming bubbles. */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-  to {
+
+  .animate-fade-in {
+    animation: fade-in 200ms ease-out;
+  }
+
+  /* Smooth panel chrome motion: shell resizes, content fades sideways. */
+  .motion-panel-shell {
+    transition:
+      width 260ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 180ms ease-out,
+      background-color 180ms ease-out;
+  }
+
+  .motion-panel-shell[data-resizing="true"] {
+    transition:
+      border-color 180ms ease-out,
+      background-color 180ms ease-out;
+  }
+
+  .motion-panel-content {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
+    transition:
+      opacity 180ms ease-out,
+      transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
   }
-}
 
-.animate-fade-in {
-  animation: fade-in 200ms ease-out;
-}
+  .motion-panel-content[data-open="false"] {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(4px);
+  }
 
-/* Smooth panel chrome motion: shell resizes, content fades sideways. */
-.motion-panel-shell {
-  transition:
-    width 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 180ms ease-out,
-    background-color 180ms ease-out;
-}
+  /* Markdown rendered inside paper preview, answer blocks, and assistant cards. */
+  .markdown-body {
+    max-width: none;
+    color: inherit;
+    overflow-wrap: anywhere;
+  }
 
-.motion-panel-shell[data-resizing="true"] {
-  transition:
-    border-color 180ms ease-out,
-    background-color 180ms ease-out;
-}
+  .markdown-body > :first-child {
+    margin-top: 0;
+  }
 
-.motion-panel-content {
-  opacity: 1;
-  transform: translateX(0);
-  transition:
-    opacity 180ms ease-out,
-    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
-}
+  .markdown-body > :last-child {
+    margin-bottom: 0;
+  }
 
-.motion-panel-content[data-open="false"] {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(4px);
-}
+  .markdown-body p,
+  .markdown-body ul,
+  .markdown-body ol,
+  .markdown-body blockquote,
+  .markdown-body pre,
+  .markdown-body table {
+    margin-block: 0.65em;
+  }
 
-/* Markdown rendered inside paper preview, answer blocks, and assistant cards. */
-.markdown-body {
-  max-width: none;
-  color: inherit;
-  overflow-wrap: anywhere;
-}
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4 {
+    margin-block: 0.9em 0.45em;
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    line-height: 1.25;
+  }
 
-.markdown-body > :first-child {
-  margin-top: 0;
-}
+  .markdown-body h1 {
+    font-size: 1.35em;
+  }
 
-.markdown-body > :last-child {
-  margin-bottom: 0;
-}
+  .markdown-body h2 {
+    font-size: 1.2em;
+  }
 
-.markdown-body p,
-.markdown-body ul,
-.markdown-body ol,
-.markdown-body blockquote,
-.markdown-body pre,
-.markdown-body table {
-  margin-block: 0.65em;
-}
+  .markdown-body h3 {
+    font-size: 1.08em;
+  }
 
-.markdown-body h1,
-.markdown-body h2,
-.markdown-body h3,
-.markdown-body h4 {
-  margin-block: 0.9em 0.45em;
-  color: hsl(var(--foreground));
-  font-weight: 600;
-  line-height: 1.25;
-}
+  .markdown-body ul,
+  .markdown-body ol {
+    padding-left: 1.4em;
+  }
 
-.markdown-body h1 {
-  font-size: 1.35em;
-}
+  .markdown-body ul {
+    list-style: disc;
+  }
 
-.markdown-body h2 {
-  font-size: 1.2em;
-}
+  .markdown-body ol {
+    list-style: decimal;
+  }
 
-.markdown-body h3 {
-  font-size: 1.08em;
-}
+  .markdown-body li {
+    margin-block: 0.2em;
+  }
 
-.markdown-body ul,
-.markdown-body ol {
-  padding-left: 1.4em;
-}
+  .markdown-body li > p {
+    margin-block: 0.25em;
+  }
 
-.markdown-body ul {
-  list-style: disc;
-}
+  .markdown-body a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+    text-underline-offset: 0.16em;
+  }
 
-.markdown-body ol {
-  list-style: decimal;
-}
+  .markdown-body strong {
+    font-weight: 600;
+  }
 
-.markdown-body li {
-  margin-block: 0.2em;
-}
+  .markdown-body em {
+    font-style: italic;
+    font-style: oblique 12deg;
+  }
 
-.markdown-body li > p {
-  margin-block: 0.25em;
-}
+  .markdown-body blockquote {
+    border-left: 2px solid hsl(var(--border));
+    color: hsl(var(--muted-foreground));
+    padding-left: 0.85em;
+  }
 
-.markdown-body a {
-  color: hsl(var(--primary));
-  text-decoration: underline;
-  text-underline-offset: 0.16em;
-}
+  .markdown-body code {
+    border-radius: 0.25rem;
+    background: hsl(var(--muted));
+    color: hsl(var(--foreground));
+    font-size: 0.92em;
+    padding: 0.08em 0.28em;
+  }
 
-.markdown-body strong {
-  font-weight: 600;
-}
+  .markdown-body pre {
+    overflow: auto;
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--muted));
+    padding: 0.75rem;
+  }
 
-.markdown-body em {
-  font-style: italic;
-  font-style: oblique 12deg;
-  font-synthesis-style: auto;
-}
+  .markdown-body pre code {
+    background: transparent;
+    padding: 0;
+  }
 
-.markdown-body blockquote {
-  border-left: 2px solid hsl(var(--border));
-  color: hsl(var(--muted-foreground));
-  padding-left: 0.85em;
-}
+  .markdown-body table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+  }
 
-.markdown-body code {
-  border-radius: 0.25rem;
-  background: hsl(var(--muted));
-  color: hsl(var(--foreground));
-  font-size: 0.92em;
-  padding: 0.08em 0.28em;
-}
+  .markdown-body th,
+  .markdown-body td {
+    border: 1px solid hsl(var(--border));
+    padding: 0.35rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+  }
 
-.markdown-body pre {
-  overflow: auto;
-  border-radius: 0.5rem;
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--muted));
-  padding: 0.75rem;
-}
+  .markdown-body th {
+    background: hsl(var(--muted));
+    font-weight: 600;
+  }
 
-.markdown-body pre code {
-  background: transparent;
-  padding: 0;
-}
+  .markdown-body .katex-display {
+    margin-block: 0.65em;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-block: 0.1em;
+  }
 
-.markdown-body table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95em;
-}
+  .markdown-body hr {
+    margin-block: 1rem;
+    border: 0;
+    border-top: 1px solid hsl(var(--border));
+  }
 
-.markdown-body th,
-.markdown-body td {
-  border: 1px solid hsl(var(--border));
-  padding: 0.35rem 0.5rem;
-  text-align: left;
-  vertical-align: top;
-}
+  .markdown-body-compact p,
+  .markdown-body-compact ul,
+  .markdown-body-compact ol,
+  .markdown-body-compact blockquote,
+  .markdown-body-compact pre,
+  .markdown-body-compact table,
+  .markdown-body-compact .katex-display {
+    margin-block: 0.35em;
+  }
 
-.markdown-body th {
-  background: hsl(var(--muted));
-  font-weight: 600;
-}
+  .markdown-body-compact ul,
+  .markdown-body-compact ol {
+    padding-left: 1.2em;
+  }
 
-.markdown-body .katex-display {
-  margin-block: 0.65em;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-block: 0.1em;
-}
-
-.markdown-body hr {
-  margin-block: 1rem;
-  border: 0;
-  border-top: 1px solid hsl(var(--border));
-}
-
-.markdown-body-compact p,
-.markdown-body-compact ul,
-.markdown-body-compact ol,
-.markdown-body-compact blockquote,
-.markdown-body-compact pre,
-.markdown-body-compact table,
-.markdown-body-compact .katex-display {
-  margin-block: 0.35em;
-}
-
-.markdown-body-compact ul,
-.markdown-body-compact ol {
-  padding-left: 1.2em;
-}
-
-.markdown-body-compact pre {
-  padding: 0.5rem;
+  .markdown-body-compact pre {
+    padding: 0.5rem;
+  }
 }
