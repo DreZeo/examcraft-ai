@@ -111,6 +111,24 @@ undoResult(cardId) {
 }
 ```
 
+## Pattern: user-message retry/edit branches
+
+Visible assistant `messages` and private `apiHistory` must stay aligned when a
+user message is retried or edited. A user text bubble may carry
+`apiHistoryIndex` plus a `requestContext` so `assistantStore` can rebuild the
+exact API user message, including focused-question "AI modify" requests.
+
+Retry/edit uses branch semantics: truncate visible messages after the selected
+user bubble, truncate `apiHistory` before replaying that user request, then call
+the normal streaming path. Do not edit only the visible bubble; that sends stale
+context to the model. If a later AI result has already been applied to the
+paper, block retry/edit instead of trying to roll back paper state.
+
+```ts
+// Correct: one store action owns visible history + API history together.
+await assistantStore.editAndResendUserMessage(messageId, nextText);
+```
+
 ## Pattern: paper-scoped persistence
 
 The app manages a local paper library rather than a single anonymous document.

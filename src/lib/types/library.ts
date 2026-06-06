@@ -22,12 +22,22 @@ export const ApiMessageSchema = z.object({
   content: z.string(),
 });
 
+const RequestContextSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("plain") }),
+  z.object({
+    kind: z.literal("modifyQuestion"),
+    question: QuestionSchema,
+  }),
+]);
+
 export const ChatMessageSchema = z.discriminatedUnion("kind", [
   z.object({
     id: z.string().min(1),
     kind: z.literal("text"),
     role: ApiRoleSchema,
     content: z.string(),
+    apiHistoryIndex: z.number().int().nonnegative().optional(),
+    requestContext: RequestContextSchema.optional(),
   }),
   z.object({
     id: z.string().min(1),

@@ -19,6 +19,7 @@ import { ConfirmationCard } from "./ConfirmationCard";
 import { ResultCard } from "./ResultCard";
 import { ErrorCard } from "./ErrorCard";
 import { ChatHistoryPanel } from "./ChatHistoryPanel";
+import { UserMessageBubble } from "./UserMessageBubble";
 
 interface AssistantDrawerProps {
   open: boolean;
@@ -291,11 +292,7 @@ function MessageItem({
   switch (message.kind) {
     case "text":
       if (message.role === "user") {
-        return (
-          <div className="ml-10 animate-fade-in rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-sm text-primary-foreground shadow-md">
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
-          </div>
-        );
+        return <UserMessageBubble message={message} />;
       }
       return (
         <div className="mr-8 flex animate-fade-in items-start gap-2">

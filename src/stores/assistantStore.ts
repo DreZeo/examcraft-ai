@@ -39,6 +39,21 @@ import { usePaperStore } from "./paperStore";
 
 const MAX_JSON_RETRIES = 3;
 
+type UserMessageResendResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason:
+        | "empty"
+        | "streaming"
+        | "notFound"
+        | "unsupportedLegacy"
+        | "appliedResultAfter";
+    };
+
+type TextMessage = Extract<ChatMessage, { kind: "text" }>;
+type RequestContext = NonNullable<TextMessage["requestContext"]>;
+
 interface AssistantState {
   messages: ChatMessage[];
   sessions: ChatSessionMeta[];
@@ -61,6 +76,11 @@ interface AssistantState {
   dismissConfirmation: (cardId: string) => void;
   retry: () => Promise<void>;
   stop: () => Promise<void>;
+  resendUserMessage: (messageId: string) => Promise<UserMessageResendResult>;
+  editAndResendUserMessage: (
+    messageId: string,
+    nextText: string,
+  ) => Promise<UserMessageResendResult>;
   applyResult: (cardId: string) => void;
   undoResult: (cardId: string) => void;
   focusQuestion: (question: Question) => void;
@@ -201,6 +221,111 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       })
       .slice(-3)
       .join("\n\n");
+  }
+
+  function requestContent(text: string, context: RequestContext): string {
+    if (context.kind === "modifyQuestion") {
+      return `Modify the following question (keep its id "${context.question.id}"):\n${JSON.stringify(context.question)}\n\nRequest: ${text}`;
+    }
+    return text;
+  }
+
+  function findUserMessage(messageId: string): {
+    message: TextMessage;
+    index: number;
+  } | null {
+    const index = get().messages.findIndex(
+      (message) =>
+        message.id === messageId &&
+        message.kind === "text" &&
+        message.role === "user",
+    );
+    if (index === -1) return null;
+    return {
+      message: get().messages[index] as TextMessage,
+      index,
+    };
+  }
+
+  function hasAppliedResultAfter(messageIndex: number): boolean {
+    return get()
+      .messages.slice(messageIndex + 1)
+      .some((message) => message.kind === "result" && message.applied);
+  }
+
+  function resolveApiHistoryIndex(
+    message: TextMessage,
+    messageIndex: number,
+  ): number | null {
+    const recorded = message.apiHistoryIndex;
+    if (
+      recorded !== undefined &&
+      apiHistory[recorded]?.role === "user"
+    ) {
+      return recorded;
+    }
+
+    const hasLaterUserText = get()
+      .messages.slice(messageIndex + 1)
+      .some((item) => item.kind === "text" && item.role === "user");
+    if (hasLaterUserText) return null;
+
+    for (let i = apiHistory.length - 1; i >= 0; i -= 1) {
+      if (apiHistory[i]?.role === "user" && apiHistory[i]?.content === message.content) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  async function resendFromUserMessage(
+    messageId: string,
+    nextText?: string,
+  ): Promise<UserMessageResendResult> {
+    if (get().status === "streaming") return { ok: false, reason: "streaming" };
+
+    const target = findUserMessage(messageId);
+    if (!target) return { ok: false, reason: "notFound" };
+    if (hasAppliedResultAfter(target.index)) {
+      return { ok: false, reason: "appliedResultAfter" };
+    }
+
+    const text = (nextText ?? target.message.content).trim();
+    if (!text) return { ok: false, reason: "empty" };
+
+    const apiIndex = resolveApiHistoryIndex(target.message, target.index);
+    if (apiIndex == null) return { ok: false, reason: "unsupportedLegacy" };
+
+    const requestContext: RequestContext =
+      target.message.requestContext ?? { kind: "plain" };
+    apiHistory = apiHistory.slice(0, apiIndex);
+    const nextApiIndex = apiHistory.length;
+    apiHistory.push({
+      role: "user",
+      content: requestContent(text, requestContext),
+    });
+
+    const messages = get().messages.slice(0, target.index + 1);
+    messages[target.index] = {
+      ...target.message,
+      content: text,
+      apiHistoryIndex: nextApiIndex,
+      requestContext,
+    };
+    const remainingIds = new Set(messages.map((message) => message.id));
+    const undoableResultId = get().undoableResultId;
+
+    set({
+      messages,
+      focusedQuestion: null,
+      undoableResultId:
+        undoableResultId && remainingIds.has(undoableResultId)
+          ? undoableResultId
+          : null,
+    });
+    await persistSession();
+    await runChat();
+    return { ok: true };
   }
 
   /** Stream one assistant turn. Listeners accumulate chunks; done/error finalize. */
@@ -446,13 +571,22 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       if (!trimmed || get().status === "streaming") return;
 
       const focused = get().focusedQuestion;
-      const content = focused
-        ? `Modify the following question (keep its id "${focused.id}"):\n${JSON.stringify(focused)}\n\nRequest: ${trimmed}`
-        : trimmed;
+      const requestContext: RequestContext = focused
+        ? { kind: "modifyQuestion", question: focused }
+        : { kind: "plain" };
+      const content = requestContent(trimmed, requestContext);
 
       retryCount = 0;
+      const apiHistoryIndex = apiHistory.length;
       apiHistory.push({ role: "user", content });
-      pushMessage({ id: uuid(), kind: "text", role: "user", content: trimmed });
+      pushMessage({
+        id: uuid(),
+        kind: "text",
+        role: "user",
+        content: trimmed,
+        apiHistoryIndex,
+        requestContext,
+      });
       await persistSession();
       await runChat();
     },
@@ -511,6 +645,11 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         await persistSession();
       }
     },
+
+    resendUserMessage: (messageId) => resendFromUserMessage(messageId),
+
+    editAndResendUserMessage: (messageId, nextText) =>
+      resendFromUserMessage(messageId, nextText),
 
     applyResult: (cardId) => {
       const card = get().messages.find(
