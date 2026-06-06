@@ -139,9 +139,9 @@ Tailwind v4's `@tailwindcss/vite` plugin -- the rules never reach the browser.
 
 ### Font Synthesis for Italic in Paper Preview
 
-**What:** Keep `font-synthesis: weight` on `:root` in `@layer base` for the general app, then explicitly set `font-synthesis: weight style` on `.markdown-body` in `@layer components`.
+**What:** Keep `font-synthesis: weight` on `:root` in `@layer base` for the general app, explicitly set `font-synthesis: weight style` on `.markdown-body`, and give `.markdown-body em` an italic-friendly fallback font stack.
 
-**Why:** Chinese paper fonts in the stack (PingFang SC, Microsoft YaHei, SimSun, KaiTi, etc.) often have no native italic faces. Italic rendering relies on browser synthesis of an oblique slant. `font-synthesis: weight` allows only bold synthesis and blocks style synthesis when inherited by `<em>`, so Markdown containers must opt back into `style`.
+**Why:** Chinese paper fonts in the stack (PingFang SC, Microsoft YaHei, SimSun, KaiTi, etc.) often have no native italic faces. Italic rendering relies on browser synthesis of an oblique slant. `font-synthesis: weight` allows only bold synthesis and blocks style synthesis when inherited by `<em>`, so Markdown containers must opt back into `style`. Some Windows CJK UI fonts still do not visibly synthesize italic even when style synthesis is allowed, so only italic spans use a stable fallback stack.
 
 **The required Markdown rules:**
 ```css
@@ -150,11 +150,12 @@ Tailwind v4's `@tailwindcss/vite` plugin -- the rules never reach the browser.
 }
 
 .markdown-body em {
+  font-family: "Times New Roman", Times, SimSun, serif;
   font-style: italic;
   font-style: oblique 12deg;
 }
 ```
-The double `font-style` provides a fallback: `oblique 12deg` is used by modern browsers; `italic` is the fallback. Add a raw CSS regression test whenever this contract changes, because jsdom component tests can prove `<em>` exists but cannot prove real browser font synthesis is visually enabled.
+The double `font-style` provides a fallback: `oblique 12deg` is used by modern browsers; `italic` is the fallback. Do not use `transform: skewX(...)` as the default italic strategy because it visually transforms glyphs outside normal font/layout behavior. Add a raw CSS regression test whenever this contract changes, because jsdom component tests can prove `<em>` exists but cannot prove real browser font synthesis is visually enabled.
 
 
 

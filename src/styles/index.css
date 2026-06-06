@@ -274,6 +274,7 @@
   }
 
   .markdown-body em {
+    font-family: "Times New Roman", Times, SimSun, serif;
     font-style: italic;
     font-style: oblique 12deg;
   }

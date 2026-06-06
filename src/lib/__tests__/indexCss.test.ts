@@ -9,6 +9,9 @@ describe("index.css", () => {
       ?.groups?.body ?? "";
 
     expect(markdownBodyRule).toMatch(/font-synthesis:\s*weight style;/);
+    expect(markdownEmRule).toMatch(
+      /font-family:\s*"Times New Roman", Times, SimSun, serif;/,
+    );
     expect(markdownEmRule).toMatch(/font-style:\s*italic;/);
     expect(markdownEmRule).toMatch(/font-style:\s*oblique 12deg;/);
   });
