@@ -5,6 +5,7 @@ import type {
 import { toStudentVersion } from "../exam/studentVersion";
 import { totalScore } from "../exam/merge";
 import { groupQuestionsByType } from "../exam/paperSections";
+import { choiceDisplay, stripLeadingQuestionNumber } from "../exam/choiceDisplay";
 import {
   studentAnswerSpaceLines,
   studentBlankUnderlineLength,
@@ -65,10 +66,11 @@ function renderFillBlankContent(question: Question): string {
   if (question.type !== "fill-in-blank") return question.content;
   const blankLength = studentBlankUnderlineLength(question);
   const replacement = "_".repeat(blankLength);
-  return /_{3,}/.test(question.content)
-    ? question.content.replace(/_{3,}/g, replacement)
-    : `${question.content} ${Array.from(
-        { length: question.blanks.length },
+  const content = stripLeadingQuestionNumber(question.content);
+  return /_{3,}/.test(content)
+    ? content.replace(/_{3,}/g, replacement)
+    : `${content} ${Array.from(
+        { length: Array.isArray(question.blanks) ? question.blanks.length : 1 },
         () => replacement,
       ).join(" ")}`;
 }
@@ -96,13 +98,18 @@ function renderQuestion(
   number: number,
   includeAnswers: boolean,
 ): string[] {
+  const choice =
+    q.type === "single-choice" || q.type === "multiple-choice"
+      ? choiceDisplay(q)
+      : null;
   const content =
-    !includeAnswers && q.type === "fill-in-blank"
+    choice?.stem ??
+    (!includeAnswers && q.type === "fill-in-blank"
       ? renderFillBlankContent(q)
-      : q.content;
+      : stripLeadingQuestionNumber(q.content));
   const lines: string[] = [`${number}. ${content} (${q.score})`];
-  if ("options" in q && !contentIncludesOptions(q.content, q.options)) {
-    lines.push("", ...renderOptions(q.options));
+  if (choice && choice.options.length > 0) {
+    lines.push("", ...renderOptions(choice.options));
   }
   if (includeAnswers) {
     const answer = renderAnswer(q);
@@ -119,24 +126,6 @@ function renderStudentAnswerSpace(question: Question): string[] {
   const lines = studentAnswerSpaceLines(question);
   if (lines === 0) return [];
   return Array.from({ length: lines }, () => ANSWER_SPACE_LINE);
-}
-
-function contentIncludesOptions(content: string, options: string[]): boolean {
-  if (options.length === 0) return false;
-  const optionMarkers = content.match(/(?:^|\s)[A-J][.)、]\s*/g) ?? [];
-  if (optionMarkers.length >= options.length) return true;
-
-  const lines = content
-    .split(/\r?\n/)
-    .map((line) => normalizeOptionText(line.replace(/^\s*[A-J][.)、]\s*/, "")))
-    .filter(Boolean);
-  return options.every((option) =>
-    lines.includes(normalizeOptionText(option)),
-  );
-}
-
-function normalizeOptionText(value: string): string {
-  return value.replace(/\s+/g, "").toLowerCase();
 }
 
 function blockquoteContent(content: string): string[] {
@@ -162,7 +151,10 @@ function getAnswerSections(question: Question): AnswerSection[] {
       return [
         {
           label: "答案",
-          content: question.correctAnswers
+          content: (Array.isArray(question.correctAnswers)
+            ? question.correctAnswers
+            : []
+          )
             .map((i) => String.fromCharCode(65 + i))
             .join(", "),
         },
@@ -170,7 +162,14 @@ function getAnswerSections(question: Question): AnswerSection[] {
     case "true-false":
       return [{ label: "答案", content: question.correctAnswer ? "正确" : "错误" }];
     case "fill-in-blank":
-      return [{ label: "答案", content: question.blanks.join(" / ") }];
+      return [
+        {
+          label: "答案",
+          content: (Array.isArray(question.blanks) ? question.blanks : []).join(
+            " / ",
+          ),
+        },
+      ];
     case "short-answer": {
       const sections: AnswerSection[] = [
         { label: "答案", content: question.referenceAnswer },

@@ -5,6 +5,10 @@ import {
   AiQuestionsResponseSchema,
   type AiPaperOperation,
 } from "../types/exam";
+import {
+  validateQuestionTypeStrategy,
+  type QuestionTypeStrategyMatch,
+} from "../exam/questionTypeStrategy";
 import { formatZodError } from "./validateQuestions";
 
 export type ValidatePaperOperationsResult =
@@ -19,6 +23,7 @@ export type ValidatePaperOperationsResult =
 export function validatePaperOperations(
   reply: string,
   mode: "append" | "replace",
+  questionTypeStrategy?: QuestionTypeStrategyMatch | null,
 ): ValidatePaperOperationsResult {
   const { json } = extractJson(reply);
 
@@ -40,22 +45,20 @@ export function validatePaperOperations(
 
   const operations = AiPaperOperationsResponseSchema.safeParse(parsed);
   if (operations.success) {
-    return { ok: true, operations: operations.data.operations };
+    return validateStrategy(operations.data.operations, questionTypeStrategy, reply);
   }
 
   const legacy = AiQuestionsResponseSchema.safeParse(parsed);
   if (legacy.success) {
-    return {
-      ok: true,
-      operations:
-        mode === "append"
-          ? [{ type: "appendQuestions", questions: legacy.data.questions }]
-          : legacy.data.questions.map((question) => ({
-              type: "updateQuestion",
-              id: question.id,
-              question,
-            })),
-    };
+    const converted: AiPaperOperation[] =
+      mode === "append"
+        ? [{ type: "appendQuestions", questions: legacy.data.questions }]
+        : legacy.data.questions.map((question) => ({
+            type: "updateQuestion",
+            id: question.id,
+            question,
+          }));
+    return validateStrategy(converted, questionTypeStrategy, reply);
   }
 
   return {
@@ -63,6 +66,21 @@ export function validatePaperOperations(
     error: formatOperationError(operations.error, legacy.error),
     raw: reply,
   };
+}
+
+function validateStrategy(
+  operations: AiPaperOperation[],
+  questionTypeStrategy: QuestionTypeStrategyMatch | null | undefined,
+  raw: string,
+): ValidatePaperOperationsResult {
+  const strategy = validateQuestionTypeStrategy(
+    operations,
+    questionTypeStrategy ?? null,
+  );
+  if (!strategy.ok) {
+    return { ok: false, error: strategy.error, raw };
+  }
+  return { ok: true, operations };
 }
 
 function formatOperationError(

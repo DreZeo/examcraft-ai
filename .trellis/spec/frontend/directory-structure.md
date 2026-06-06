@@ -73,6 +73,15 @@ subjective answer-space placeholders. When exact CSS cannot be represented in
 plain Markdown, choose the closest Markdown-native structure and cover it with
 `exportMarkdown.test.ts`.
 
+Choice question display is also a shared derivation. AI output may put A/B/C/D
+options inside `content` even when the structured `options` array exists, so
+renderers must use `lib/exam/choiceDisplay.ts` to derive a clean stem plus an
+aligned option list. Do not reimplement option-marker detection in components or
+exports, and do not suppress structured option rendering merely because the stem
+contains option markers; strip embedded options from the stem and render the
+options through the shared helper instead. Cover this with both pure helper tests
+and `QuestionBlock` / Markdown export regression tests.
+
 ---
 
 ## Testing

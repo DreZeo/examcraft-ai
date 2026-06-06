@@ -1,4 +1,5 @@
 import type { ExamPaper, Question, QuestionType } from "../types/exam";
+import { inferQuestionTypeStrategy } from "./questionTypeStrategy";
 
 /** Display order shared by preview and exports; absent types are skipped. */
 export const QUESTION_TYPE_ORDER: readonly QuestionType[] = [
@@ -48,6 +49,7 @@ export function cnOrdinal(index: number): string {
 
 export function groupQuestionsByType(paper: ExamPaper): PaperQuestionSection[] {
   const sections: PaperQuestionSection[] = [];
+  const labels = questionTypeLabelsForPaper(paper);
 
   for (const type of QUESTION_TYPE_ORDER) {
     const questions = paper.questions.filter((question) => question.type === type);
@@ -56,11 +58,23 @@ export function groupQuestionsByType(paper: ExamPaper): PaperQuestionSection[] {
     sections.push({
       type,
       ordinal,
-      title: `${ordinal}、${QUESTION_TYPE_LABEL_ZH[type]}`,
+      title: `${ordinal}、${labels[type]}`,
       questions,
       score: questions.reduce((sum, question) => sum + question.score, 0),
     });
   }
 
   return sections;
+}
+
+export function questionTypeLabelsForPaper(
+  paper: ExamPaper,
+): Record<QuestionType, string> {
+  const match = inferQuestionTypeStrategy({
+    requestText: [paper.title, paper.metadata?.subject].filter(Boolean).join("\n"),
+  });
+  return {
+    ...QUESTION_TYPE_LABEL_ZH,
+    ...(match?.strategy.sectionLabels ?? {}),
+  };
 }

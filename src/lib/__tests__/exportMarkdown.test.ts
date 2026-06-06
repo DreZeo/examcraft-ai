@@ -80,6 +80,41 @@ describe("paperToMarkdown", () => {
     expect(md).not.toContain("计算题");
   });
 
+  it("uses contextual English section labels in Markdown export", () => {
+    const paper = ExamPaperSchema.parse({
+      title: "六年级英语试卷",
+      questions: [
+        {
+          id: "tf-1",
+          type: "true-false",
+          content: "Read the passage and judge the statement.",
+          correctAnswer: true,
+          score: 4,
+        },
+        {
+          id: "fill-1",
+          type: "fill-in-blank",
+          content: "Complete the cloze passage: ___.",
+          blanks: ["word"],
+          score: 6,
+        },
+        {
+          id: "essay-1",
+          type: "essay",
+          content: "Write about your weekend.",
+          scoringCriteria: "Clear structure and correct grammar.",
+          score: 15,
+        },
+      ],
+    });
+
+    const md = paperToMarkdown(paper, { includeAnswers: true });
+
+    expect(md).toContain("## 一、阅读理解判断");
+    expect(md).toContain("## 二、完形填空");
+    expect(md).toContain("## 三、作文");
+  });
+
   it("restarts question numbering within each section", () => {
     const md = paperToMarkdown(makePaper(), { includeAnswers: true });
     const lines = md.split("\n");

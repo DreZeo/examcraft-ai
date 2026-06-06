@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { validatePaperOperations } from "../api/validatePaperOperations";
+import { inferQuestionTypeStrategy } from "../exam/questionTypeStrategy";
 
 const validQuestion = {
   id: "q1",
@@ -8,6 +9,22 @@ const validQuestion = {
   options: ["3", "4"],
   correctAnswer: 1,
   score: 5,
+};
+
+const essayQuestion = {
+  id: "essay-1",
+  type: "essay",
+  content: "Discuss your opinion.",
+  scoringCriteria: "Clear argument.",
+  score: 10,
+};
+
+const shortAnswerQuestion = {
+  id: "short-1",
+  type: "short-answer",
+  content: "Answer briefly.",
+  referenceAnswer: "Reference answer.",
+  score: 6,
 };
 
 describe("validatePaperOperations", () => {
@@ -74,5 +91,37 @@ describe("validatePaperOperations", () => {
     if (!result.ok) {
       expect(result.error).toMatch(/id must match question.id/i);
     }
+  });
+
+  it("rejects generated question types that violate the active strategy", () => {
+    const reply = JSON.stringify({
+      operations: [{ type: "appendQuestions", questions: [shortAnswerQuestion] }],
+    });
+
+    const result = validatePaperOperations(
+      reply,
+      "append",
+      inferQuestionTypeStrategy({ requestText: "生成一份六年级英语试卷" }),
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("English language paper");
+      expect(result.error).toContain("short-answer");
+    }
+  });
+
+  it("allows English composition by default", () => {
+    const reply = JSON.stringify({
+      operations: [{ type: "appendQuestions", questions: [essayQuestion] }],
+    });
+
+    const result = validatePaperOperations(
+      reply,
+      "append",
+      inferQuestionTypeStrategy({ requestText: "生成一份六年级英语试卷" }),
+    );
+
+    expect(result.ok).toBe(true);
   });
 });

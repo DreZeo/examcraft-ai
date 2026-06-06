@@ -13,6 +13,10 @@ import {
   studentAnswerSpaceLines,
   studentBlankUnderlineLength,
 } from "../../lib/exam/pagination";
+import {
+  choiceDisplay,
+  stripLeadingQuestionNumber,
+} from "../../lib/exam/choiceDisplay";
 import { Markdown } from "./Markdown";
 
 interface QuestionBlockProps {
@@ -36,6 +40,10 @@ export function QuestionBlock({
   const { t } = useTranslation();
   const { reorder, deleteQuestion } = usePaperStore();
   const focusQuestion = useAssistantStore((s) => s.focusQuestion);
+
+  const choice = isChoiceQuestion(question) ? choiceDisplay(question) : null;
+  const content =
+    choice?.stem ?? stripLeadingQuestionNumber(question.content);
 
   return (
     <li
@@ -90,7 +98,7 @@ export function QuestionBlock({
               {studentView && question.type === "fill-in-blank" ? (
                 <FillBlankContent question={question} />
               ) : (
-                <Markdown>{question.content}</Markdown>
+                <Markdown>{content}</Markdown>
               )}
             </div>
             <span className="shrink-0 text-xs text-muted-foreground">
@@ -98,9 +106,9 @@ export function QuestionBlock({
             </span>
           </div>
 
-          {"options" in question && !contentIncludesOptions(question.content, question.options) && (
-            <ol className="mt-1 space-y-0.5 pl-1 text-sm text-foreground">
-              {question.options.map((opt, i) => (
+          {choice && choice.options.length > 0 && (
+            <ol className="mt-2 grid grid-cols-1 gap-x-8 gap-y-1 pl-1 text-sm text-foreground sm:grid-cols-2">
+              {choice.options.map((opt, i) => (
                 <li key={i} className="flex gap-2">
                   <span className="shrink-0">
                     {String.fromCharCode(65 + i)}.
@@ -129,8 +137,8 @@ function FillBlankContent({ question }: { question: Question }) {
   const replacement = "_".repeat(blankLength);
   const content = /_{3,}/.test(question.content)
     ? question.content.replace(/_{3,}/g, replacement)
-    : `${question.content} ${Array.from(
-        { length: question.blanks.length },
+    : `${stripLeadingQuestionNumber(question.content)} ${Array.from(
+        { length: Array.isArray(question.blanks) ? question.blanks.length : 1 },
         () => replacement,
       ).join(" ")}`;
   return <Markdown>{content}</Markdown>;
@@ -148,22 +156,10 @@ function StudentAnswerSpace({ question }: { question: Question }) {
   );
 }
 
-function contentIncludesOptions(content: string, options: string[]): boolean {
-  if (options.length === 0) return false;
-  const optionMarkers = content.match(/(?:^|\s)[A-J][.)、]\s*/g) ?? [];
-  if (optionMarkers.length >= options.length) return true;
-
-  const lines = content
-    .split(/\r?\n/)
-    .map((line) => normalizeOptionText(line.replace(/^\s*[A-J][.)、]\s*/, "")))
-    .filter(Boolean);
-  return options.every((option) =>
-    lines.includes(normalizeOptionText(option)),
-  );
-}
-
-function normalizeOptionText(value: string): string {
-  return value.replace(/\s+/g, "").toLowerCase();
+function isChoiceQuestion(
+  question: Question,
+): question is Extract<Question, { type: "single-choice" | "multiple-choice" }> {
+  return question.type === "single-choice" || question.type === "multiple-choice";
 }
 
 function AnswerBlock({ question }: { question: Question }) {
@@ -237,7 +233,10 @@ function getAnswerSections(
       return [
         {
           label: labels.answer,
-          content: question.correctAnswers
+          content: (Array.isArray(question.correctAnswers)
+            ? question.correctAnswers
+            : []
+          )
             .map((i) => String.fromCharCode(65 + i))
             .join(", "),
         },
@@ -250,7 +249,14 @@ function getAnswerSections(
         },
       ];
     case "fill-in-blank":
-      return [{ label: labels.answer, content: question.blanks.join(" / ") }];
+      return [
+        {
+          label: labels.answer,
+          content: (Array.isArray(question.blanks) ? question.blanks : []).join(
+            " / ",
+          ),
+        },
+      ];
     case "short-answer": {
       const sections = [
         { label: labels.answer, content: question.referenceAnswer },

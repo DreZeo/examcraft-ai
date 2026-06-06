@@ -1,4 +1,8 @@
 import type { AgentConfig, AppSettings, ExplanationTier } from "../types/config";
+import {
+  formatQuestionTypeStrategy,
+  type QuestionTypeStrategyMatch,
+} from "../exam/questionTypeStrategy";
 
 /**
  * Build the system prompt sent to the model each turn.
@@ -6,15 +10,17 @@ import type { AgentConfig, AppSettings, ExplanationTier } from "../types/config"
  * The prompt is a fixed, built-in instruction set (not user-editable) that
  * defines the two-phase interaction flow, the paper-operation JSON schema
  * (mirroring `lib/types/exam.ts`), subject-neutrality, fenced-JSON output, and
- * mandatory answers. The explanation-detail tier and any custom user
- * instructions from settings are appended. When a paper summary is supplied it
- * is included so the assistant can be paper-aware (avoid duplicates, edit a
- * specific question, fill to a target score).
+ * mandatory answers. Subject/category question-type strategy guidance is
+ * appended when context can be inferred. The explanation-detail tier and any
+ * custom user instructions from settings are appended. When a paper summary is
+ * supplied it is included so the assistant can be paper-aware (avoid
+ * duplicates, edit a specific question, fill to a target score).
  */
 export function buildSystemPrompt(
   settings: AppSettings,
   paperSummary?: string,
   activeAgent?: AgentConfig | null,
+  questionTypeStrategy?: QuestionTypeStrategyMatch | null,
 ): string {
   const sections: string[] = [
     ROLE,
@@ -22,8 +28,12 @@ export function buildSystemPrompt(
     SCHEMA,
     OPERATIONS,
     OUTPUT_RULES,
-    explanationInstruction(settings.explanationTier),
   ];
+
+  const strategySection = formatQuestionTypeStrategy(questionTypeStrategy ?? null);
+  if (strategySection) sections.push(strategySection);
+
+  sections.push(explanationInstruction(settings.explanationTier));
 
   if (activeAgent?.instructions.trim()) {
     sections.push(
@@ -76,7 +86,10 @@ Per type:
 - "fill-in-blank": "content" uses ___ for each blank, "blanks" (string[], expected answers in order), "explanation"?
 - "short-answer": "referenceAnswer" (string), "scoringPoints"? (string[]), "explanation"?
 - "essay": "scoringCriteria" (string), "explanation"?
-- "calculation": "solution" (step-by-step, Markdown+LaTeX), "answer" (string), "explanation"?`;
+- "calculation": "solution" (step-by-step, Markdown+LaTeX), "answer" (string), "explanation"?
+For choice questions, put ONLY the stem/passage/question text in "content";
+put every A/B/C/D option in the "options" array. Do not duplicate option labels
+inside "content". Do not pre-number questions in "content"; the app numbers them.`;
 
 const OPERATIONS = `# Paper operation JSON schema
 In Phase 2, return an object: {"operations": [ ...Operation ]}.

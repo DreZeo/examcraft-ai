@@ -164,6 +164,20 @@ describe("toStudentVersion", () => {
     expect(q.blanks).toEqual(["", ""]);
   });
 
+  it("does not crash when legacy fill-in-blank data has no blanks array", () => {
+    const malformed = {
+      id: "f1",
+      type: "fill-in-blank",
+      content: "Complete ___.",
+      score: 4,
+    } as unknown as Question;
+
+    const student = toStudentVersion(paper([malformed]));
+    const q = student.questions[0] as Record<string, unknown>;
+
+    expect(q.blanks).toEqual([""]);
+  });
+
   it("does not mutate the original paper", () => {
     const original = paper([sc("q1")]);
     toStudentVersion(original);

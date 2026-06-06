@@ -53,4 +53,39 @@ describe("paperSections", () => {
     expect(cnOrdinal(0)).toBe("一");
     expect(cnOrdinal(10)).toBe("11");
   });
+
+  it("uses contextual English exam section labels", () => {
+    const paper = ExamPaperSchema.parse({
+      title: "六年级英语试卷",
+      questions: [
+        {
+          id: "tf-1",
+          type: "true-false",
+          content: "Read the passage and judge.",
+          correctAnswer: true,
+          score: 4,
+        },
+        {
+          id: "fill-1",
+          type: "fill-in-blank",
+          content: "Complete the cloze passage: ___.",
+          blanks: ["word"],
+          score: 6,
+        },
+        {
+          id: "essay-1",
+          type: "essay",
+          content: "Write about your weekend.",
+          scoringCriteria: "Clear structure and correct grammar.",
+          score: 15,
+        },
+      ],
+    });
+
+    expect(groupQuestionsByType(paper).map((section) => section.title)).toEqual([
+      "一、阅读理解判断",
+      "二、完形填空",
+      "三、作文",
+    ]);
+  });
 });

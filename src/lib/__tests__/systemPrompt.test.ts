@@ -6,6 +6,7 @@ import {
   type AgentConfig,
   type AppSettings,
 } from "../types/config";
+import { inferQuestionTypeStrategy } from "../exam/questionTypeStrategy";
 
 function settings(patch: Partial<AppSettings> = {}): AppSettings {
   return AppSettingsSchema.parse({ ...patch });
@@ -105,5 +106,22 @@ describe("buildSystemPrompt", () => {
 
   it("omits the paper section when no summary is given", () => {
     expect(buildSystemPrompt(settings())).not.toMatch(/# current paper/i);
+  });
+
+  it("injects subject-aware question type strategy guidance", () => {
+    const prompt = buildSystemPrompt(
+      settings(),
+      undefined,
+      null,
+      inferQuestionTypeStrategy({ requestText: "生成一份六年级英语试卷" }),
+    );
+
+    expect(prompt).toMatch(/question type strategy/i);
+    expect(prompt).toContain("English language paper");
+    expect(prompt).toContain("Default-excluded question types");
+    expect(prompt).toContain("short-answer");
+    expect(prompt).toContain("完形填空");
+    expect(prompt).toContain("阅读理解判断");
+    expect(prompt).toContain("作文");
   });
 });

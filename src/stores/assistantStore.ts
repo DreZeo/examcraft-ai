@@ -21,6 +21,7 @@ import { buildSystemPrompt } from "../lib/api/systemPrompt";
 import { validatePaperOperations } from "../lib/api/validatePaperOperations";
 import { extractJson } from "../lib/api/extractJson";
 import { type AppError } from "../lib/api/errorMessages";
+import { inferQuestionTypeStrategy } from "../lib/exam/questionTypeStrategy";
 import { summarizePaper } from "../lib/exam/summary";
 import * as storage from "../lib/storage/tauri";
 import { useConfigStore } from "./configStore";
@@ -169,12 +170,32 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
   function buildApiMessages(): ApiMessage[] {
     const configState = useConfigStore.getState();
     const summary = summarizePaper(usePaperStore.getState().paper);
+    const questionTypeStrategy = inferQuestionTypeStrategy({
+      requestText: userIntentContext(),
+      paperSummary: summary,
+    });
     const system = buildSystemPrompt(
       configState.config.settings,
       summary,
       configState.activeAgent(),
+      questionTypeStrategy,
     );
     return [{ role: "system", content: system }, ...apiHistory];
+  }
+
+  function userIntentContext(): string {
+    return apiHistory
+      .filter((message) => message.role === "user")
+      .map((message) => message.content)
+      .filter((content) => {
+        const trimmed = content.trim();
+        return (
+          !trimmed.startsWith("Confirmed. Generate the paper operations now") &&
+          !trimmed.startsWith("Your previous response did not pass validation:")
+        );
+      })
+      .slice(-3)
+      .join("\n\n");
   }
 
   /** Stream one assistant turn. Listeners accumulate chunks; done/error finalize. */
@@ -266,7 +287,14 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     // Phase 2: JSON present -> validate.
     const focused = get().focusedQuestion;
     const applyMode = focused ? "replace" : "append";
-    const result = validatePaperOperations(reply, applyMode);
+    const result = validatePaperOperations(
+      reply,
+      applyMode,
+      inferQuestionTypeStrategy({
+        requestText: userIntentContext(),
+        paperSummary: summarizePaper(usePaperStore.getState().paper),
+      }),
+    );
     if (result.ok) {
       apiHistory.push({ role: "assistant", content: reply });
       retryCount = 0;

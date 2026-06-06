@@ -189,7 +189,7 @@ export function studentAnswerSpaceLines(question: Question): number {
 
 export function studentBlankUnderlineLength(question: Question): number {
   if (question.type !== "fill-in-blank") return 0;
-  const count = question.blanks.length;
+  const count = Array.isArray(question.blanks) ? question.blanks.length : 1;
   if (count >= 3 || question.content.length > 80) return 18;
   if (count === 2 || question.content.length > 40) return 14;
   return 10;
@@ -204,7 +204,8 @@ function estimateQuestionHeightMm(
   let lines = 2 + estimateTextLines(question.content);
 
   if ("options" in question) {
-    lines += question.options.reduce(
+    const options = Array.isArray(question.options) ? question.options : [];
+    lines += options.reduce(
       (sum, option) => sum + Math.max(1, estimateTextLines(option)),
       0,
     );

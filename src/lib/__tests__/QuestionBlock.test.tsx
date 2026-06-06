@@ -83,7 +83,7 @@ describe("QuestionBlock", () => {
     expect(container).toHaveTextContent("<u>raw</u>");
   });
 
-  it("does not render structured options again when content already includes them", () => {
+  it("renders embedded line options as an aligned option list", () => {
     const question: SingleChoiceQuestion = {
       id: "q1",
       type: "single-choice",
@@ -101,11 +101,12 @@ describe("QuestionBlock", () => {
 
     const { container } = renderQuestion(question);
 
-    expect(container).toHaveTextContent("A. HCl");
-    expect(container.querySelectorAll("ol ol li")).toHaveLength(0);
+    expect(container).toHaveTextContent("下列物质中，属于弱电解质的是（）");
+    expect(container.querySelectorAll("ol li")).toHaveLength(4);
+    expect(container.querySelector("ol")).toHaveClass("grid");
   });
 
-  it("does not render structured options again when content includes inline option markers", () => {
+  it("renders embedded inline options as an aligned option list", () => {
     const question: SingleChoiceQuestion = {
       id: "q1",
       type: "single-choice",
@@ -117,8 +118,11 @@ describe("QuestionBlock", () => {
 
     const { container } = renderQuestion(question);
 
-    expect(container).toHaveTextContent("A. 广州");
-    expect(container.querySelectorAll("ol ol li")).toHaveLength(0);
+    expect(container).toHaveTextContent(
+      "鸦片战争后，中国被迫开放的第一批通商口岸中，位于最北端的是？",
+    );
+    expect(container.querySelectorAll("ol li")).toHaveLength(4);
+    expect(container.querySelector("ol")).toHaveClass("grid");
   });
 
   it("renders calculation solution in teacher view and hides it in student view", () => {

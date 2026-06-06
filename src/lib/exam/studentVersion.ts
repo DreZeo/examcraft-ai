@@ -27,7 +27,8 @@ function stripAnswer(q: Question): Question {
     }
     case "fill-in-blank": {
       const { blanks: _b, explanation: _e, ...rest } = q;
-      return { ...rest, blanks: q.blanks.map(() => "") } as Question;
+      const blanks = Array.isArray(q.blanks) && q.blanks.length > 0 ? q.blanks : [""];
+      return { ...rest, blanks: blanks.map(() => "") } as Question;
     }
     case "short-answer": {
       const {
