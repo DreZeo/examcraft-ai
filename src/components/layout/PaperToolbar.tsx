@@ -89,8 +89,23 @@ export function PaperToolbar() {
   }
 
   function applyFormatToActiveSelection(format: MarkdownFormat): boolean {
+    const currentPaperSelection = readPaperTextSelection();
+    if (
+      currentPaperSelection &&
+      applyFormatToPaperSelection(currentPaperSelection, format)
+    ) {
+      return true;
+    }
     if (applyFormat(format)) return true;
-    const selection = readPaperTextSelection() ?? paperSelection;
+    const selection = paperSelection;
+    if (selection && applyFormatToPaperSelection(selection, format)) return true;
+    return false;
+  }
+
+  function applyFormatToPaperSelection(
+    selection: PaperTextSelection,
+    format: MarkdownFormat,
+  ): boolean {
     if (!selection) return false;
     const question = paper.questions.find((q) => q.id === selection.questionId);
     if (!question) return false;

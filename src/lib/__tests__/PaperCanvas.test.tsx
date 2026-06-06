@@ -174,6 +174,86 @@ describe("PaperCanvas", () => {
       .not.toContain("**choose**");
   });
 
+  it("renders italic Markdown immediately after content changes", async () => {
+    paper = makeRealtimeMarkdownPaper("choose one");
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function getRect(this: HTMLElement) {
+        const id = this.dataset.layoutBlockId;
+        const height = id === "question-choice-1" ? 880 : 12;
+        return {
+          width: 100,
+          height,
+          top: 0,
+          right: 0,
+          bottom: height,
+          left: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      },
+    );
+
+    const { container, rerender } = renderCanvas();
+
+    await waitFor(() => {
+      expect(visiblePages(container).length).toBeGreaterThan(1);
+    });
+
+    paper = makeRealtimeMarkdownPaper("*choose* one");
+    rerender(
+      <MarkdownFormatProvider>
+        <PaperCanvas />
+      </MarkdownFormatProvider>,
+    );
+
+    const formatted = visiblePages(container)
+      .map((page) => page.querySelector("em"))
+      .find((node): node is HTMLElement => node instanceof HTMLElement);
+    expect(formatted).toHaveTextContent("choose");
+    expect(visiblePages(container).map((page) => page.textContent).join(""))
+      .not.toContain("*choose*");
+  });
+
+  it("renders bold italic Markdown immediately after content changes", async () => {
+    paper = makeRealtimeMarkdownPaper("**choose** one");
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function getRect(this: HTMLElement) {
+        const id = this.dataset.layoutBlockId;
+        const height = id === "question-choice-1" ? 880 : 12;
+        return {
+          width: 100,
+          height,
+          top: 0,
+          right: 0,
+          bottom: height,
+          left: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      },
+    );
+
+    const { container, rerender } = renderCanvas();
+
+    await waitFor(() => {
+      expect(visiblePages(container).length).toBeGreaterThan(1);
+    });
+
+    paper = makeRealtimeMarkdownPaper("***choose*** one");
+    rerender(
+      <MarkdownFormatProvider>
+        <PaperCanvas />
+      </MarkdownFormatProvider>,
+    );
+
+    const formatted = visiblePages(container)
+      .map((page) => page.querySelector("em strong"))
+      .find((node): node is HTMLElement => node instanceof HTMLElement);
+    expect(formatted).toHaveTextContent("choose");
+  });
+
   it("does not append a blank question when the new-question modal is canceled", async () => {
     renderCanvas();
 

@@ -18,21 +18,31 @@ export function applyMarkdownFormat(
     return clearMarkdownFormat(value, selectionStart, selectionEnd);
   }
 
-  if (format === "bulletList" || format === "orderedList" || format === "quote") {
+  if (
+    format === "heading" ||
+    format === "bulletList" ||
+    format === "orderedList" ||
+    format === "quote"
+  ) {
     const blockStart = value.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1;
     const blockEndIndex = value.indexOf("\n", selectionEnd);
     const blockEnd = blockEndIndex === -1 ? value.length : blockEndIndex;
     const block = value.slice(blockStart, blockEnd);
     const lines = block.length > 0 ? block.split("\n") : [""];
     const everyLineFormatted = lines.every((line) => {
+      if (format === "heading") return /^(\s*)#{1,6}\s+/.test(line);
       if (format === "bulletList") return /^(\s*)[-*]\s+/.test(line);
       if (format === "orderedList") return /^(\s*)\d+\.\s+/.test(line);
       return /^(\s*)>\s*/.test(line);
     });
     const formatted = lines
       .map((line, index) => {
-        const stripped = line.replace(/^(\s*)([-*]\s+|\d+\.\s+|>\s*)/, "$1");
+        const stripped = line.replace(
+          /^(\s*)(#{1,6}\s+|[-*]\s+|\d+\.\s+|>\s*)/,
+          "$1",
+        );
         if (everyLineFormatted) return stripped;
+        if (format === "heading") return stripped.replace(/^(\s*)/, "$1## ");
         if (format === "bulletList") return stripped.replace(/^(\s*)/, "$1- ");
         if (format === "orderedList") return stripped.replace(/^(\s*)/, `$1${index + 1}. `);
         return stripped.replace(/^(\s*)/, "$1> ");
@@ -41,35 +51,56 @@ export function applyMarkdownFormat(
     return replaceRange(value, blockStart, blockEnd, formatted);
   }
 
-  const fallback = format === "heading" ? "Heading" : "text";
+  const fallback = "text";
   const text = selected || fallback;
   const wrappers: Record<
-    Exclude<MarkdownFormat, "bulletList" | "orderedList" | "quote" | "clear">,
+    Exclude<MarkdownFormat, "heading" | "bulletList" | "orderedList" | "quote" | "clear">,
     [string, string]
   > = {
     bold: ["**", "**"],
     italic: ["*", "*"],
     underline: ["++", "++"],
-    heading: ["## ", ""],
     code: ["`", "`"],
   };
   const [prefix, suffix] = wrappers[format];
+  const inlineRange = selected
+    ? trimInlineSelection(value, selectionStart, selectionEnd)
+    : { selectionStart, selectionEnd };
   const toggled = toggleWrappedRange(
     value,
-    selectionStart,
-    selectionEnd,
+    inlineRange.selectionStart,
+    inlineRange.selectionEnd,
     prefix,
     suffix,
   );
   if (toggled) return toggled;
 
-  const replacement = `${prefix}${text}${suffix}`;
-  const next = replaceRange(value, selectionStart, selectionEnd, replacement);
+  const inlineText =
+    value.slice(inlineRange.selectionStart, inlineRange.selectionEnd) || text;
+  const replacement = `${prefix}${inlineText}${suffix}`;
+  const next = replaceRange(
+    value,
+    inlineRange.selectionStart,
+    inlineRange.selectionEnd,
+    replacement,
+  );
   return {
     value: next.value,
-    selectionStart: selectionStart + prefix.length,
-    selectionEnd: selectionStart + prefix.length + text.length,
+    selectionStart: inlineRange.selectionStart + prefix.length,
+    selectionEnd: inlineRange.selectionStart + prefix.length + inlineText.length,
   };
+}
+
+function trimInlineSelection(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+): { selectionStart: number; selectionEnd: number } {
+  let start = selectionStart;
+  let end = selectionEnd;
+  while (start < end && /\s/.test(value[start])) start += 1;
+  while (end > start && /\s/.test(value[end - 1])) end -= 1;
+  return { selectionStart: start, selectionEnd: end };
 }
 
 function toggleWrappedRange(
@@ -165,6 +196,9 @@ function expandFormatSelection(
   selectionStart: number,
   selectionEnd: number,
 ): { selectionStart: number; selectionEnd: number } {
+  const lineExpanded = expandLineFormatSelection(value, selectionStart, selectionEnd);
+  if (lineExpanded) return lineExpanded;
+
   const pairs: Array<[string, string]> = [
     ["**", "**"],
     ["++", "++"],
@@ -194,12 +228,32 @@ function expandFormatSelection(
   return { selectionStart: start, selectionEnd: end };
 }
 
+function expandLineFormatSelection(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+): { selectionStart: number; selectionEnd: number } | null {
+  const blockStart = value.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1;
+  const blockEndIndex = value.indexOf("\n", selectionEnd);
+  const blockEnd = blockEndIndex === -1 ? value.length : blockEndIndex;
+  const block = value.slice(blockStart, blockEnd);
+  const lines = block.length > 0 ? block.split("\n") : [""];
+  const hasLineMarker = lines.some((line) =>
+    /^(\s*)(#{1,6}\s+|[-*]\s+|\d+\.\s+|>\s*)/.test(line),
+  );
+
+  return hasLineMarker
+    ? { selectionStart: blockStart, selectionEnd: blockEnd }
+    : null;
+}
+
 function stripMarkdownMarkers(value: string): string {
   return value
     .split("\n")
     .map((line) =>
       line
         .replace(/^(\s*)(#{1,6}\s+|[-*]\s+|\d+\.\s+|>\s*)/, "$1")
+        .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
         .replace(/\*\*([^*]+)\*\*/g, "$1")
         .replace(/\+\+([^+]+)\+\+/g, "$1")
         .replace(/`([^`]+)`/g, "$1")

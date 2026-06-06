@@ -66,6 +66,36 @@ describe("QuestionBlock", () => {
     expect(container.querySelector(".answer-block")).toBeInTheDocument();
   });
 
+  it("renders italic Markdown in question content", () => {
+    const question: SingleChoiceQuestion = {
+      id: "q1",
+      type: "single-choice",
+      content: "*choose* one",
+      options: ["A", "B"],
+      correctAnswer: 0,
+      score: 5,
+    };
+
+    const { container } = renderQuestion(question);
+
+    expect(container.querySelector("em")?.textContent).toBe("choose");
+  });
+
+  it("renders bold italic Markdown in question content", () => {
+    const question: SingleChoiceQuestion = {
+      id: "q1",
+      type: "single-choice",
+      content: "***choose*** one",
+      options: ["A", "B"],
+      correctAnswer: 0,
+      score: 5,
+    };
+
+    const { container } = renderQuestion(question);
+
+    expect(container.querySelector("em strong")?.textContent).toBe("choose");
+  });
+
   it("renders custom underline syntax without raw HTML", () => {
     const question: SingleChoiceQuestion = {
       id: "q1",

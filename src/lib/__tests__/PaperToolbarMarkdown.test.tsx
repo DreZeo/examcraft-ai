@@ -4,11 +4,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import "../../i18n";
 import { MarkdownFormatProvider } from "../../components/layout/MarkdownFormatContext";
 import { PaperToolbar } from "../../components/layout/PaperToolbar";
+import { QuestionBlock } from "../../components/paper/QuestionBlock";
 import { QuestionEditModal } from "../../components/paper/QuestionEditModal";
 import type { SingleChoiceQuestion } from "../types/exam";
 
 const editQuestion = vi.fn();
 const updateSettings = vi.fn();
+const reorder = vi.fn();
+const deleteQuestion = vi.fn();
+const focusQuestion = vi.fn();
 
 vi.mock("../../stores/configStore", () => ({
   useConfigStore: (selector: (state: unknown) => unknown) =>
@@ -27,14 +31,25 @@ vi.mock("../../stores/configStore", () => ({
 }));
 
 vi.mock("../../stores/paperStore", () => ({
-  usePaperStore: (selector: (state: unknown) => unknown) =>
-    selector({
+  usePaperStore: (selector?: (state: unknown) => unknown) => {
+    const state = {
       paper: {
         version: 1,
         title: "测试卷",
         questions: [currentQuestion],
       },
       editQuestion,
+      reorder,
+      deleteQuestion,
+    };
+    return selector ? selector(state) : state;
+  },
+}));
+
+vi.mock("../../stores/assistantStore", () => ({
+  useAssistantStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      focusQuestion,
     }),
 }));
 
@@ -50,8 +65,11 @@ let currentQuestion = question;
 
 beforeEach(() => {
   currentQuestion = question;
-  editQuestion.mockClear();
-  updateSettings.mockClear();
+  editQuestion.mockReset();
+  updateSettings.mockReset();
+  reorder.mockReset();
+  deleteQuestion.mockReset();
+  focusQuestion.mockReset();
 });
 
 function renderToolbarWithEditor(editorOpen = false) {
@@ -86,6 +104,60 @@ function renderToolbarWithPreviewSelection({
       </div>
     </MarkdownFormatProvider>,
   );
+}
+
+function renderToolbarWithEditorAndPreviewSelection() {
+  currentQuestion = question;
+  return render(
+    <MarkdownFormatProvider>
+      <PaperToolbar />
+      <QuestionEditModal question={question} onClose={vi.fn()} />
+      <div
+        className="question-block"
+        data-question-id="q1"
+      >
+        <div
+          data-testid="preview-content"
+          data-markdown-source="content"
+          data-markdown-text="choose one"
+        >
+          <span>choose one</span>
+        </div>
+      </div>
+    </MarkdownFormatProvider>,
+  );
+}
+
+function renderInteractiveToolbarWithQuestionBlock() {
+  currentQuestion = question;
+  const view = render(
+    <MarkdownFormatProvider>
+      <PaperToolbar />
+      <QuestionBlock
+        question={currentQuestion}
+        index={0}
+        studentView={false}
+        onEdit={vi.fn()}
+      />
+    </MarkdownFormatProvider>,
+  );
+
+  editQuestion.mockImplementation((next: SingleChoiceQuestion) => {
+    currentQuestion = next;
+    view.rerender(
+      <MarkdownFormatProvider>
+        <PaperToolbar />
+        <QuestionBlock
+          question={currentQuestion}
+          index={0}
+          studentView={false}
+          onEdit={vi.fn()}
+        />
+      </MarkdownFormatProvider>,
+    );
+  });
+
+  return view;
 }
 
 async function openMarkdownTab() {
@@ -252,6 +324,111 @@ describe("PaperToolbar Markdown tab", () => {
     });
   });
 
+  it("applies italic to selected plain paper-preview text", async () => {
+    renderToolbarWithPreviewSelection();
+    selectText(screen.getByText("choose one").firstChild, 0, 6);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "斜体" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "*choose* one",
+    });
+  });
+
+  it("prioritizes the current paper-preview selection over an editor target", async () => {
+    renderToolbarWithEditorAndPreviewSelection();
+    const textarea = screen.getByPlaceholderText("输入题干，支持 Markdown 与 $公式$");
+    textarea.focus();
+    (textarea as HTMLTextAreaElement).setSelectionRange(7, 10);
+    selectText(screen.getByTestId("preview-content").querySelector("span")?.firstChild ?? null, 0, 6);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "斜体" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "*choose* one",
+    });
+    expect(textarea).toHaveValue("choose one");
+  });
+
+  it("renders italic in the paper preview immediately after toolbar click", async () => {
+    const { container } = renderInteractiveToolbarWithQuestionBlock();
+    selectText(screen.getByText("choose one").firstChild, 0, 6);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "斜体" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "*choose* one",
+    });
+    expect(container.querySelector("em")?.textContent).toBe("choose");
+    expect(container).not.toHaveTextContent("*choose*");
+  });
+
+  it("renders italic when the preview selection includes whitespace", async () => {
+    const { container } = renderInteractiveToolbarWithQuestionBlock();
+    selectText(screen.getByText("choose one").firstChild, 6, 10);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "斜体" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "choose *one*",
+    });
+    expect(container.querySelector("em")?.textContent).toBe("one");
+    expect(container).not.toHaveTextContent("*one*");
+  });
+
+  it("applies heading to the whole paper-preview line", async () => {
+    renderToolbarWithPreviewSelection();
+    selectText(screen.getByText("choose one").firstChild, 7, 10);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "标题" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "## choose one",
+    });
+  });
+
+  it("applies unordered and ordered lists to the whole paper-preview line", async () => {
+    const { unmount } = renderToolbarWithPreviewSelection();
+    selectText(screen.getByText("choose one").firstChild, 7, 10);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "无序列表" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "- choose one",
+    });
+
+    unmount();
+    renderToolbarWithPreviewSelection();
+    selectText(screen.getByText("choose one").firstChild, 7, 10);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "有序列表" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "1. choose one",
+    });
+  });
+
   it("clears Markdown syntax from selected rendered paper-preview text", async () => {
     renderToolbarWithPreviewSelection({
       content: "**++choose++** one",
@@ -265,6 +442,43 @@ describe("PaperToolbar Markdown tab", () => {
       ),
     });
     selectText(screen.getByText("choose").firstChild, 0, 6);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "清除格式" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "choose one",
+    });
+  });
+
+  it("clears heading and list markers from selected rendered paper-preview text", async () => {
+    const { unmount } = renderToolbarWithPreviewSelection({
+      content: "## choose one",
+      rendered: <h2>choose one</h2>,
+    });
+    selectText(screen.getByText("choose one").firstChild, 7, 10);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "清除格式" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "choose one",
+    });
+
+    unmount();
+    renderToolbarWithPreviewSelection({
+      content: "- choose one",
+      rendered: (
+        <ul>
+          <li>choose one</li>
+        </ul>
+      ),
+    });
+    selectText(screen.getByText("choose one").firstChild, 0, 6);
     document.dispatchEvent(new Event("selectionchange"));
 
     await openMarkdownTab();

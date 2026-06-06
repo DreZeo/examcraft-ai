@@ -145,6 +145,25 @@ surface has a documented exception.
   tests should cover formatted text that renders as nested/inline elements, and
   `*` italic toggles must not treat the two characters of a `**` bold marker as
   standalone italic markers.
+- When both a Markdown editor target and a current paper-preview DOM selection
+  exist, toolbar commands must prioritize the current paper-preview selection.
+  Otherwise a stale editor target can consume clicks and make the selected
+  preview text appear unchanged.
+- Inline toolbar commands (`bold`, `italic`, `underline`, `code`) must keep
+  selected leading/trailing whitespace outside the Markdown markers. For example,
+  selecting ` one` should produce ` *one*`, not `* one*`; CommonMark emphasis
+  markers beside whitespace render as literal asterisks instead of `<em>`.
+- Markdown toolbar commands that create block structure (`heading`,
+  `bulletList`, `orderedList`, `quote`) are line-level commands. Apply/toggle
+  them against the whole selected line or selected block, even when the user only
+  selects one word inside the rendered paper preview. Clear-format must also
+  expand to the line when a heading/list/quote marker is present so the marker is
+  removed, not just the visible word.
+- Italic must be visibly rendered in the paper preview, including bold+italic
+  content. `***text***` is parsed as `<em><strong>text</strong></em>` by the
+  shared Markdown renderer, so tests should query that DOM order and preview CSS
+  should use an explicit oblique style that remains noticeable with Chinese paper
+  fonts.
 
 ---
 

@@ -269,6 +269,8 @@ body {
 
 .markdown-body em {
   font-style: italic;
+  font-style: oblique 12deg;
+  font-synthesis-style: auto;
 }
 
 .markdown-body blockquote {
