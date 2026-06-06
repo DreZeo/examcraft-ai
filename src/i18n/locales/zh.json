@@ -84,8 +84,12 @@
   },
   "globalFont": {
     "system": "跟随系统",
-    "sans": "黑体（无衬线）",
-    "serif": "宋体（衬线）",
+    "sans": "微软雅黑（默认无衬线）",
+    "sourcehan": "思源黑体",
+    "simsun": "宋体",
+    "simhei": "黑体",
+    "dengxian": "等线",
+    "times": "Times New Roman",
     "mono": "等宽"
   },
   "paperFont": {

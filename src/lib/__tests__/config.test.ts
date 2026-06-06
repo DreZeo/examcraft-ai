@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { AppConfigSchema, DEFAULT_AGENTS } from "../types/config";
+import {
+  AppConfigSchema,
+  DEFAULT_AGENTS,
+  GLOBAL_FONT_OPTIONS,
+  GLOBAL_FONT_STACKS,
+} from "../types/config";
 
 describe("AppConfigSchema", () => {
   it("defaults paper font for fresh config", () => {
@@ -27,6 +32,38 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperMargin).toBe("standard");
     expect(config.settings.paperSize).toBe("a4");
     expect(config.settings.language).toBe("en");
+  });
+
+  it("accepts every global font preset and has a stack for each one", () => {
+    expect(GLOBAL_FONT_OPTIONS).toEqual([
+      "system",
+      "sans",
+      "sourcehan",
+      "simsun",
+      "simhei",
+      "dengxian",
+      "times",
+      "mono",
+    ]);
+
+    for (const globalFont of GLOBAL_FONT_OPTIONS) {
+      const config = AppConfigSchema.parse({ settings: { globalFont } });
+      expect(config.settings.globalFont).toBe(globalFont);
+      expect(GLOBAL_FONT_STACKS).toHaveProperty(globalFont);
+    }
+  });
+
+  it("maps removed global font presets to effective visible presets", () => {
+    expect(
+      AppConfigSchema.parse({ settings: { globalFont: "serif" } }).settings
+        .globalFont,
+    ).toBe("simsun");
+    for (const legacy of ["yahei", "pingfang", "inter", "arial"]) {
+      expect(
+        AppConfigSchema.parse({ settings: { globalFont: legacy } }).settings
+          .globalFont,
+      ).toBe("sans");
+    }
   });
 
   it("keeps configured paper layout presets", () => {

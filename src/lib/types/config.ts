@@ -30,13 +30,44 @@ export const ExplanationTierSchema = z.enum(["none", "brief", "detailed"]);
 export const ThemeSchema = z.enum(["system", "light", "dark"]);
 
 /** UI global font preset. Overrides --font-sans CSS variable on <html>. */
-export const GlobalFontSchema = z.enum(["system", "sans", "serif", "mono"]);
+const GlobalFontPresetSchema = z.enum([
+  "system",
+  "sans",
+  "sourcehan",
+  "simsun",
+  "simhei",
+  "dengxian",
+  "times",
+  "mono",
+]);
+
+export const GlobalFontSchema = z.preprocess((value) => {
+  if (value === "serif") return "simsun";
+  if (
+    value === "yahei" ||
+    value === "pingfang" ||
+    value === "inter" ||
+    value === "arial"
+  ) {
+    return "sans";
+  }
+  return value;
+}, GlobalFontPresetSchema);
+
 export type GlobalFont = z.infer<typeof GlobalFontSchema>;
-export const GLOBAL_FONT_OPTIONS = GlobalFontSchema.options;
+export const GLOBAL_FONT_OPTIONS = GlobalFontPresetSchema.options;
 export const GLOBAL_FONT_STACKS: Record<GlobalFont, string> = {
   system: "",
-  sans: '"Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif',
-  serif: 'SimSun, "Songti SC", "Noto Serif CJK SC", serif',
+  sans:
+    '"Microsoft YaHei", "Microsoft YaHei UI", "Noto Sans SC", "Noto Sans CJK SC", system-ui, sans-serif',
+  sourcehan:
+    '"Noto Sans SC", "Source Han Sans SC", "Noto Sans CJK SC", "Microsoft YaHei", system-ui, sans-serif',
+  simsun: 'SimSun, "Songti SC", "Noto Serif CJK SC", serif',
+  simhei:
+    'SimHei, "Microsoft JhengHei", "Noto Sans SC", "Source Han Sans SC", sans-serif',
+  dengxian:
+    'DengXian, "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif',
+  times: '"Times New Roman", Times, SimSun, serif',
   mono: '"SFMono-Regular", Consolas, "Liberation Mono", "Courier New", monospace',
 };
 

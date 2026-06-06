@@ -84,8 +84,12 @@
   },
   "globalFont": {
     "system": "Follow system",
-    "sans": "Sans-serif",
-    "serif": "Serif",
+    "sans": "Microsoft YaHei / Sans-serif",
+    "sourcehan": "Source Han Sans",
+    "simsun": "SimSun",
+    "simhei": "SimHei",
+    "dengxian": "DengXian",
+    "times": "Times New Roman",
     "mono": "Monospace"
   },
   "paperFont": {
