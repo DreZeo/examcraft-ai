@@ -17,6 +17,7 @@ pub fn run() {
             storage::get_data_dir,
             storage::set_data_dir,
             storage::default_data_dir,
+            storage::open_data_dir,
             storage::load_config,
             storage::save_config,
             storage::load_working_paper,

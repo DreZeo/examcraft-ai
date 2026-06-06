@@ -54,6 +54,7 @@ pointer lives in the Tauri app-data dir:
 - `get_data_dir() -> AppResult<Option<String>>`
 - `set_data_dir(data_dir) -> AppResult<()>`
 - `default_data_dir() -> AppResult<String>`  (Documents/AI试卷)
+- `open_data_dir(data_dir) -> AppResult<()>`  (create if missing, then open in platform file manager)
 - `load_config(data_dir) / save_config(data_dir, contents)`  (raw JSON string)
 - `load_working_paper(data_dir) / save_working_paper(data_dir, contents)`
 - `load_paper_index(data_dir) / save_paper_index(data_dir, contents)`
@@ -102,6 +103,70 @@ and out of network/logging code. See `error-handling.md`.
 Plugin permissions are declared in `src-tauri/capabilities/default.json`
 (`dialog:default`, `fs:default`, `opener:default` added on top of `core:default`).
 A new plugin needs both `.plugin(...)` in lib.rs AND its permission here.
+
+## Scenario: Opening the User Data Directory
+
+### 1. Scope / Trigger
+
+- Trigger: settings UI needs to open a user-selected local directory in the
+  system file manager.
+- This crosses frontend component → TS storage wrapper → Rust command → OS
+  process boundary, so the command contract belongs in backend code-spec.
+
+### 2. Signatures
+
+- Rust command: `open_data_dir(data_dir: String) -> AppResult<()>`
+- Frontend wrapper: `openDataDir(dataDir: string): Promise<void>`
+- Component call site: `DataDirSection` calls the wrapper; it must not call
+  `@tauri-apps/plugin-opener.openPath` directly for arbitrary data dirs.
+
+### 3. Contracts
+
+- Request field `data_dir`: absolute or user-selected directory path.
+- Behavior: Rust calls `fs::create_dir_all(data_dir)` first, then spawns the
+  platform file manager:
+  - Windows: `explorer <path>`
+  - macOS: `open <path>`
+  - Linux/Unix: `xdg-open <path>`
+- Response: `Ok(())` means the OS process was spawned. It does not guarantee
+  the file manager window stayed open or came to the front.
+
+### 4. Validation & Error Matrix
+
+| Condition | Result |
+|-----------|--------|
+| Directory missing but creatable | create it, then open |
+| Directory creation denied | `AppError::Io` |
+| File manager command cannot spawn | `AppError::Io` |
+| Frontend receives rejection | show localized settings error feedback |
+
+### 5. Good/Base/Bad Cases
+
+- Good: configured path exists and opens in Explorer/Finder/file manager.
+- Base: configured path was deleted; command recreates it and opens it.
+- Bad: frontend calls `openPath(dataDir)` directly and Tauri opener path scope
+  rejects the arbitrary user directory, making the button appear inert.
+
+### 6. Tests Required
+
+- Component regression test asserts the button calls `openDataDir(dataDir)`.
+- Component rejection test asserts localized error feedback appears.
+- `cargo check --manifest-path src-tauri/Cargo.toml` must pass after command
+  registration changes in `lib.rs`.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+await openPath(dataDir);
+```
+
+#### Correct
+
+```tsx
+await openDataDir(dataDir);
+```
 
 ### Gotcha: `fs:default` does not grant file writes
 

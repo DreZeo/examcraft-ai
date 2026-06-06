@@ -30,6 +30,10 @@ export function defaultDataDir(): Promise<string> {
   return invoke("default_data_dir");
 }
 
+export function openDataDir(dataDir: string): Promise<void> {
+  return invoke("open_data_dir", { dataDir });
+}
+
 // ---- App config ----
 
 export async function loadConfig(dataDir: string): Promise<AppConfig | null> {

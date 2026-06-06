@@ -2,6 +2,7 @@ use crate::error::AppResult;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use tauri::{AppHandle, Manager};
 
 /// Bootstrap pointer stored in the Tauri app-data dir. Its only job is to record
@@ -65,6 +66,37 @@ pub fn default_data_dir(app: AppHandle) -> AppResult<String> {
         .or_else(|_| app.path().home_dir())
         .map_err(|e| crate::error::AppError::Io(e.to_string()))?;
     Ok(base.join("AI试卷").to_string_lossy().to_string())
+}
+
+/// Open the configured data directory in the platform file manager.
+#[tauri::command]
+pub fn open_data_dir(data_dir: String) -> AppResult<()> {
+    let path = Path::new(&data_dir);
+    fs::create_dir_all(path)?;
+
+    #[cfg(target_os = "windows")]
+    let mut command = {
+        let mut command = Command::new("explorer");
+        command.arg(path);
+        command
+    };
+
+    #[cfg(target_os = "macos")]
+    let mut command = {
+        let mut command = Command::new("open");
+        command.arg(path);
+        command
+    };
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let mut command = {
+        let mut command = Command::new("xdg-open");
+        command.arg(path);
+        command
+    };
+
+    command.spawn()?;
+    Ok(())
 }
 
 fn read_json_file(dir: &Path, file: &str) -> AppResult<Option<String>> {

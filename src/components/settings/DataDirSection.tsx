@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { FolderOpen, FolderInput, HardDrive } from "lucide-react";
 import { useState } from "react";
+import { openDataDir as openDataDirInFileManager } from "../../lib/storage/tauri";
 import { useConfigStore } from "../../stores/configStore";
 import { secondaryBtn } from "../../lib/ui/styles";
 
@@ -24,7 +24,7 @@ export function DataDirSection() {
     setIsOpening(true);
     setOpenError(false);
     try {
-      await openPath(dataDir);
+      await openDataDirInFileManager(dataDir);
     } catch (error) {
       console.error("Failed to open data directory", error);
       setOpenError(true);
