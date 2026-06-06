@@ -123,16 +123,16 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
           onClick={() => void newPaper()}
           disabled={isBlank}
           title={isBlank ? t("app.newPaperDisabled") : t("app.newPaper")}
-          className={actionBtn + " disabled:pointer-events-none disabled:opacity-40"}
+          className={primaryActionBtn + " disabled:pointer-events-none disabled:opacity-40"}
         >
           <FilePlus2 className="h-4 w-4" />
           <span className="hidden sm:inline">{t("app.newPaper")}</span>
         </button>
-        <button type="button" onClick={onOpenPaperManager} className={actionBtn}>
+        <button type="button" onClick={onOpenPaperManager} className={outlineActionBtn}>
           <FolderOpen className="h-4 w-4" />
           <span className="hidden sm:inline">{t("paperLibrary.title")}</span>
         </button>
-        <ExportMenu triggerClassName={actionBtn} />
+        <ExportMenu triggerClassName={outlineActionBtn} />
         <button
           type="button"
           aria-label={t("settings.title")}
@@ -147,8 +147,8 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
   );
 }
 
-const actionBtn =
-  ghostBtn + " h-8 whitespace-nowrap";
+const outlineActionBtn = ghostBtn + " h-8 whitespace-nowrap border border-border";
+const primaryActionBtn = ghostBtn + " h-8 whitespace-nowrap border border-primary/40 text-primary hover:bg-primary/10 hover:text-primary";
 
 function viewTab(active: boolean): string {
   return [
