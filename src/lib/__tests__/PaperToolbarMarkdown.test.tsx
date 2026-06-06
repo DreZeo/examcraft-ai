@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import "../../i18n";
 import { MarkdownFormatProvider } from "../../components/layout/MarkdownFormatContext";
 import { PaperToolbar } from "../../components/layout/PaperToolbar";
@@ -32,7 +32,7 @@ vi.mock("../../stores/paperStore", () => ({
       paper: {
         version: 1,
         title: "测试卷",
-        questions: [question],
+        questions: [currentQuestion],
       },
       editQuestion,
     }),
@@ -46,6 +46,13 @@ const question: SingleChoiceQuestion = {
   correctAnswer: 0,
   score: 5,
 };
+let currentQuestion = question;
+
+beforeEach(() => {
+  currentQuestion = question;
+  editQuestion.mockClear();
+  updateSettings.mockClear();
+});
 
 function renderToolbarWithEditor(editorOpen = false) {
   return render(
@@ -58,7 +65,14 @@ function renderToolbarWithEditor(editorOpen = false) {
   );
 }
 
-function renderToolbarWithPreviewSelection() {
+function renderToolbarWithPreviewSelection({
+  content = "choose one",
+  rendered,
+}: {
+  content?: string;
+  rendered?: React.ReactNode;
+} = {}) {
+  currentQuestion = { ...question, content };
   return render(
     <MarkdownFormatProvider>
       <PaperToolbar />
@@ -66,8 +80,8 @@ function renderToolbarWithPreviewSelection() {
         className="question-block"
         data-question-id="q1"
       >
-        <div data-markdown-source="content">
-          <span>choose one</span>
+        <div data-markdown-source="content" data-markdown-text={content}>
+          {rendered ?? <span>choose one</span>}
         </div>
       </div>
     </MarkdownFormatProvider>,
@@ -193,6 +207,72 @@ describe("PaperToolbar Markdown tab", () => {
     expect(editQuestion).toHaveBeenCalledWith({
       ...question,
       content: "**choose** one",
+    });
+  });
+
+  it("toggles bold off from selected rendered paper-preview text", async () => {
+    renderToolbarWithPreviewSelection({
+      content: "**choose** one",
+      rendered: (
+        <p>
+          <strong>choose</strong> one
+        </p>
+      ),
+    });
+    selectText(screen.getByText("choose").firstChild, 0, 6);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "加粗" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "choose one",
+    });
+  });
+
+  it("applies italic to selected rendered paper-preview text", async () => {
+    renderToolbarWithPreviewSelection({
+      content: "**choose** one",
+      rendered: (
+        <p>
+          <strong>choose</strong> one
+        </p>
+      ),
+    });
+    selectText(screen.getByText("choose").firstChild, 0, 6);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "斜体" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "***choose*** one",
+    });
+  });
+
+  it("clears Markdown syntax from selected rendered paper-preview text", async () => {
+    renderToolbarWithPreviewSelection({
+      content: "**++choose++** one",
+      rendered: (
+        <p>
+          <strong>
+            <u>choose</u>
+          </strong>{" "}
+          one
+        </p>
+      ),
+    });
+    selectText(screen.getByText("choose").firstChild, 0, 6);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "清除格式" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "choose one",
     });
   });
 

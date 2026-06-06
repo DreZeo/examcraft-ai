@@ -92,11 +92,15 @@ function toggleWrappedRange(
     return replaceRange(value, selectionStart, selectionEnd, value.slice(innerStart, innerEnd));
   }
 
-  const suffixStart = selectionEnd;
   const suffixEnd = selectionEnd + suffix.length;
   if (
-    value.slice(selectionStart - prefix.length, selectionStart) === prefix &&
-    (suffix === "" || value.slice(suffixStart, suffixEnd) === suffix)
+    hasStandaloneWrappingMarker(
+      value,
+      selectionStart,
+      selectionEnd,
+      prefix,
+      suffix,
+    )
   ) {
     const before = value.slice(0, selectionStart - prefix.length);
     const after = value.slice(suffixEnd);
@@ -108,6 +112,27 @@ function toggleWrappedRange(
   }
 
   return null;
+}
+
+function hasStandaloneWrappingMarker(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+  prefix: string,
+  suffix: string,
+): boolean {
+  if (value.slice(selectionStart - prefix.length, selectionStart) !== prefix) {
+    return false;
+  }
+  if (suffix !== "" && value.slice(selectionEnd, selectionEnd + suffix.length) !== suffix) {
+    return false;
+  }
+  if (prefix === "*" && suffix === "*") {
+    const beforePrefix = value[selectionStart - prefix.length - 1];
+    const afterSuffix = value[selectionEnd + suffix.length];
+    if (beforePrefix === "*" || afterSuffix === "*") return false;
+  }
+  return true;
 }
 
 function clearMarkdownFormat(

@@ -77,7 +77,7 @@ export function PaperCanvas({
         view,
         includeAnswers ? "answers" : "student",
         pageMetrics.contentHeightMm,
-        blocks.map((block) => block.id).join("|"),
+        blocks.map(blockContentSignature).join("|"),
       ].join("::"),
     [blocks, includeAnswers, pageMetrics.contentHeightMm, view],
   );
@@ -408,4 +408,31 @@ function samePages(a: PaperPage[] | null, b: PaperPage[]): boolean {
       page.blocks.map((block) => block.id).join("|") ===
       b[index].blocks.map((block) => block.id).join("|"),
   );
+}
+
+function blockContentSignature(block: PaperLayoutBlock): string {
+  switch (block.kind) {
+    case "title":
+      return stableSignature([block.id, block.title]);
+    case "exam-info":
+      return block.id;
+    case "section":
+      return stableSignature([
+        block.id,
+        block.section.title,
+        block.section.passage ?? "",
+        block.section.questions.map((question) => question.id),
+      ]);
+    case "question":
+      return stableSignature([
+        block.id,
+        block.number,
+        block.question,
+        block.estimatedHeightMm,
+      ]);
+  }
+}
+
+function stableSignature(value: unknown): string {
+  return JSON.stringify(value);
 }

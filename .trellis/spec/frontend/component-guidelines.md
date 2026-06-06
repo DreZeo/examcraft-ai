@@ -134,6 +134,17 @@ surface has a documented exception.
   `summarizeMarkdown` instead of hand-writing local Markdown-stripping regexes.
   The outline stays scannable while stems, answers, and explanations keep full
   safe Markdown rendering in the paper preview.
+- When caching rendered paper blocks or measured pagination, cache signatures
+  must include a content fingerprint, not only stable ids. Question ids can stay
+  unchanged while Markdown content, options, answers, or section passages change;
+  id-only caches render stale previews until a full refresh. Add a regression
+  test that changes content with the same id and asserts the visible preview
+  updates immediately.
+- Formatting selected paper-preview text must map the rendered DOM selection
+  back to the source Markdown range before applying toolbar commands. Regression
+  tests should cover formatted text that renders as nested/inline elements, and
+  `*` italic toggles must not treat the two characters of a `**` bold marker as
+  standalone italic markers.
 
 ---
 

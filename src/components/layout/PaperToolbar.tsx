@@ -49,6 +49,9 @@ type SettingKey =
 interface PaperTextSelection {
   questionId: string;
   text: string;
+  markdownText: string;
+  plainStart: number;
+  plainEnd: number;
 }
 
 /** Office-like paper formatting toolbar for whole-paper typography and layout. */
@@ -91,7 +94,7 @@ export function PaperToolbar() {
     if (!selection) return false;
     const question = paper.questions.find((q) => q.id === selection.questionId);
     if (!question) return false;
-    const range = findSelectedTextRange(question.content, selection.text);
+    const range = findSelectedTextRange(question.content, selection);
     if (!range) return false;
 
     const result = applyMarkdownFormat(
@@ -350,19 +353,44 @@ function readPaperTextSelection(): PaperTextSelection | null {
   const element =
     container instanceof Element ? container : container?.parentElement ?? null;
   const source = element?.closest<HTMLElement>("[data-markdown-source='content']");
+  if (!source) return null;
   const questionBlock = source?.closest<HTMLElement>(".question-block");
   const questionId = questionBlock?.dataset.questionId;
   if (!questionId) return null;
 
-  return { questionId, text };
+  const markdownText = source.dataset.markdownText ?? "";
+  const beforeSelection = range?.cloneRange();
+  beforeSelection?.selectNodeContents(source);
+  if (range) {
+    beforeSelection?.setEnd(range.startContainer, range.startOffset);
+  }
+  const rawText = selection.toString();
+  const leadingWhitespace = rawText.match(/^\s*/)?.[0].length ?? 0;
+  const trailingWhitespace = rawText.match(/\s*$/)?.[0].length ?? 0;
+  const plainStart = (beforeSelection?.toString().length ?? 0) + leadingWhitespace;
+  const plainEnd = Math.max(plainStart, plainStart + rawText.length - leadingWhitespace - trailingWhitespace);
+
+  return { questionId, text, markdownText, plainStart, plainEnd };
 }
 
 function findSelectedTextRange(
   content: string,
-  selectedText: string,
+  selection: PaperTextSelection,
 ): { start: number; end: number } | null {
-  const text = selectedText.trim();
+  const text = selection.text.trim();
   if (!text) return null;
+  const markdownRange = findMarkdownTextRange(selection.markdownText, selection);
+  if (markdownRange) {
+    const renderedMarkdown = selection.markdownText;
+    const markdownStart = content.indexOf(renderedMarkdown);
+    if (markdownStart >= 0) {
+      return {
+        start: markdownStart + markdownRange.start,
+        end: markdownStart + markdownRange.end,
+      };
+    }
+  }
+
   const direct = content.indexOf(text);
   if (direct >= 0) return { start: direct, end: direct + text.length };
 
@@ -400,4 +428,47 @@ function findSelectedTextRange(
 
 function normalizeSelectionText(value: string): string {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function findMarkdownTextRange(
+  markdown: string,
+  selection: PaperTextSelection,
+): { start: number; end: number } | null {
+  if (!markdown) return null;
+  const positions = visibleMarkdownPositions(markdown);
+  if (selection.plainStart < 0 || selection.plainEnd < selection.plainStart) {
+    return null;
+  }
+  if (selection.plainStart === selection.plainEnd) return null;
+  const start = positions[selection.plainStart];
+  const last = positions[selection.plainEnd - 1];
+  if (start === undefined || last === undefined) return null;
+  return { start, end: last + 1 };
+}
+
+function visibleMarkdownPositions(markdown: string): number[] {
+  const positions: number[] = [];
+  let lineStart = true;
+
+  for (let index = 0; index < markdown.length; index += 1) {
+    const rest = markdown.slice(index);
+    if (lineStart) {
+      const blockMarker = rest.match(/^(\s*)(#{1,6}\s+|[-*]\s+|\d+\.\s+|>\s*)/);
+      if (blockMarker) {
+        index += blockMarker[0].length - 1;
+        lineStart = false;
+        continue;
+      }
+    }
+    if (rest.startsWith("**") || rest.startsWith("++")) {
+      index += 1;
+      continue;
+    }
+    const char = markdown[index];
+    if (char === "*" || char === "`") continue;
+    positions.push(index);
+    lineStart = char === "\n";
+  }
+
+  return positions;
 }

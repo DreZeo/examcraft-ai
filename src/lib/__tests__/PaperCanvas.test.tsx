@@ -133,6 +133,47 @@ describe("PaperCanvas", () => {
     });
   });
 
+  it("invalidates measured pages when question Markdown content changes", async () => {
+    paper = makeRealtimeMarkdownPaper("choose one");
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function getRect(this: HTMLElement) {
+        const id = this.dataset.layoutBlockId;
+        const height = id === "question-choice-1" ? 880 : 12;
+        return {
+          width: 100,
+          height,
+          top: 0,
+          right: 0,
+          bottom: height,
+          left: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      },
+    );
+
+    const { container, rerender } = renderCanvas();
+
+    await waitFor(() => {
+      expect(visiblePages(container).length).toBeGreaterThan(1);
+    });
+
+    paper = makeRealtimeMarkdownPaper("**choose** one");
+    rerender(
+      <MarkdownFormatProvider>
+        <PaperCanvas />
+      </MarkdownFormatProvider>,
+    );
+
+    const formatted = visiblePages(container)
+      .map((page) => page.querySelector("strong"))
+      .find((node): node is HTMLElement => node instanceof HTMLElement);
+    expect(formatted).toHaveTextContent("choose");
+    expect(visiblePages(container).map((page) => page.textContent).join(""))
+      .not.toContain("**choose**");
+  });
+
   it("does not append a blank question when the new-question modal is canceled", async () => {
     renderCanvas();
 
@@ -209,6 +250,31 @@ function makeMeasuredPaper(): ExamPaper {
         id: "choice-1",
         type: "single-choice",
         content: "第一题 ".repeat(220),
+        options: ["A", "B", "C", "D"],
+        correctAnswer: 0,
+        score: 4,
+      },
+      {
+        id: "choice-2",
+        type: "single-choice",
+        content: "第二题",
+        options: ["A", "B", "C", "D"],
+        correctAnswer: 1,
+        score: 4,
+      },
+    ],
+  };
+}
+
+function makeRealtimeMarkdownPaper(content: string): ExamPaper {
+  return {
+    version: 1,
+    title: "测试卷",
+    questions: [
+      {
+        id: "choice-1",
+        type: "single-choice",
+        content,
         options: ["A", "B", "C", "D"],
         correctAnswer: 0,
         score: 4,

@@ -95,6 +95,7 @@ export function QuestionBlock({
             <div
               className="min-w-0 flex-1"
               data-markdown-source="content"
+              data-markdown-text={content}
             >
               {studentView && question.type === "fill-in-blank" ? (
                 <FillBlankContent question={question} />
