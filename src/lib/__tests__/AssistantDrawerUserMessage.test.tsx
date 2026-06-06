@@ -135,8 +135,26 @@ describe("AssistantDrawer user message actions", () => {
 
     await user.click(screen.getByRole("button", { name: "重试" }));
 
-    expect(
-      await screen.findByText(/这条消息之后已有结果应用到试卷/),
-    ).toBeInTheDocument();
+    const warning = await screen.findByText(/这条消息之后已有结果应用到试卷/);
+    expect(warning).toBeInTheDocument();
+    expect(warning).toHaveClass(
+      "bg-primary/8",
+      "text-foreground/75",
+      "backdrop-blur-md",
+      "border",
+      "border-primary/15",
+      "ml-auto",
+      "max-w-[82%]",
+      "font-medium",
+    );
+    expect(warning).not.toHaveClass(
+      "bg-amber-50",
+      "text-amber-800",
+      "bg-primary-foreground/85",
+      "text-foreground",
+      "bg-card/90",
+      "text-muted-foreground",
+      "shadow-sm",
+    );
   });
 });

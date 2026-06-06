@@ -107,12 +107,12 @@ export function UserMessageBubble({ message }: UserMessageBubbleProps) {
         ) : (
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
         )}
-        {error && (
-          <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-            {error}
-          </p>
-        )}
       </div>
+      {error && (
+        <p className="ml-auto mt-1 max-w-[82%] rounded-lg border border-primary/15 bg-primary/8 px-2.5 py-1.5 text-xs font-medium leading-relaxed tracking-normal text-foreground/75 backdrop-blur-md dark:bg-primary/12 dark:text-foreground/80">
+          {error}
+        </p>
+      )}
       {!editing && (
         <div className="mt-1 flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
           <button
