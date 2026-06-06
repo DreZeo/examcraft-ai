@@ -130,9 +130,10 @@ export function AssistantDrawer({
         >
           <PanelRightOpen className="h-5 w-5 transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
         </button>
-        <span className="mt-3 text-xs text-muted-foreground [writing-mode:vertical-rl]">
+        <span className="mt-3 text-xs text-muted-foreground/60 [writing-mode:vertical-rl]">
           {t("assistant.title")}
         </span>
+        <div className="mt-2 h-px w-5 bg-border/50" />
       </div>
       <button
         type="button"
@@ -149,13 +150,13 @@ export function AssistantDrawer({
         aria-hidden={!open}
         style={{ width: drawerWidth }}
       >
-        <div className="flex items-center justify-between border-b border-border bg-muted/30 px-3 py-2.5">
+        <div className="flex items-center justify-between border-b border-border/60 bg-card px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <Sparkles className="h-4 w-4" />
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary shadow-sm">
+              <Sparkles className="h-[18px] w-[18px]" />
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-sm font-semibold text-foreground">
                 {t("assistant.title")}
               </p>
               {activeConfig && (
@@ -180,7 +181,7 @@ export function AssistantDrawer({
 
         <div
           ref={scrollRef}
-          className="min-h-0 flex-1 space-y-4 overflow-auto bg-background/45 p-3"
+          className="min-h-0 flex-1 space-y-3 overflow-auto bg-background/45 px-3 py-4"
         >
           {!activeConfig && (
             <div className="animate-fade-in rounded-md bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
@@ -203,7 +204,7 @@ export function AssistantDrawer({
           ))}
 
           {streaming && (
-            <div className="mr-8 animate-fade-in rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm">
+            <div className="mr-8 animate-fade-in rounded-2xl rounded-tl-md border border-border bg-card px-3.5 py-2.5 text-sm text-foreground shadow-sm">
               {streamBuffer ? (
                 <Markdown>{streamBuffer}</Markdown>
               ) : (
@@ -216,9 +217,9 @@ export function AssistantDrawer({
           )}
         </div>
 
-        <div className="border-t border-border bg-card p-3">
+        <div className="border-t border-border bg-card px-3 py-3">
           {focusedQuestion && (
-            <div className="mb-2 flex items-center justify-between rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-xs text-primary">
+            <div className="mb-2 flex items-center justify-between rounded-xl border border-primary/25 bg-primary/[0.08] px-2 py-1 text-xs font-medium text-primary">
               <span className="truncate">{t("paper.aiModify")}: {focusedQuestion.type}</span>
               <button
                 type="button"
@@ -239,7 +240,7 @@ export function AssistantDrawer({
               disabled={!activeConfig}
               rows={1}
               placeholder={t("assistant.placeholder")}
-              className={`${inputCls} min-h-9 flex-1 resize-none bg-background shadow-inner`}
+              className={`${inputCls} min-h-9 flex-1 resize-none bg-background shadow-inner rounded-xl shadow-none focus:shadow-sm transition-shadow`}
             />
             {streaming ? (
               <button
@@ -247,7 +248,7 @@ export function AssistantDrawer({
                 aria-label={t("assistant.stop")}
                 title={t("assistant.stop")}
                 onClick={() => void stop()}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground shadow-sm transition-shadow hover:shadow-md hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
               >
                 <Square className="h-4 w-4" />
               </button>
@@ -258,7 +259,7 @@ export function AssistantDrawer({
                 title={t("assistant.send")}
                 onClick={submit}
                 disabled={!activeConfig || !draft.trim()}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-shadow hover:shadow-md hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -283,17 +284,17 @@ function MessageItem({
     case "text":
       if (message.role === "user") {
         return (
-          <div className="ml-10 animate-fade-in rounded-lg rounded-br-sm bg-primary px-3 py-2 text-sm text-primary-foreground shadow-sm transition-transform hover:-translate-y-0.5">
+          <div className="ml-10 animate-fade-in rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-sm text-primary-foreground shadow-md">
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
           </div>
         );
       }
       return (
         <div className="mr-8 flex animate-fade-in items-start gap-2">
-          <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-            <Bot className="h-3.5 w-3.5" />
+          <span className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm">
+            <Bot className="h-4 w-4 text-primary" />
           </span>
-          <div className="min-w-0 flex-1 rounded-lg rounded-tl-sm border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm transition-colors hover:border-ring/40">
+          <div className="min-w-0 flex-1 rounded-2xl rounded-tl-md border border-border/70 bg-card px-3.5 py-2.5 text-sm text-foreground shadow-sm transition-shadow hover:shadow-md hover:border-border">
             <Markdown>{message.content}</Markdown>
           </div>
         </div>

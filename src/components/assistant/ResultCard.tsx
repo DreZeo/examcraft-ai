@@ -43,7 +43,7 @@ export function ResultCard({
   const totalChanges = countPaperOperationChanges(summary);
 
   return (
-    <div className="animate-fade-in rounded-lg border border-border bg-card p-3 text-sm shadow-sm">
+    <div className="animate-fade-in rounded-2xl border border-border/70 bg-card p-4 text-sm shadow-sm transition-shadow hover:shadow-md">
       {prose && (
         <div className="mb-2 text-muted-foreground">
           <Markdown>{prose}</Markdown>
@@ -53,7 +53,7 @@ export function ResultCard({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded-md text-left font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+        className="flex w-full items-center justify-between rounded-xl text-left font-medium text-foreground transition-colors hover:bg-accent/40 px-2 py-1 -mx-2 -my-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
       >
         <span>{t("assistant.operationSummary", { count: totalChanges })}</span>
         {open ? (
@@ -124,7 +124,7 @@ export function ResultCard({
             <button
               type="button"
               onClick={() => undoApply()}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
             >
               <Undo2 className="h-4 w-4" />
               {t("assistant.undo")}
@@ -134,7 +134,7 @@ export function ResultCard({
           <button
             type="button"
             onClick={() => applyResult(id)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-shadow hover:shadow-md hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             {t("assistant.applyToPaper")}
@@ -155,7 +155,7 @@ function SummaryRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-md bg-muted px-2 py-1.5">
+    <div className="rounded-xl bg-muted/70 px-3 py-2">
       <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         {icon}
         <span>{label}</span>
@@ -176,14 +176,14 @@ function QuestionList({
 }) {
   if (questions.length === 0) return null;
   return (
-    <div className="rounded-md bg-muted px-2 py-1.5">
+    <div className="rounded-xl bg-muted px-2 py-1.5">
       <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         {icon}
         <span>{title}</span>
       </div>
       <ol className="space-y-1.5">
         {questions.map((q, i) => (
-          <li key={q.id} className="rounded bg-background/70 px-2 py-1.5">
+          <li key={q.id} className="rounded-xl bg-background/80 px-2.5 py-2 border border-border/40">
             <div className="mb-1 flex items-baseline gap-2">
               <span className="select-none text-xs font-medium text-muted-foreground">
                 {i + 1}.

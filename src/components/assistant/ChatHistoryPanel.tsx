@@ -49,7 +49,7 @@ export function ChatHistoryPanel() {
             open ? t("assistant.collapseHistory") : t("assistant.expandHistory")
           }
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+          className="inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
         >
           <ChevronRight className={`h-3.5 w-3.5 shrink-0 text-muted-foreground/60 transition-transform duration-200 ${open ? "rotate-90" : ""}`} />
           <span className="shrink-0 text-xs text-muted-foreground/70">
@@ -70,17 +70,15 @@ export function ChatHistoryPanel() {
         </button>
       </div>
       {open && (
-        <div className="mt-2 flex gap-1 overflow-x-auto pb-1">
+        <div className="mt-1 flex flex-col gap-0.5 max-h-52 overflow-y-auto">
           {sessions.map((session) => {
             const active = session.id === activeSessionId;
             return (
               <div
                 key={session.id}
-                className={
-                  active
-                    ? "flex min-w-[10rem] max-w-[13rem] items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 py-1"
-                    : "flex min-w-[10rem] max-w-[13rem] items-center gap-1 rounded-md border border-border bg-background px-2 py-1"
-                }
+                className={`group flex w-full items-center gap-1.5 rounded-xl px-2.5 py-1.5 ${
+                  active ? "bg-primary/10" : "hover:bg-accent/50 transition-colors"
+                }`}
               >
                 {editingId === session.id ? (
                   <input
@@ -109,7 +107,7 @@ export function ChatHistoryPanel() {
                   aria-label={t("assistant.renameChat")}
                   title={t("assistant.renameChat")}
                   onClick={() => startRename(session.id, session.title)}
-                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
@@ -118,7 +116,7 @@ export function ChatHistoryPanel() {
                   aria-label={t("assistant.deleteChat")}
                   title={t("assistant.deleteChat")}
                   onClick={() => void deleteSession(session.id)}
-                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

@@ -35,9 +35,11 @@ export function ErrorCard({
     : t(errorMessageKey({ code, detail }));
 
   return (
-    <div className="animate-fade-in rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+    <div className="animate-fade-in rounded-2xl border border-red-200/70 bg-red-50 p-4 text-sm text-red-800 shadow-sm dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
       <p className="flex items-start gap-2">
-        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-red-100 dark:bg-red-900/40 shrink-0">
+          <AlertCircle className="h-4 w-4" />
+        </span>
         <span>{message}</span>
       </p>
 
@@ -47,7 +49,7 @@ export function ErrorCard({
             type="button"
             disabled={streaming}
             onClick={() => void retry()}
-            className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground shadow-sm transition-shadow hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
           >
             <RotateCcw className="h-4 w-4" />
             {t("assistant.retry")}
@@ -56,7 +58,7 @@ export function ErrorCard({
         <button
           type="button"
           onClick={onCheckSettings}
-          className="inline-flex items-center gap-1.5 rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-red-800 dark:text-red-200 dark:hover:bg-red-900/40 cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-red-800 dark:text-red-200 dark:hover:bg-red-900/40 cursor-pointer"
         >
           <Settings className="h-4 w-4" />
           {t("assistant.checkSettings")}
@@ -78,7 +80,7 @@ export function ErrorCard({
             {t("assistant.viewRaw")}
           </button>
           {showRaw && (
-            <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-2 text-xs text-muted-foreground">
+            <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded-xl bg-muted p-2 text-xs text-muted-foreground">
               {raw}
             </pre>
           )}
