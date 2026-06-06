@@ -49,6 +49,7 @@ export function AssistantDrawer({
   const status = useAssistantStore((s) => s.status);
   const streamBuffer = useAssistantStore((s) => s.streamBuffer);
   const focusedQuestion = useAssistantStore((s) => s.focusedQuestion);
+  const undoableResultId = useAssistantStore((s) => s.undoableResultId);
   const sendMessage = useAssistantStore((s) => s.sendMessage);
   const stop = useAssistantStore((s) => s.stop);
   const clearFocus = useAssistantStore((s) => s.clearFocus);
@@ -200,7 +201,12 @@ export function AssistantDrawer({
           )}
 
           {messages.map((m) => (
-            <MessageItem key={m.id} message={m} onOpenSettings={onOpenSettings} />
+            <MessageItem
+              key={m.id}
+              message={m}
+              undoableResultId={undoableResultId}
+              onOpenSettings={onOpenSettings}
+            />
           ))}
 
           {streaming && (
@@ -273,9 +279,11 @@ export function AssistantDrawer({
 
 function MessageItem({
   message,
+  undoableResultId,
   onOpenSettings,
 }: {
   message: ChatMessage;
+  undoableResultId: string | null;
   onOpenSettings: () => void;
 }) {
   const { t } = useTranslation();
@@ -315,6 +323,7 @@ function MessageItem({
           operations={message.operations}
           questions={message.questions}
           applied={message.applied}
+          undoable={undoableResultId === message.id}
         />
       );
     case "error":

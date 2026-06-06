@@ -48,6 +48,8 @@ interface AssistantState {
   streamBuffer: string;
   /** Question pulled into context via "AI modify"; switches apply to replace. */
   focusedQuestion: Question | null;
+  /** Result card whose paper snapshot can currently be undone. */
+  undoableResultId: string | null;
 
   loadForPaper: (paperId: string) => Promise<void>;
   newSession: () => Promise<void>;
@@ -60,6 +62,7 @@ interface AssistantState {
   retry: () => Promise<void>;
   stop: () => Promise<void>;
   applyResult: (cardId: string) => void;
+  undoResult: (cardId: string) => void;
   focusQuestion: (question: Question) => void;
   clearFocus: () => void;
   reset: () => void;
@@ -156,6 +159,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         sessions: nextIndex.sessions,
         activeSessionId: session.id,
         messages: session.messages,
+        undoableResultId: null,
       });
       return;
     }
@@ -163,6 +167,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       sessions: [session],
       activeSessionId: session.id,
       messages: session.messages,
+      undoableResultId: null,
     });
   }
 
@@ -356,12 +361,18 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     status: "idle",
     streamBuffer: "",
     focusedQuestion: null,
+    undoableResultId: null,
 
     loadForPaper: async (paperId) => {
       await teardown();
       const session = await ensureSession(paperId);
       await activateSession(paperId, session);
-      set({ status: "idle", streamBuffer: "", focusedQuestion: null });
+      set({
+        status: "idle",
+        streamBuffer: "",
+        focusedQuestion: null,
+        undoableResultId: null,
+      });
     },
 
     newSession: async () => {
@@ -517,6 +528,25 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
           m.id === cardId && m.kind === "result" ? { ...m, applied: true } : m,
         ),
         focusedQuestion: null,
+        undoableResultId: cardId,
+      }));
+      void persistSession();
+    },
+
+    undoResult: (cardId) => {
+      const card = get().messages.find(
+        (m): m is Extract<ChatMessage, { kind: "result" }> =>
+          m.id === cardId && m.kind === "result",
+      );
+      if (!card || !card.applied || get().undoableResultId !== cardId) return;
+      if (!usePaperStore.getState().undoSnapshot) return;
+
+      usePaperStore.getState().undoApply();
+      set((s) => ({
+        messages: s.messages.map((m) =>
+          m.id === cardId && m.kind === "result" ? { ...m, applied: false } : m,
+        ),
+        undoableResultId: null,
       }));
       void persistSession();
     },
@@ -530,7 +560,13 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       retryCount = 0;
       activeSession = null;
       activePaperId = null;
-      set({ messages: [], status: "idle", streamBuffer: "", focusedQuestion: null });
+      set({
+        messages: [],
+        status: "idle",
+        streamBuffer: "",
+        focusedQuestion: null,
+        undoableResultId: null,
+      });
     },
   };
 });

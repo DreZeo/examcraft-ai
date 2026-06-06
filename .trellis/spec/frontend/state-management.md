@@ -95,6 +95,22 @@ AI output is never auto-applied. The result card holds the parsed questions;
 into `undoSnapshot` before mutating, enabling one-level `undoApply()`. Manual
 edits don't push undo state (MVP scope).
 
+`assistantStore` owns the AI result-card apply state. Components must call
+`assistantStore.applyResult(cardId)` and `assistantStore.undoResult(cardId)`,
+not `paperStore.undoApply()` directly. `paperStore` owns the paper snapshot, but
+`assistantStore` must keep the chat message's `applied` flag and transient
+`undoableResultId` synchronized with that snapshot. After undo, the same result
+card must become applicable again.
+
+```ts
+// Correct: assistantStore coordinates message state + paper snapshot.
+undoResult(cardId) {
+  if (get().undoableResultId !== cardId) return;
+  usePaperStore.getState().undoApply();
+  set({ undoableResultId: null /* plus message applied:false */ });
+}
+```
+
 ## Pattern: paper-scoped persistence
 
 The app manages a local paper library rather than a single anonymous document.
@@ -119,5 +135,8 @@ back single-paper state.
 
 - **Auto-applying AI results**: breaks the preview/confirm contract. Result cards
   are preview-only (`applied:false`) until the user clicks apply.
+- **Undoing AI results from a component via `paperStore.undoApply()`**: restores
+  the paper but leaves the assistant message `applied:true`, so the card cannot
+  be applied again. Route through `assistantStore.undoResult(cardId)`.
 - **Calling a store hook inside an action**: use `getState()` instead.
 - **Persisting from the component**: mutate via the store action so autosave runs.

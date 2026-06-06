@@ -16,7 +16,6 @@ import {
   previewPaperOperations,
 } from "../../lib/exam/operationPreview";
 import { useAssistantStore } from "../../stores/assistantStore";
-import { usePaperStore } from "../../stores/paperStore";
 import { Markdown } from "../paper/Markdown";
 
 interface ResultCardProps {
@@ -25,6 +24,7 @@ interface ResultCardProps {
   operations: AiPaperOperation[];
   questions?: Question[];
   applied: boolean;
+  undoable: boolean;
 }
 
 /** Preview validated AI paper operations and apply them only on user action. */
@@ -34,11 +34,12 @@ export function ResultCard({
   operations,
   questions,
   applied,
+  undoable,
 }: ResultCardProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const applyResult = useAssistantStore((s) => s.applyResult);
-  const undoApply = usePaperStore((s) => s.undoApply);
+  const undoResult = useAssistantStore((s) => s.undoResult);
   const summary = previewPaperOperations(operations, questions);
   const totalChanges = countPaperOperationChanges(summary);
 
@@ -121,14 +122,16 @@ export function ResultCard({
             <span className="text-xs text-muted-foreground">
               {t("assistant.applied")}
             </span>
-            <button
-              type="button"
-              onClick={() => undoApply()}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
-            >
-              <Undo2 className="h-4 w-4" />
-              {t("assistant.undo")}
-            </button>
+            {undoable && (
+              <button
+                type="button"
+                onClick={() => undoResult(id)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+              >
+                <Undo2 className="h-4 w-4" />
+                {t("assistant.undo")}
+              </button>
+            )}
           </>
         ) : (
           <button
