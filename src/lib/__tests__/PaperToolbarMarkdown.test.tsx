@@ -27,8 +27,15 @@ vi.mock("../../stores/configStore", () => ({
 }));
 
 vi.mock("../../stores/paperStore", () => ({
-  usePaperStore: (selector: (state: { editQuestion: typeof editQuestion }) => unknown) =>
-    selector({ editQuestion }),
+  usePaperStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      paper: {
+        version: 1,
+        title: "测试卷",
+        questions: [question],
+      },
+      editQuestion,
+    }),
 }));
 
 const question: SingleChoiceQuestion = {
@@ -47,6 +54,22 @@ function renderToolbarWithEditor(editorOpen = false) {
       {editorOpen && (
         <QuestionEditModal question={question} onClose={vi.fn()} />
       )}
+    </MarkdownFormatProvider>,
+  );
+}
+
+function renderToolbarWithPreviewSelection() {
+  return render(
+    <MarkdownFormatProvider>
+      <PaperToolbar />
+      <div
+        className="question-block"
+        data-question-id="q1"
+      >
+        <div data-markdown-source="content">
+          <span>choose one</span>
+        </div>
+      </div>
     </MarkdownFormatProvider>,
   );
 }
@@ -75,6 +98,24 @@ describe("PaperToolbar Markdown tab", () => {
     await userEvent.click(screen.getByRole("option", { name: "B5" }));
 
     expect(updateSettings).toHaveBeenCalledWith({ paperSize: "b5" });
+  });
+
+  it("uses a primary-color sliding indicator for layout and Markdown tabs", async () => {
+    const { container } = renderToolbarWithEditor();
+    const indicator = container.querySelector(
+      "[data-testid='paper-toolbar-tab-indicator']",
+    );
+
+    expect(indicator).toHaveClass("bg-primary");
+    expect(indicator).toHaveClass("translate-x-0");
+    expect(screen.getByRole("tab", { name: "排版" }))
+      .toHaveAttribute("aria-selected", "true");
+
+    await openMarkdownTab();
+
+    expect(indicator).toHaveClass("translate-x-full");
+    expect(screen.getByRole("tab", { name: "标记" }))
+      .toHaveAttribute("aria-selected", "true");
   });
 
   it("covers the toolbar while the question editor modal is open", () => {
@@ -121,6 +162,40 @@ describe("PaperToolbar Markdown tab", () => {
     expect(textarea).toHaveValue("choose one");
   });
 
+  it("keeps the editor selection active when switching to the Markdown tab", async () => {
+    renderToolbarWithEditor(true);
+    const textarea = screen.getByPlaceholderText("输入题干，支持 Markdown 与 $公式$");
+    textarea.focus();
+    (textarea as HTMLTextAreaElement).setSelectionRange(0, 6);
+
+    await openMarkdownTab();
+
+    expect(textarea).toHaveFocus();
+    expect(screen.getByRole("button", { name: "加粗" })).not.toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "加粗" }));
+
+    expect(textarea).toHaveValue("**choose** one");
+  });
+
+  it("formats selected paper-preview stem text when no editor modal is open", async () => {
+    renderToolbarWithPreviewSelection();
+    selectText(screen.getByText("choose one").firstChild, 0, 6);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    window.getSelection()?.removeAllRanges();
+    document.dispatchEvent(new Event("selectionchange"));
+
+    expect(screen.getByRole("button", { name: "加粗" })).not.toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "加粗" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "**choose** one",
+    });
+  });
+
   it("keeps Markdown buttons usable after refocusing the question editor", async () => {
     renderToolbarWithEditor(true);
     const textarea = screen.getByPlaceholderText("输入题干，支持 Markdown 与 $公式$");
@@ -156,3 +231,13 @@ describe("PaperToolbar Markdown tab", () => {
     expect(textarea).toHaveValue("choose one");
   });
 });
+
+function selectText(node: ChildNode | null, start: number, end: number) {
+  if (!node) throw new Error("Missing text node");
+  const range = document.createRange();
+  range.setStart(node, start);
+  range.setEnd(node, end);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}

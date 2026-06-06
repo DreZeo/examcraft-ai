@@ -66,8 +66,11 @@ describe("PaperCanvas", () => {
     expect(container).toHaveTextContent("一、单选题");
     expect(container).toHaveTextContent("二、填空题");
     expect(container).toHaveTextContent("三、论述题");
-    expect([...visiblePages(container)[0].querySelectorAll(".question-block > div > span")]
-      .map((node) => node.textContent)).toEqual(["1.", "1.", "1."]);
+    expect([
+      ...visiblePages(container).flatMap((page) => [
+        ...page.querySelectorAll(".question-block > div > span"),
+      ]),
+    ].map((node) => node.textContent)).toEqual(["1.", "1.", "1."]);
   });
 
   it("renders student blank lines and answer space without teacher answers", () => {

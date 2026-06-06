@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Bold,
@@ -18,10 +18,13 @@ import {
 } from "lucide-react";
 import { SelectControl } from "../ui/SelectControl";
 import { useConfigStore } from "../../stores/configStore";
+import { usePaperStore } from "../../stores/paperStore";
+import type { Question } from "../../lib/types/exam";
 import {
   useMarkdownFormat,
   type MarkdownFormat,
 } from "./MarkdownFormatContext";
+import { applyMarkdownFormat } from "./markdownFormat";
 import {
   PAPER_FONT_OPTIONS,
   PAPER_FONT_SIZE_OPTIONS,
@@ -43,16 +46,64 @@ type SettingKey =
   | "paperMargin"
   | "paperSize";
 
+interface PaperTextSelection {
+  questionId: string;
+  text: string;
+}
+
 /** Office-like paper formatting toolbar for whole-paper typography and layout. */
 export function PaperToolbar() {
   const { t } = useTranslation();
   const settings = useConfigStore((state) => state.config.settings);
   const updateSettings = useConfigStore((state) => state.updateSettings);
+  const paper = usePaperStore((state) => state.paper);
+  const editQuestion = usePaperStore((state) => state.editQuestion);
   const { hasTarget, applyFormat } = useMarkdownFormat();
   const [activeTab, setActiveTab] = useState<"layout" | "markdown">("layout");
+  const [paperSelection, setPaperSelection] =
+    useState<PaperTextSelection | null>(null);
+  const canFormat = hasTarget || paperSelection !== null;
+
+  const refreshPaperSelection = useCallback(() => {
+    const nextSelection = readPaperTextSelection();
+    if (nextSelection) setPaperSelection(nextSelection);
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener("selectionchange", refreshPaperSelection);
+    window.addEventListener("mouseup", refreshPaperSelection);
+    window.addEventListener("keyup", refreshPaperSelection);
+    refreshPaperSelection();
+    return () => {
+      document.removeEventListener("selectionchange", refreshPaperSelection);
+      window.removeEventListener("mouseup", refreshPaperSelection);
+      window.removeEventListener("keyup", refreshPaperSelection);
+    };
+  }, [refreshPaperSelection]);
 
   function update<K extends SettingKey>(key: K, value: AppSettings[K]) {
     void updateSettings({ [key]: value });
+  }
+
+  function applyFormatToActiveSelection(format: MarkdownFormat): boolean {
+    if (applyFormat(format)) return true;
+    const selection = readPaperTextSelection() ?? paperSelection;
+    if (!selection) return false;
+    const question = paper.questions.find((q) => q.id === selection.questionId);
+    if (!question) return false;
+    const range = findSelectedTextRange(question.content, selection.text);
+    if (!range) return false;
+
+    const result = applyMarkdownFormat(
+      question.content,
+      range.start,
+      range.end,
+      format,
+    );
+    editQuestion({ ...question, content: result.value } as Question);
+    window.getSelection()?.removeAllRanges();
+    setPaperSelection(null);
+    return true;
   }
 
   return (
@@ -61,10 +112,18 @@ export function PaperToolbar() {
       className="no-print relative z-10 flex flex-wrap items-center gap-1 border-b border-border bg-card px-4 py-1.5"
     >
       <div
-        className="inline-flex h-8 overflow-hidden rounded-md border border-border p-0.5"
+        className="relative grid h-8 grid-cols-2 rounded-md border border-border bg-muted/50 p-0.5 shadow-sm"
         role="tablist"
         aria-label={t("paperToolbar.modeTabs")}
       >
+        <span
+          aria-hidden="true"
+          data-testid="paper-toolbar-tab-indicator"
+          className={
+            "absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-sm bg-primary shadow-sm transition-transform duration-200 ease-out " +
+            (activeTab === "markdown" ? "translate-x-full" : "translate-x-0")
+          }
+        />
         <TabButton
           active={activeTab === "layout"}
           label={t("paperToolbar.layoutTab")}
@@ -138,64 +197,64 @@ export function PaperToolbar() {
             format="bold"
             icon={<Bold className="h-4 w-4" />}
             label={t("editorToolbar.bold")}
-            disabled={!hasTarget}
-            onFormat={applyFormat}
+            disabled={!canFormat}
+            onFormat={applyFormatToActiveSelection}
           />
           <MarkdownButton
             format="italic"
             icon={<Italic className="h-4 w-4" />}
             label={t("editorToolbar.italic")}
-            disabled={!hasTarget}
-            onFormat={applyFormat}
+            disabled={!canFormat}
+            onFormat={applyFormatToActiveSelection}
           />
           <MarkdownButton
             format="underline"
             icon={<Underline className="h-4 w-4" />}
             label={t("editorToolbar.underline")}
-            disabled={!hasTarget}
-            onFormat={applyFormat}
+            disabled={!canFormat}
+            onFormat={applyFormatToActiveSelection}
           />
           <MarkdownButton
             format="heading"
             icon={<Heading2 className="h-4 w-4" />}
             label={t("editorToolbar.heading")}
-            disabled={!hasTarget}
-            onFormat={applyFormat}
+            disabled={!canFormat}
+            onFormat={applyFormatToActiveSelection}
           />
           <MarkdownButton
             format="bulletList"
             icon={<List className="h-4 w-4" />}
             label={t("editorToolbar.bulletList")}
-            disabled={!hasTarget}
-            onFormat={applyFormat}
+            disabled={!canFormat}
+            onFormat={applyFormatToActiveSelection}
           />
           <MarkdownButton
             format="orderedList"
             icon={<ListOrdered className="h-4 w-4" />}
             label={t("editorToolbar.orderedList")}
-            disabled={!hasTarget}
-            onFormat={applyFormat}
+            disabled={!canFormat}
+            onFormat={applyFormatToActiveSelection}
           />
           <MarkdownButton
             format="quote"
             icon={<Quote className="h-4 w-4" />}
             label={t("editorToolbar.quote")}
-            disabled={!hasTarget}
-            onFormat={applyFormat}
+            disabled={!canFormat}
+            onFormat={applyFormatToActiveSelection}
           />
           <MarkdownButton
             format="code"
             icon={<Code className="h-4 w-4" />}
             label={t("editorToolbar.code")}
-            disabled={!hasTarget}
-            onFormat={applyFormat}
+            disabled={!canFormat}
+            onFormat={applyFormatToActiveSelection}
           />
           <MarkdownButton
             format="clear"
             icon={<Eraser className="h-4 w-4" />}
             label={t("editorToolbar.clear")}
-            disabled={!hasTarget}
-            onFormat={applyFormat}
+            disabled={!canFormat}
+            onFormat={applyFormatToActiveSelection}
           />
         </ToolbarGroup>
       )}
@@ -217,16 +276,23 @@ function TabButton({
       type="button"
       role="tab"
       aria-selected={active}
+      onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
-      className={
-        active
-          ? "rounded px-3 text-xs font-medium bg-primary text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
-          : "rounded px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
-      }
+      className={tabButton(active)}
     >
       {label}
     </button>
   );
+}
+
+function tabButton(active: boolean): string {
+  return [
+    "relative z-10 inline-flex h-7 items-center justify-center rounded-sm px-3 text-xs font-medium",
+    "transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer",
+    active
+      ? "text-primary-foreground"
+      : "text-muted-foreground hover:text-foreground",
+  ].join(" ");
 }
 
 function ToolbarGroup({
@@ -264,10 +330,74 @@ function MarkdownButton({
       aria-label={label}
       title={label}
       disabled={disabled}
+      onMouseDown={(event) => event.preventDefault()}
       onClick={() => onFormat(format)}
       className="inline-flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
     >
       {icon}
     </button>
   );
+}
+
+function readPaperTextSelection(): PaperTextSelection | null {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return null;
+  const text = selection.toString().trim();
+  if (!text) return null;
+
+  const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+  const container = range?.commonAncestorContainer ?? selection.anchorNode;
+  const element =
+    container instanceof Element ? container : container?.parentElement ?? null;
+  const source = element?.closest<HTMLElement>("[data-markdown-source='content']");
+  const questionBlock = source?.closest<HTMLElement>(".question-block");
+  const questionId = questionBlock?.dataset.questionId;
+  if (!questionId) return null;
+
+  return { questionId, text };
+}
+
+function findSelectedTextRange(
+  content: string,
+  selectedText: string,
+): { start: number; end: number } | null {
+  const text = selectedText.trim();
+  if (!text) return null;
+  const direct = content.indexOf(text);
+  if (direct >= 0) return { start: direct, end: direct + text.length };
+
+  const collapsed = text.replace(/\s+/g, " ");
+  if (collapsed !== text) {
+    const collapsedIndex = content.indexOf(collapsed);
+    if (collapsedIndex >= 0) {
+      return { start: collapsedIndex, end: collapsedIndex + collapsed.length };
+    }
+  }
+
+  const normalizedNeedle = normalizeSelectionText(text);
+  if (!normalizedNeedle) return null;
+  const normalizedContent = normalizeSelectionText(content);
+  const normalizedIndex = normalizedContent.indexOf(normalizedNeedle);
+  if (normalizedIndex < 0) return null;
+
+  let normalizedCursor = 0;
+  let start = -1;
+  let end = -1;
+  for (let index = 0; index < content.length; index += 1) {
+    const char = content[index];
+    const normalizedChar = normalizeSelectionText(char);
+    if (!normalizedChar) continue;
+    if (normalizedCursor === normalizedIndex) start = index;
+    normalizedCursor += normalizedChar.length;
+    if (normalizedCursor >= normalizedIndex + normalizedNeedle.length) {
+      end = index + 1;
+      break;
+    }
+  }
+
+  return start >= 0 && end >= 0 ? { start, end } : null;
+}
+
+function normalizeSelectionText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
 }

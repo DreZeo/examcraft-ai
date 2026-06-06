@@ -26,7 +26,7 @@ import {
 import * as storage from "../lib/storage/tauri";
 import { useConfigStore } from "./configStore";
 
-type ViewMode = "teacher" | "student";
+export type ViewMode = "teacher" | "student";
 
 interface PaperState {
   paper: ExamPaper;

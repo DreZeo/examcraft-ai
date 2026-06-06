@@ -1,15 +1,18 @@
+import { startTransition, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircle2,
   CircleAlert,
+  Eye,
   FilePlus2,
   FileText,
   FolderOpen,
   GraduationCap,
   Loader2,
   Settings,
+  UserCheck,
 } from "lucide-react";
-import { usePaperStore } from "../../stores/paperStore";
+import { usePaperStore, type ViewMode } from "../../stores/paperStore";
 import { iconBtn, ghostBtn } from "../../lib/ui/styles";
 import { ExportMenu } from "./ExportMenu";
 
@@ -24,10 +27,28 @@ interface TopBarProps {
  */
 export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
   const { t } = useTranslation();
-  const { paper, setTitle, saveStatus, view, setView, newPaper } =
-    usePaperStore();
+  const paperTitle = usePaperStore((s) => s.paper.title);
+  const questionCount = usePaperStore((s) => s.paper.questions.length);
+  const setTitle = usePaperStore((s) => s.setTitle);
+  const saveStatus = usePaperStore((s) => s.saveStatus);
+  const view = usePaperStore((s) => s.view);
+  const setView = usePaperStore((s) => s.setView);
+  const newPaper = usePaperStore((s) => s.newPaper);
+  const [optimisticView, setOptimisticView] = useState<ViewMode>(view);
   const StatusIcon = statusIcon[saveStatus];
-  const isBlank = !paper.title.trim() && paper.questions.length === 0;
+  const isBlank = !paperTitle.trim() && questionCount === 0;
+
+  useEffect(() => {
+    setOptimisticView(view);
+  }, [view]);
+
+  function changeView(nextView: ViewMode) {
+    if (nextView === optimisticView) return;
+    setOptimisticView(nextView);
+    startTransition(() => {
+      setView(nextView);
+    });
+  }
 
   return (
     <header className="no-print flex items-center gap-3 border-b border-border bg-card px-4 py-2">
@@ -43,7 +64,7 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
         <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
           aria-label={t("app.title")}
-          value={paper.title}
+          value={paperTitle}
           placeholder={t("app.untitled")}
           onChange={(e) => setTitle(e.currentTarget.value)}
           className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none"
@@ -63,19 +84,37 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
       <div className="h-5 w-px shrink-0 bg-border" />
 
       {/* View toggle */}
-      <div className="flex overflow-hidden rounded-md border border-border text-xs">
+      <div
+        className="relative grid grid-cols-2 rounded-md border border-border bg-muted/50 p-0.5 text-xs shadow-sm"
+        role="group"
+        aria-label={t("paper.viewMode")}
+      >
+        <span
+          aria-hidden="true"
+          data-testid="view-toggle-indicator"
+          className={
+            "absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-sm bg-card shadow-sm ring-1 ring-border/70 transition-transform duration-200 ease-out " +
+            (optimisticView === "student" ? "translate-x-full" : "translate-x-0")
+          }
+        />
         <button
           type="button"
-          onClick={() => setView("teacher")}
-          className={view === "teacher" ? activeTab : inactiveTab}
+          aria-pressed={optimisticView === "teacher"}
+          title={t("paper.teacherView")}
+          onClick={() => changeView("teacher")}
+          className={viewTab(optimisticView === "teacher")}
         >
+          <UserCheck className="h-3.5 w-3.5" />
           {t("paper.teacherView")}
         </button>
         <button
           type="button"
-          onClick={() => setView("student")}
-          className={view === "student" ? activeTab : inactiveTab}
+          aria-pressed={optimisticView === "student"}
+          title={t("paper.studentPreview")}
+          onClick={() => changeView("student")}
+          className={viewTab(optimisticView === "student")}
         >
+          <Eye className="h-3.5 w-3.5" />
           {t("paper.studentPreview")}
         </button>
       </div>
@@ -116,10 +155,16 @@ export function TopBar({ onOpenSettings, onOpenPaperManager }: TopBarProps) {
 const actionBtn =
   ghostBtn + " h-8 whitespace-nowrap";
 
-const activeTab =
-  "bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors cursor-pointer";
-const inactiveTab =
-  "px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer";
+function viewTab(active: boolean): string {
+  return [
+    "relative z-10 inline-flex h-7 min-w-[5.75rem] items-center justify-center gap-1.5 rounded-sm px-2.5",
+    "text-xs font-medium transition-colors duration-150 cursor-pointer",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    active
+      ? "text-foreground"
+      : "text-muted-foreground hover:text-foreground",
+  ].join(" ");
+}
 
 const statusIcon = {
   saved: CheckCircle2,

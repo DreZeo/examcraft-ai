@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -54,7 +53,10 @@ export function PaperCanvas({
   const { t } = useTranslation();
   const { paper, view, appendQuestion } = usePaperStore();
   const paperSettings = useConfigStore((s) => s.config.settings);
-  const display = view === "student" ? toStudentVersion(paper) : paper;
+  const display = useMemo(
+    () => (view === "student" ? toStudentVersion(paper) : paper),
+    [paper, view],
+  );
   const questionIds = display.questions.map((question) => question.id).join("|");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newQuestionDraft, setNewQuestionDraft] = useState<Question | null>(null);
@@ -69,8 +71,22 @@ export function PaperCanvas({
     () => buildPaperPages(display, paperSettings, includeAnswers),
     [display, paperSettings, includeAnswers],
   );
-  const [measuredPages, setMeasuredPages] = useState<PaperPage[] | null>(null);
-  const pages = measuredPages ?? estimatedPages;
+  const blockSignature = useMemo(
+    () =>
+      [
+        view,
+        includeAnswers ? "answers" : "student",
+        pageMetrics.contentHeightMm,
+        blocks.map((block) => block.id).join("|"),
+      ].join("::"),
+    [blocks, includeAnswers, pageMetrics.contentHeightMm, view],
+  );
+  const [measured, setMeasured] = useState<{
+    signature: string;
+    pages: PaperPage[];
+  } | null>(null);
+  const pages =
+    measured?.signature === blockSignature ? measured.pages : estimatedPages;
 
   const editing = editingId
     ? (paper.questions.find((q) => q.id === editingId) ?? null)
@@ -80,30 +96,46 @@ export function PaperCanvas({
     setNewQuestionDraft(createBlankQuestion("single-choice", uuid()));
   }
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (blocks.length === 0) return;
     const root = measureRef.current;
     if (!root) return;
 
-    const heights: Record<string, number> = {};
-    root.querySelectorAll<HTMLElement>("[data-layout-block-id]").forEach((node) => {
-      const id = node.dataset.layoutBlockId;
-      if (!id) return;
-      heights[id] = pxToMm(node.getBoundingClientRect().height);
+    let canceled = false;
+    const frame = window.requestAnimationFrame(() => {
+      if (canceled) return;
+      const heights: Record<string, number> = {};
+      root
+        .querySelectorAll<HTMLElement>("[data-layout-block-id]")
+        .forEach((node) => {
+          const id = node.dataset.layoutBlockId;
+          if (!id) return;
+          heights[id] = pxToMm(node.getBoundingClientRect().height);
+        });
+
+      if (Object.keys(heights).length !== blocks.length) return;
+      const next = paginateMeasuredBlocks(
+        blocks,
+        pageMetrics.contentHeightMm,
+        heights,
+      );
+      setMeasured((current) => {
+        if (
+          current?.signature === blockSignature &&
+          samePages(current.pages, next)
+        ) {
+          return current;
+        }
+        if (samePages(estimatedPages, next)) return null;
+        return { signature: blockSignature, pages: next };
+      });
     });
 
-    if (Object.keys(heights).length !== blocks.length) return;
-    const next = paginateMeasuredBlocks(
-      blocks,
-      pageMetrics.contentHeightMm,
-      heights,
-    );
-    setMeasuredPages((current) =>
-      samePages(current, next) || samePages(estimatedPages, next)
-        ? current
-        : next,
-    );
-  }, [blocks, estimatedPages, pageMetrics.contentHeightMm]);
+    return () => {
+      canceled = true;
+      window.cancelAnimationFrame(frame);
+    };
+  }, [blocks, blockSignature, estimatedPages, pageMetrics.contentHeightMm]);
 
   useEffect(() => {
     if (!onActiveQuestionChange) return;
