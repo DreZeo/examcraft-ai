@@ -50,6 +50,7 @@
     "dataDirectory": "Data directory",
     "dataDirectoryDescription": "View or change where papers and settings are saved.",
     "openInExplorer": "Open in file manager",
+    "openDataDirectoryFailed": "Could not open the data directory. Check that the path exists and the system allows access.",
     "changeLocation": "Change location",
     "save": "Save",
     "cancel": "Cancel"
