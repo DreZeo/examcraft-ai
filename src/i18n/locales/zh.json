@@ -134,14 +134,14 @@
     "mono": "等宽"
   },
   "paperFontSize": {
-    "xiaowu": "小五 / 9pt",
+    "xiaowu": "小五",
     "wuhao": "五号",
     "xiaosi": "小四",
     "sihao": "四号",
-    "xiaosan": "小三 / 15pt",
+    "xiaosan": "小三",
     "sanhao": "三号",
-    "xiaoer": "小二 / 18pt",
-    "erhao": "二号 / 22pt"
+    "xiaoer": "小二",
+    "erhao": "二号"
   },
   "paperLineHeight": {
     "single": "1.0",
@@ -199,6 +199,10 @@
     "paragraph": "段落",
     "page": "页面",
     "markdown": "标记",
+    "markdownStructure": "结构",
+    "markdownText": "文字",
+    "markdownColor": "颜色",
+    "markdownClear": "清除",
     "font": "字体",
     "fontSize": "字号",
     "lineHeight": "行距",

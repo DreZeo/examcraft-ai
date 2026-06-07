@@ -233,91 +233,108 @@ export function PaperToolbar() {
           </ToolbarGroup>
         </>
       ) : (
-        <ToolbarGroup label={t("paperToolbar.markdown")}>
-          <MarkdownButton
-            format="bold"
-            icon={<Bold className="h-4 w-4" />}
-            label={t("editorToolbar.bold")}
-            disabled={!canFormat}
-            onFormat={applyFormatToActiveSelection}
-          />
-          <MarkdownButton
-            format="italic"
-            icon={<Italic className="h-4 w-4" />}
-            label={t("editorToolbar.italic")}
-            disabled={!canFormat}
-            onFormat={applyFormatToActiveSelection}
-          />
-          <MarkdownButton
-            format="underline"
-            icon={<Underline className="h-4 w-4" />}
-            label={t("editorToolbar.underline")}
-            disabled={!canFormat}
-            onFormat={applyFormatToActiveSelection}
-          />
-          <MarkdownButton
-            format="heading"
-            icon={<Heading2 className="h-4 w-4" />}
-            label={t("editorToolbar.heading")}
-            disabled={!canFormat}
-            onFormat={applyFormatToActiveSelection}
-          />
-          <MarkdownButton
-            format="bulletList"
-            icon={<List className="h-4 w-4" />}
-            label={t("editorToolbar.bulletList")}
-            disabled={!canFormat}
-            onFormat={applyFormatToActiveSelection}
-          />
-          <MarkdownButton
-            format="orderedList"
-            icon={<ListOrdered className="h-4 w-4" />}
-            label={t("editorToolbar.orderedList")}
-            disabled={!canFormat}
-            onFormat={applyFormatToActiveSelection}
-          />
-          <MarkdownButton
-            format="quote"
-            icon={<Quote className="h-4 w-4" />}
-            label={t("editorToolbar.quote")}
-            disabled={!canFormat}
-            onFormat={applyFormatToActiveSelection}
-          />
-          <MarkdownButton
-            format="code"
-            icon={<Code className="h-4 w-4" />}
-            label={t("editorToolbar.code")}
-            disabled={!canFormat}
-            onFormat={applyFormatToActiveSelection}
-          />
-          <ColorPaletteButton<TextColorPreset>
-            type="textColor"
-            icon={<Baseline className="h-4 w-4" />}
-            label={t("editorToolbar.textColor")}
-            disabled={!canFormat}
-            options={TEXT_COLOR_PRESETS}
-            values={TEXT_COLOR_VALUES}
-            optionKeyPrefix="textColor"
-            onFormat={applyFormatToActiveSelection}
-          />
-          <ColorPaletteButton<HighlightColorPreset>
-            type="highlight"
-            icon={<PaintBucket className="h-4 w-4" />}
-            label={t("editorToolbar.highlightColor")}
-            disabled={!canFormat}
-            options={HIGHLIGHT_COLOR_PRESETS}
-            values={HIGHLIGHT_COLOR_VALUES}
-            optionKeyPrefix="highlightColor"
-            onFormat={applyFormatToActiveSelection}
-          />
-          <MarkdownButton
-            format="clear"
-            icon={<Eraser className="h-4 w-4" />}
-            label={t("editorToolbar.clear")}
-            disabled={!canFormat}
-            onFormat={applyFormatToActiveSelection}
-          />
-        </ToolbarGroup>
+        <>
+          <ToolbarGroup label={t("paperToolbar.markdownStructure")}>
+            <MarkdownButton
+              format="heading"
+              icon={<Heading2 className="h-4 w-4" />}
+              label={t("editorToolbar.heading")}
+              disabled={!canFormat}
+              onFormat={applyFormatToActiveSelection}
+            />
+            <MarkdownButton
+              format="bulletList"
+              icon={<List className="h-4 w-4" />}
+              label={t("editorToolbar.bulletList")}
+              disabled={!canFormat}
+              onFormat={applyFormatToActiveSelection}
+            />
+            <MarkdownButton
+              format="orderedList"
+              icon={<ListOrdered className="h-4 w-4" />}
+              label={t("editorToolbar.orderedList")}
+              disabled={!canFormat}
+              onFormat={applyFormatToActiveSelection}
+            />
+            <MarkdownButton
+              format="quote"
+              icon={<Quote className="h-4 w-4" />}
+              label={t("editorToolbar.quote")}
+              disabled={!canFormat}
+              onFormat={applyFormatToActiveSelection}
+            />
+          </ToolbarGroup>
+
+          <div className="h-5 w-px bg-border" />
+
+          <ToolbarGroup label={t("paperToolbar.markdownText")}>
+            <MarkdownButton
+              format="bold"
+              icon={<Bold className="h-4 w-4" />}
+              label={t("editorToolbar.bold")}
+              disabled={!canFormat}
+              onFormat={applyFormatToActiveSelection}
+            />
+            <MarkdownButton
+              format="italic"
+              icon={<Italic className="h-4 w-4" />}
+              label={t("editorToolbar.italic")}
+              disabled={!canFormat}
+              onFormat={applyFormatToActiveSelection}
+            />
+            <MarkdownButton
+              format="underline"
+              icon={<Underline className="h-4 w-4" />}
+              label={t("editorToolbar.underline")}
+              disabled={!canFormat}
+              onFormat={applyFormatToActiveSelection}
+            />
+            <MarkdownButton
+              format="code"
+              icon={<Code className="h-4 w-4" />}
+              label={t("editorToolbar.code")}
+              disabled={!canFormat}
+              onFormat={applyFormatToActiveSelection}
+            />
+          </ToolbarGroup>
+
+          <div className="h-5 w-px bg-border" />
+
+          <ToolbarGroup label={t("paperToolbar.markdownColor")}>
+            <ColorPaletteButton<TextColorPreset>
+              type="textColor"
+              icon={<Baseline className="h-4 w-4" />}
+              label={t("editorToolbar.textColor")}
+              disabled={!canFormat}
+              options={TEXT_COLOR_PRESETS}
+              values={TEXT_COLOR_VALUES}
+              optionKeyPrefix="textColor"
+              onFormat={applyFormatToActiveSelection}
+            />
+            <ColorPaletteButton<HighlightColorPreset>
+              type="highlight"
+              icon={<PaintBucket className="h-4 w-4" />}
+              label={t("editorToolbar.highlightColor")}
+              disabled={!canFormat}
+              options={HIGHLIGHT_COLOR_PRESETS}
+              values={HIGHLIGHT_COLOR_VALUES}
+              optionKeyPrefix="highlightColor"
+              onFormat={applyFormatToActiveSelection}
+            />
+          </ToolbarGroup>
+
+          <div className="h-5 w-px bg-border" />
+
+          <ToolbarGroup label={t("paperToolbar.markdownClear")}>
+            <MarkdownButton
+              format="clear"
+              icon={<Eraser className="h-4 w-4" />}
+              label={t("editorToolbar.clear")}
+              disabled={!canFormat}
+              onFormat={applyFormatToActiveSelection}
+            />
+          </ToolbarGroup>
+        </>
       )}
     </section>
   );
