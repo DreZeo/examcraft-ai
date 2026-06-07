@@ -55,6 +55,8 @@
     "paperFont": "Paper font",
     "globalFont": "Global font",
     "explanationTier": "Explanation detail",
+    "contextMessageLimit": "Context message limit",
+    "contextMessageLimitDescription": "Max historical messages sent to the model per turn. 0 = unlimited.",
     "customInstructions": "Custom instructions",
     "dataDirectory": "Data directory",
     "dataDirectoryDescription": "View or change where papers and settings are saved.",

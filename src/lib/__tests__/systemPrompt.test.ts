@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildSystemPrompt } from "../api/systemPrompt";
+import { buildSystemPrompt, buildPaperContextMessage } from "../api/systemPrompt";
 import {
   AgentConfigSchema,
   AppSettingsSchema,
@@ -75,58 +75,69 @@ describe("buildSystemPrompt", () => {
   });
 
   it("appends the active AI agent when present", () => {
-    const prompt = buildSystemPrompt(settings(), undefined, agent());
+    const prompt = buildSystemPrompt(settings(), agent());
     expect(prompt).toMatch(/active ai agent/i);
     expect(prompt).toContain("Math Teacher");
     expect(prompt).toContain("Use step-by-step reasoning.");
   });
 
   it("omits the agent section when no active agent is provided", () => {
-    const prompt = buildSystemPrompt(settings(), undefined, null);
+    const prompt = buildSystemPrompt(settings(), null);
     expect(prompt).not.toMatch(/active ai agent/i);
   });
 
   it("omits the agent section when instructions are blank", () => {
     const prompt = buildSystemPrompt(
       settings(),
-      undefined,
       agent({ instructions: "   " }),
     );
     expect(prompt).not.toMatch(/active ai agent/i);
   });
 
-  it("includes the paper summary when provided", () => {
-    const prompt = buildSystemPrompt(
-      settings(),
-      "Questions: 2, total 15 pts",
-    );
-    expect(prompt).toMatch(/current paper/i);
-    expect(prompt).toContain("Questions: 2, total 15 pts");
-  });
-
-  it("omits the paper section when no summary is given", () => {
+  it("does not include paper summary in the system prompt", () => {
     expect(buildSystemPrompt(settings())).not.toMatch(/# current paper/i);
   });
 
-  it("injects subject-aware question type strategy guidance", () => {
-    const prompt = buildSystemPrompt(
-      settings(),
-      undefined,
-      null,
-      inferQuestionTypeStrategy({ requestText: "生成一份六年级英语试卷" }),
-    );
+  it("does not include question type strategy in the system prompt", () => {
+    const strategy = inferQuestionTypeStrategy({ requestText: "生成一份六年级英语试卷" });
+    const prompt = buildSystemPrompt(settings(), null);
+    expect(prompt).not.toMatch(/question type strategy/i);
+    // strategy is not used in buildSystemPrompt — suppress unused variable warning
+    void strategy;
+  });
+});
 
-    expect(prompt).toMatch(/question type strategy/i);
-    expect(prompt).toContain("English language paper");
-    expect(prompt).toContain("Default-excluded question types");
-    expect(prompt).toContain("true-false");
-    expect(prompt).toContain("fill-in-blank");
-    expect(prompt).toContain("english-cloze");
-    expect(prompt).toContain("english-reading");
-    expect(prompt).toContain("examSection.passage");
-    expect(prompt).toContain("完形填空");
-    expect(prompt).toContain("阅读理解");
-    expect(prompt).toContain("作文");
-    expect(prompt).not.toContain("阅读理解判断");
+describe("buildPaperContextMessage", () => {
+  it("returns null when no summary and no strategy", () => {
+    expect(buildPaperContextMessage()).toBeNull();
+    expect(buildPaperContextMessage("", null)).toBeNull();
+    expect(buildPaperContextMessage("   ", null)).toBeNull();
+  });
+
+  it("includes paper summary when provided", () => {
+    const msg = buildPaperContextMessage("Questions: 2, total 15 pts");
+    expect(msg).not.toBeNull();
+    expect(msg).toContain("[Paper context for this turn]");
+    expect(msg).toMatch(/# Current paper/i);
+    expect(msg).toContain("Questions: 2, total 15 pts");
+  });
+
+  it("includes strategy section when provided", () => {
+    const strategy = inferQuestionTypeStrategy({ requestText: "生成一份六年级英语试卷" });
+    const msg = buildPaperContextMessage(undefined, strategy);
+    expect(msg).not.toBeNull();
+    expect(msg).toContain("[Paper context for this turn]");
+    expect(msg).toMatch(/question type strategy/i);
+    expect(msg).toContain("English language paper");
+  });
+
+  it("includes both summary and strategy when both are provided", () => {
+    const strategy = inferQuestionTypeStrategy({ requestText: "生成一份六年级英语试卷" });
+    const msg = buildPaperContextMessage("Questions: 3, total 20 pts", strategy);
+    expect(msg).not.toBeNull();
+    expect(msg).toContain("[Paper context for this turn]");
+    expect(msg).toMatch(/question type strategy/i);
+    expect(msg).toMatch(/# Current paper/i);
+    expect(msg).toContain("Questions: 3, total 20 pts");
   });
 });

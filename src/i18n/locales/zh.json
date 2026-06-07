@@ -55,6 +55,8 @@
     "paperFont": "试卷字体",
     "globalFont": "全局字体",
     "explanationTier": "解析详细程度",
+    "contextMessageLimit": "上下文消息上限",
+    "contextMessageLimitDescription": "发送给模型的最大历史消息条数，0 表示不限",
     "customInstructions": "自定义补充指令",
     "dataDirectory": "数据目录",
     "dataDirectoryDescription": "查看或更改试卷和设置保存的位置。",

@@ -7,20 +7,14 @@ import {
 /**
  * Build the system prompt sent to the model each turn.
  *
- * The prompt is a fixed, built-in instruction set (not user-editable) that
- * defines the two-phase interaction flow, the paper-operation JSON schema
- * (mirroring `lib/types/exam.ts`), subject-neutrality, fenced-JSON output, and
- * mandatory answers. Subject/category question-type strategy guidance is
- * appended when context can be inferred. The explanation-detail tier and any
- * custom user instructions from settings are appended. When a paper summary is
- * supplied it is included so the assistant can be paper-aware (avoid
- * duplicates, edit a specific question, fill to a target score).
+ * Returns only session-static content: role, two-phase flow, schema, operations,
+ * output rules, explanation tier, and agent instructions. Paper state is injected
+ * separately as a user message via `buildPaperContextMessage` so the system
+ * prefix stays stable across turns (prefix-cache friendly).
  */
 export function buildSystemPrompt(
   settings: AppSettings,
-  paperSummary?: string,
   activeAgent?: AgentConfig | null,
-  questionTypeStrategy?: QuestionTypeStrategyMatch | null,
 ): string {
   const sections: string[] = [
     ROLE,
@@ -29,9 +23,6 @@ export function buildSystemPrompt(
     OPERATIONS,
     OUTPUT_RULES,
   ];
-
-  const strategySection = formatQuestionTypeStrategy(questionTypeStrategy ?? null);
-  if (strategySection) sections.push(strategySection);
 
   sections.push(explanationInstruction(settings.explanationTier));
 
@@ -51,11 +42,22 @@ export function buildSystemPrompt(
     );
   }
 
-  if (paperSummary && paperSummary.trim()) {
-    sections.push(`# Current paper\n${paperSummary.trim()}`);
-  }
-
   return sections.join("\n\n");
+}
+
+/**
+ * Build the per-turn paper context user message injected just before apiHistory.
+ * Returns null when there is nothing to inject (empty summary and no strategy).
+ */
+export function buildPaperContextMessage(
+  paperSummary?: string,
+  strategy?: QuestionTypeStrategyMatch | null,
+): string | null {
+  const parts: string[] = [];
+  const strategySection = formatQuestionTypeStrategy(strategy ?? null);
+  if (strategySection) parts.push(strategySection);
+  if (paperSummary?.trim()) parts.push(`# Current paper\n${paperSummary.trim()}`);
+  return parts.length > 0 ? `[Paper context for this turn]\n${parts.join("\n\n")}` : null;
 }
 
 const ROLE = `You are an AI assistant that helps a teacher author exam papers.

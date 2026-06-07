@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Languages,
   LayoutTemplate,
+  MessageSquare,
   Palette,
   Save,
   Sparkles,
@@ -113,6 +114,25 @@ export function GeneralSection() {
             onChange={(v) => void updateSettings({ explanationTier: v as ExplanationTier })}
           />
         </SettingRow>
+
+        <SettingRow
+          icon={<MessageSquare className="h-4 w-4" />}
+          label={t("settings.contextMessageLimit")}
+          description={t("settings.contextMessageLimitDescription")}
+        >
+          <input
+            type="number"
+            min={0}
+            max={200}
+            value={s.contextMessageLimit}
+            onChange={(e) => {
+              const v = Math.min(200, Math.max(0, parseInt(e.target.value, 10) || 0));
+              void updateSettings({ contextMessageLimit: v });
+            }}
+            className="w-20 rounded-md border border-input bg-background px-2 py-1 text-sm text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={t("settings.contextMessageLimit")}
+          />
+        </SettingRow>
       </SettingsGroup>
     </div>
   );
@@ -143,17 +163,24 @@ function SettingsGroup({
 function SettingRow({
   icon,
   label,
+  description,
   children,
 }: {
   icon: ReactNode;
   label: string;
+  description?: string;
   children: ReactNode;
 }) {
   return (
     <div className="grid gap-3 bg-background px-4 py-3 sm:grid-cols-[minmax(8rem,11rem)_minmax(0,1fr)] sm:items-center">
       <span className="inline-flex items-center gap-2 text-foreground">
         <span className="text-muted-foreground">{icon}</span>
-        <span className="font-medium">{label}</span>
+        <span>
+          <span className="font-medium">{label}</span>
+          {description && (
+            <span className="block text-xs text-muted-foreground">{description}</span>
+          )}
+        </span>
       </span>
       <span className="flex min-w-0 justify-start sm:justify-end">{children}</span>
     </div>

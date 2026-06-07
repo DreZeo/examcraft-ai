@@ -315,6 +315,8 @@ export const AppSettingsSchema = z.object({
   customInstructions: z.string().default(""),
   /** Optional web search provider behavior for AI assistant turns. */
   webSearch: WebSearchSettingsSchema.prefault({}),
+  /** Max number of historical messages sent to the model per turn (0 = unlimited). */
+  contextMessageLimit: z.number().int().min(0).max(200).default(0),
 });
 
 const AppConfigBaseSchema = z.object({

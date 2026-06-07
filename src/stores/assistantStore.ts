@@ -18,7 +18,7 @@ import {
   updateChatSessionContent,
   upsertChatSessionMeta,
 } from "../lib/api/chatLibrary";
-import { buildSystemPrompt } from "../lib/api/systemPrompt";
+import { buildSystemPrompt, buildPaperContextMessage } from "../lib/api/systemPrompt";
 import { validatePaperOperations } from "../lib/api/validatePaperOperations";
 import { extractJson } from "../lib/api/extractJson";
 import { type AppError } from "../lib/api/errorMessages";
@@ -212,16 +212,18 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     });
     const system = buildSystemPrompt(
       configState.config.settings,
-      summary,
       configState.activeAgent(),
-      questionTypeStrategy,
     );
     const searchInstructions = webSearchEnabledForTurn
       ? `\n\n${buildSearchToolInstructions()}`
       : "";
+    const paperContextMsg = buildPaperContextMessage(summary, questionTypeStrategy);
+    const limit = configState.config.settings.contextMessageLimit ?? 0;
+    const windowedHistory = applyContextWindow(apiHistory, limit);
     return [
       { role: "system", content: `${system}${searchInstructions}` },
-      ...apiHistory,
+      ...(paperContextMsg ? [{ role: "user" as const, content: paperContextMsg }] : []),
+      ...windowedHistory,
     ];
   }
 
@@ -841,6 +843,21 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     },
   };
 });
+
+export function applyContextWindow(history: ApiMessage[], limit: number): ApiMessage[] {
+  if (limit <= 0 || history.length <= limit) return history;
+  let start = history.length - limit;
+  const msg = history[start];
+  if (
+    msg &&
+    msg.role === "user" &&
+    (msg.content.startsWith("Web search results for this turn.") ||
+      msg.content.startsWith("Confirmed. Generate"))
+  ) {
+    start = Math.max(0, start - 1);
+  }
+  return history.slice(start);
+}
 
 function toAppError(err: unknown): AppError {
   if (err && typeof err === "object" && "code" in err) {

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatMessage } from "../types/library";
 import type { ExamPaper, Question } from "../types/exam";
 import { defaultAppConfig } from "../types/config";
-import { useAssistantStore } from "../../stores/assistantStore";
+import { useAssistantStore, applyContextWindow } from "../../stores/assistantStore";
 import { useConfigStore } from "../../stores/configStore";
 import { usePaperStore } from "../../stores/paperStore";
 
@@ -432,5 +432,59 @@ describe("assistantStore web search tool loop", () => {
     expect(
       tauriMocks.invoke.mock.calls.some(([command]) => command === "web_search"),
     ).toBe(false);
+  });
+});
+
+describe("applyContextWindow", () => {
+  function msg(role: "user" | "assistant", content: string) {
+    return { role, content };
+  }
+
+  it("returns full history when limit is 0", () => {
+    const h = [msg("user", "a"), msg("assistant", "b"), msg("user", "c")];
+    expect(applyContextWindow(h, 0)).toBe(h);
+  });
+
+  it("returns full history when history length <= limit", () => {
+    const h = [msg("user", "a"), msg("assistant", "b")];
+    expect(applyContextWindow(h, 5)).toBe(h);
+  });
+
+  it("trims to the last N messages", () => {
+    const h = [msg("user", "a"), msg("assistant", "b"), msg("user", "c"), msg("assistant", "d")];
+    expect(applyContextWindow(h, 2)).toEqual([msg("user", "c"), msg("assistant", "d")]);
+  });
+
+  it("expands by one when cut lands on a search context user message", () => {
+    const h = [
+      msg("assistant", "search tool request"),
+      msg("user", "Web search results for this turn. ..."),
+      msg("assistant", "here are the results"),
+    ];
+    // limit=2 would start at index 1 (the search context message)
+    const result = applyContextWindow(h, 2);
+    expect(result).toHaveLength(3);
+    expect(result[0]).toEqual(msg("assistant", "search tool request"));
+  });
+
+  it("expands by one when cut lands on a Confirmed user message", () => {
+    const h = [
+      msg("assistant", "phase 1 confirmation prose"),
+      msg("user", "Confirmed. Generate the paper operations now as JSON inside a ```json fenced block."),
+      msg("assistant", '```json\n{"operations":[]}\n```'),
+    ];
+    // limit=2 starts at index 1
+    const result = applyContextWindow(h, 2);
+    expect(result).toHaveLength(3);
+    expect(result[0]).toEqual(msg("assistant", "phase 1 confirmation prose"));
+  });
+
+  it("does not go below index 0 when expanding", () => {
+    const h = [
+      msg("user", "Web search results for this turn. ..."),
+      msg("assistant", "reply"),
+    ];
+    // limit=2 would start at 0, expansion clamps at 0
+    expect(applyContextWindow(h, 2)).toBe(h);
   });
 });
