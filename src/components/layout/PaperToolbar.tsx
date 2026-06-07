@@ -190,8 +190,6 @@ export function PaperToolbar() {
             />
           </ToolbarGroup>
 
-          <div className="h-5 w-px bg-border" />
-
           <ToolbarGroup label={t("paperToolbar.paragraph")}>
             <SelectControl<PaperLineHeight>
               icon={<Pilcrow className="h-4 w-4" />}
@@ -202,8 +200,6 @@ export function PaperToolbar() {
               onChange={(value) => update("paperLineHeight", value)}
             />
           </ToolbarGroup>
-
-          <div className="h-5 w-px bg-border" />
 
           <ToolbarGroup label={t("paperToolbar.page")}>
             <SelectControl<PaperSize>
@@ -265,8 +261,6 @@ export function PaperToolbar() {
             />
           </ToolbarGroup>
 
-          <div className="h-5 w-px bg-border" />
-
           <ToolbarGroup label={t("paperToolbar.markdownText")}>
             <MarkdownButton
               format="bold"
@@ -298,8 +292,6 @@ export function PaperToolbar() {
             />
           </ToolbarGroup>
 
-          <div className="h-5 w-px bg-border" />
-
           <ToolbarGroup label={t("paperToolbar.markdownColor")}>
             <ColorPaletteButton<TextColorPreset>
               type="textColor"
@@ -322,8 +314,6 @@ export function PaperToolbar() {
               onFormat={applyFormatToActiveSelection}
             />
           </ToolbarGroup>
-
-          <div className="h-5 w-px bg-border" />
 
           <ToolbarGroup label={t("paperToolbar.markdownClear")}>
             <MarkdownButton
@@ -381,9 +371,8 @@ function ToolbarGroup({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-1.5 px-1">
-      <span className="hidden text-xs font-medium text-muted-foreground/60 sm:inline">{label}</span>
-      <div className="hidden h-4 w-px bg-border sm:block" />
+    <div className="flex min-h-8 min-w-0 items-center gap-1 rounded-sm border border-border/80 bg-muted/20 px-1">
+      <span className="hidden shrink-0 text-xs font-medium text-muted-foreground/70 sm:inline">{label}</span>
       <div className="flex min-w-0 flex-wrap items-center gap-0.5">{children}</div>
     </div>
   );
