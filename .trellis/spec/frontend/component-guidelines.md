@@ -167,6 +167,10 @@ The double `font-style` provides a fallback: `oblique 12deg` is used by modern b
   `src/styles/print.css` (`@media print`). Semantic hooks `paper-sheet`,
   `question-block`, `answer-block` drive print layout — keep them on the right
   elements. See export flow in `frontend/directory-structure.md`.
+- Paper page size, orientation, and margins are owned by typed app settings and
+  `getPageMetrics()`. The live `.paper-page` writes `--paper-page-size`, and
+  print CSS uses that variable for `@page size`; do not hardcode A4 or portrait
+  in print rules.
 
 ### Markdown Preview
 
@@ -178,6 +182,13 @@ The double `font-style` provides a fallback: `oblique 12deg` is used by modern b
   Underline uses the safe custom syntax `++text++`, rendered as `<u>` after
   ReactMarkdown has parsed escaped text. Do not enable raw HTML for underline;
   literal `<u>raw</u>` must remain escaped user text.
+- Text color and highlight also use safe custom Markdown syntax, not raw HTML in
+  the live preview: `{{color:red|text}}` and `{{mark:yellow|text}}`. Only allow
+  preset ids from `src/lib/exam/markdownStyle.ts`; render them through React
+  elements in the shared `Markdown` component. Markdown file export may convert
+  these controlled markers to `<span style="color:...">` / `<mark
+  style="background-color:...">` so external Markdown viewers can preserve the
+  visual formatting.
 - When a small UI surface needs a one-line summary (for example the paper
   outline), derive readable plain text with `markdownToPlainText` /
   `summarizeMarkdown` instead of hand-writing local Markdown-stripping regexes.
@@ -208,6 +219,10 @@ The double `font-style` provides a fallback: `oblique 12deg` is used by modern b
   selects one word inside the rendered paper preview. Clear-format must also
   expand to the line when a heading/list/quote marker is present so the marker is
   removed, not just the visible word.
+- Markdown color/highlight toolbar commands are inline commands. They must keep
+  whitespace outside markers, map rendered preview selections through hidden
+  custom marker characters, and clear/toggle only the matching style wrapper
+  unless the user invokes clear-format.
 - Italic must be visibly rendered in the paper preview, including bold+italic
   content. `***text***` is parsed as `<em><strong>text</strong></em>` by the
   shared Markdown renderer, so tests should query that DOM order and preview CSS

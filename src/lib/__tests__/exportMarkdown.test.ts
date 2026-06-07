@@ -188,4 +188,48 @@ describe("paperToMarkdown", () => {
     expect(md).toContain("> **【评分要点】**");
     expect(md).toContain("> - mentions mass");
   });
+
+  it("preserves custom color and highlight syntax as safe HTML in Markdown export", () => {
+    const paper = ExamPaperSchema.parse({
+      title: "Styled Paper",
+      questions: [
+        {
+          id: "q1",
+          type: "short-answer",
+          content: "Explain {{color:red|key term}} and {{mark:yellow|review}}.",
+          referenceAnswer: "{{color:blue|Reference}}",
+          score: 5,
+        },
+      ],
+    });
+
+    const md = paperToMarkdown(paper, { includeAnswers: true });
+
+    expect(md).toContain('<span style="color:#dc2626">key term</span>');
+    expect(md).toContain(
+      '<mark style="background-color:#fef08a">review</mark>',
+    );
+    expect(md).toContain('<span style="color:#2563eb">Reference</span>');
+  });
+
+  it("preserves nested custom color and highlight in Markdown export", () => {
+    const paper = ExamPaperSchema.parse({
+      title: "Nested Styled Paper",
+      questions: [
+        {
+          id: "q1",
+          type: "short-answer",
+          content: "{{color:red|{{mark:yellow|important}}}}",
+          referenceAnswer: "OK",
+          score: 5,
+        },
+      ],
+    });
+
+    const md = paperToMarkdown(paper, { includeAnswers: false });
+
+    expect(md).toContain(
+      '<span style="color:#dc2626"><mark style="background-color:#fef08a">important</mark></span>',
+    );
+  });
 });

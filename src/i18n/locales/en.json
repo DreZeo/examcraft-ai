@@ -134,26 +134,61 @@
     "mono": "Monospace"
   },
   "paperFontSize": {
-    "wuhao": "No. 5",
-    "xiaosi": "Small 4",
-    "sihao": "No. 4",
-    "sanhao": "No. 3"
+    "xiaowu": "Small 5 / 9pt",
+    "wuhao": "No. 5 / 10.5pt",
+    "xiaosi": "Small 4 / 12pt",
+    "sihao": "No. 4 / 14pt",
+    "xiaosan": "Small 3 / 15pt",
+    "sanhao": "No. 3 / 16pt",
+    "xiaoer": "Small 2 / 18pt",
+    "erhao": "No. 2 / 22pt"
   },
   "paperLineHeight": {
-    "compact": "Compact",
-    "standard": "Standard",
-    "relaxed": "Relaxed"
+    "single": "1.0",
+    "oneFifteen": "1.15",
+    "oneHalf": "1.5",
+    "double": "2.0",
+    "twoHalf": "2.5",
+    "triple": "3.0"
   },
   "paperMargin": {
+    "normal": "Normal",
     "narrow": "Narrow",
-    "standard": "Standard",
-    "wide": "Wide"
+    "moderate": "Moderate",
+    "wide": "Wide",
+    "mirrored": "Mirrored"
   },
   "paperSize": {
     "a4": "A4",
     "a3": "A3",
+    "a5": "A5",
     "b5": "B5",
-    "letter": "Letter"
+    "letter": "Letter",
+    "legal": "Legal",
+    "executive": "Executive"
+  },
+  "paperOrientation": {
+    "portrait": "Portrait",
+    "landscape": "Landscape"
+  },
+  "textColor": {
+    "auto": "Automatic",
+    "red": "Red",
+    "orange": "Orange",
+    "yellow": "Yellow",
+    "green": "Green",
+    "blue": "Blue",
+    "purple": "Purple",
+    "gray": "Gray"
+  },
+  "highlightColor": {
+    "none": "No color",
+    "yellow": "Yellow",
+    "green": "Green",
+    "cyan": "Cyan",
+    "pink": "Pink",
+    "blue": "Blue",
+    "gray": "Gray"
   },
   "paperToolbar": {
     "title": "Paper formatting toolbar",
@@ -168,6 +203,7 @@
     "fontSize": "Font size",
     "lineHeight": "Line height",
     "paperSize": "Paper size",
+    "orientation": "Orientation",
     "margin": "Margins"
   },
   "editorToolbar": {
@@ -179,6 +215,8 @@
     "orderedList": "Numbered list",
     "quote": "Quote",
     "code": "Inline code",
+    "textColor": "Font color",
+    "highlightColor": "Text highlight color",
     "clear": "Clear formatting"
   },
   "assistant": {

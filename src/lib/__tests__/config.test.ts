@@ -12,9 +12,10 @@ describe("AppConfigSchema", () => {
     const config = AppConfigSchema.parse({});
     expect(config.settings.paperFont).toBe("default");
     expect(config.settings.paperFontSize).toBe("xiaosi");
-    expect(config.settings.paperLineHeight).toBe("standard");
-    expect(config.settings.paperMargin).toBe("standard");
+    expect(config.settings.paperLineHeight).toBe("oneHalf");
+    expect(config.settings.paperMargin).toBe("normal");
     expect(config.settings.paperSize).toBe("a4");
+    expect(config.settings.paperOrientation).toBe("portrait");
   });
 
   it("loads old settings without paper layout presets", () => {
@@ -29,9 +30,10 @@ describe("AppConfigSchema", () => {
 
     expect(config.settings.paperFont).toBe("default");
     expect(config.settings.paperFontSize).toBe("xiaosi");
-    expect(config.settings.paperLineHeight).toBe("standard");
-    expect(config.settings.paperMargin).toBe("standard");
+    expect(config.settings.paperLineHeight).toBe("oneHalf");
+    expect(config.settings.paperMargin).toBe("normal");
     expect(config.settings.paperSize).toBe("a4");
+    expect(config.settings.paperOrientation).toBe("portrait");
     expect(config.settings.language).toBe("en");
   });
 
@@ -71,18 +73,20 @@ describe("AppConfigSchema", () => {
     const config = AppConfigSchema.parse({
       settings: {
         paperFont: "fangsong",
-        paperFontSize: "sanhao",
-        paperLineHeight: "relaxed",
+        paperFontSize: "xiaoer",
+        paperLineHeight: "double",
         paperMargin: "wide",
-        paperSize: "b5",
+        paperSize: "legal",
+        paperOrientation: "landscape",
       },
     });
 
     expect(config.settings.paperFont).toBe("fangsong");
-    expect(config.settings.paperFontSize).toBe("sanhao");
-    expect(config.settings.paperLineHeight).toBe("relaxed");
+    expect(config.settings.paperFontSize).toBe("xiaoer");
+    expect(config.settings.paperLineHeight).toBe("double");
     expect(config.settings.paperMargin).toBe("wide");
-    expect(config.settings.paperSize).toBe("b5");
+    expect(config.settings.paperSize).toBe("legal");
+    expect(config.settings.paperOrientation).toBe("landscape");
   });
 
   it("maps old paper font size presets and ignores old text alignment", () => {
@@ -96,6 +100,21 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperFontSize).toBe("sihao");
     expect(config.settings.paperSize).toBe("a4");
     expect("paperTextAlign" in config.settings).toBe(false);
+  });
+
+  it("maps old paper line height and margin presets to Word-like presets", () => {
+    expect(
+      AppConfigSchema.parse({ settings: { paperLineHeight: "compact" } })
+        .settings.paperLineHeight,
+    ).toBe("oneFifteen");
+    expect(
+      AppConfigSchema.parse({ settings: { paperLineHeight: "relaxed" } })
+        .settings.paperLineHeight,
+    ).toBe("double");
+    expect(
+      AppConfigSchema.parse({ settings: { paperMargin: "standard" } }).settings
+        .paperMargin,
+    ).toBe("normal");
   });
 
   it("maps old paper font presets to practical Chinese fonts", () => {

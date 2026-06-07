@@ -83,22 +83,55 @@ export const PaperFontSchema = z.enum([
   "times",
   "mono",
 ]);
-export const PaperFontSizeSchema = z.enum(["wuhao", "xiaosi", "sihao", "sanhao"]);
-export const PaperLineHeightSchema = z.enum(["compact", "standard", "relaxed"]);
-export const PaperMarginSchema = z.enum(["narrow", "standard", "wide"]);
-export const PaperSizeSchema = z.enum(["a4", "a3", "b5", "letter"]);
+export const PaperFontSizeSchema = z.enum([
+  "xiaowu",
+  "wuhao",
+  "xiaosi",
+  "sihao",
+  "xiaosan",
+  "sanhao",
+  "xiaoer",
+  "erhao",
+]);
+export const PaperLineHeightSchema = z.enum([
+  "single",
+  "oneFifteen",
+  "oneHalf",
+  "double",
+  "twoHalf",
+  "triple",
+]);
+export const PaperMarginSchema = z.enum([
+  "normal",
+  "narrow",
+  "moderate",
+  "wide",
+  "mirrored",
+]);
+export const PaperSizeSchema = z.enum([
+  "a4",
+  "a3",
+  "a5",
+  "b5",
+  "letter",
+  "legal",
+  "executive",
+]);
+export const PaperOrientationSchema = z.enum(["portrait", "landscape"]);
 
 export type PaperFont = z.infer<typeof PaperFontSchema>;
 export type PaperFontSize = z.infer<typeof PaperFontSizeSchema>;
 export type PaperLineHeight = z.infer<typeof PaperLineHeightSchema>;
 export type PaperMargin = z.infer<typeof PaperMarginSchema>;
 export type PaperSize = z.infer<typeof PaperSizeSchema>;
+export type PaperOrientation = z.infer<typeof PaperOrientationSchema>;
 
 export const PAPER_FONT_OPTIONS = PaperFontSchema.options;
 export const PAPER_FONT_SIZE_OPTIONS = PaperFontSizeSchema.options;
 export const PAPER_LINE_HEIGHT_OPTIONS = PaperLineHeightSchema.options;
 export const PAPER_MARGIN_OPTIONS = PaperMarginSchema.options;
 export const PAPER_SIZE_OPTIONS = PaperSizeSchema.options;
+export const PAPER_ORIENTATION_OPTIONS = PaperOrientationSchema.options;
 
 export const PAPER_FONT_STACKS: Record<PaperFont, string> = {
   default: '"Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif',
@@ -121,29 +154,48 @@ export const PAPER_FONT_STACKS: Record<PaperFont, string> = {
 };
 
 export const PAPER_FONT_SIZE_STYLES: Record<PaperFontSize, string> = {
+  xiaowu: "9pt",
   wuhao: "10.5pt",
   xiaosi: "12pt",
   sihao: "14pt",
+  xiaosan: "15pt",
   sanhao: "16pt",
+  xiaoer: "18pt",
+  erhao: "22pt",
 };
 
 export const PAPER_LINE_HEIGHT_STYLES: Record<PaperLineHeight, number> = {
-  compact: 1.45,
-  standard: 1.65,
-  relaxed: 1.9,
+  single: 1,
+  oneFifteen: 1.15,
+  oneHalf: 1.5,
+  double: 2,
+  twoHalf: 2.5,
+  triple: 3,
 };
 
-export const PAPER_MARGIN_STYLES: Record<PaperMargin, string> = {
-  narrow: "10mm",
-  standard: "14mm",
-  wide: "20mm",
+export interface PaperMarginStyle {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export const PAPER_MARGIN_STYLES: Record<PaperMargin, PaperMarginStyle> = {
+  normal: { top: 25.4, right: 31.8, bottom: 25.4, left: 31.8 },
+  narrow: { top: 12.7, right: 12.7, bottom: 12.7, left: 12.7 },
+  moderate: { top: 25.4, right: 19.1, bottom: 25.4, left: 19.1 },
+  wide: { top: 25.4, right: 50.8, bottom: 25.4, left: 50.8 },
+  mirrored: { top: 25.4, right: 25.4, bottom: 25.4, left: 31.8 },
 };
 
-export const PAPER_SIZE_STYLES: Record<PaperSize, { width: string; minHeight: string }> = {
-  a4: { width: "210mm", minHeight: "297mm" },
-  a3: { width: "297mm", minHeight: "420mm" },
-  b5: { width: "176mm", minHeight: "250mm" },
-  letter: { width: "216mm", minHeight: "279mm" },
+export const PAPER_SIZE_STYLES: Record<PaperSize, { widthMm: number; heightMm: number }> = {
+  a4: { widthMm: 210, heightMm: 297 },
+  a3: { widthMm: 297, heightMm: 420 },
+  a5: { widthMm: 148, heightMm: 210 },
+  b5: { widthMm: 176, heightMm: 250 },
+  letter: { widthMm: 216, heightMm: 279 },
+  legal: { widthMm: 216, heightMm: 356 },
+  executive: { widthMm: 184, heightMm: 267 },
 };
 
 const LegacyPaperFontSizeSchema = z.preprocess((value) => {
@@ -152,6 +204,18 @@ const LegacyPaperFontSizeSchema = z.preprocess((value) => {
   if (value === "large") return "sihao";
   return value;
 }, PaperFontSizeSchema);
+
+const LegacyPaperLineHeightSchema = z.preprocess((value) => {
+  if (value === "compact") return "oneFifteen";
+  if (value === "standard") return "oneHalf";
+  if (value === "relaxed") return "double";
+  return value;
+}, PaperLineHeightSchema);
+
+const LegacyPaperMarginSchema = z.preprocess((value) => {
+  if (value === "standard") return "normal";
+  return value;
+}, PaperMarginSchema);
 
 const LegacyPaperFontSchema = z.preprocess((value) => {
   if (value === "serif") return "simsun";
@@ -227,11 +291,13 @@ export const AppSettingsSchema = z.object({
   /** Base font size preset used only for paper rendering. */
   paperFontSize: LegacyPaperFontSizeSchema.default("xiaosi"),
   /** Line-height preset used only for paper rendering. */
-  paperLineHeight: PaperLineHeightSchema.default("standard"),
+  paperLineHeight: LegacyPaperLineHeightSchema.default("oneHalf"),
   /** Page padding/margin preset used only for paper rendering. */
-  paperMargin: PaperMarginSchema.default("standard"),
+  paperMargin: LegacyPaperMarginSchema.default("normal"),
   /** Word-like paper size preset used only for paper rendering. */
   paperSize: PaperSizeSchema.default("a4"),
+  /** Page orientation used only for paper rendering and printing. */
+  paperOrientation: PaperOrientationSchema.default("portrait"),
   /** Legacy field: migrated into an AI agent and no longer shown in settings. */
   customInstructions: z.string().default(""),
   /** Optional web search provider behavior for AI assistant turns. */

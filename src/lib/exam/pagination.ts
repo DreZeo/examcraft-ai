@@ -39,6 +39,7 @@ export interface PageMetrics {
   width: string;
   height: string;
   padding: string;
+  pageSize: string;
   contentHeightMm: number;
 }
 
@@ -46,12 +47,16 @@ const PT_TO_MM = 0.352778;
 
 export function getPageMetrics(settings: AppSettings): PageMetrics {
   const size = PAPER_SIZE_STYLES[settings.paperSize];
-  const marginMm = parseMm(PAPER_MARGIN_STYLES[settings.paperMargin]);
+  const margin = PAPER_MARGIN_STYLES[settings.paperMargin];
+  const isLandscape = settings.paperOrientation === "landscape";
+  const widthMm = isLandscape ? size.heightMm : size.widthMm;
+  const heightMm = isLandscape ? size.widthMm : size.heightMm;
   return {
-    width: size.width,
-    height: size.minHeight,
-    padding: PAPER_MARGIN_STYLES[settings.paperMargin],
-    contentHeightMm: Math.max(40, parseMm(size.minHeight) - marginMm * 2),
+    width: `${widthMm}mm`,
+    height: `${heightMm}mm`,
+    padding: `${margin.top}mm ${margin.right}mm ${margin.bottom}mm ${margin.left}mm`,
+    pageSize: `${widthMm}mm ${heightMm}mm`,
+    contentHeightMm: Math.max(40, heightMm - margin.top - margin.bottom),
   };
 }
 
@@ -262,10 +267,6 @@ function estimateTextLines(text: string | undefined): number {
 function fontLineHeightMm(settings: AppSettings): number {
   const fontSizePt = parseFloat(PAPER_FONT_SIZE_STYLES[settings.paperFontSize]);
   return fontSizePt * PT_TO_MM * PAPER_LINE_HEIGHT_STYLES[settings.paperLineHeight];
-}
-
-function parseMm(value: string): number {
-  return Number.parseFloat(value.replace("mm", ""));
 }
 
 function clamp(value: number, min: number, max: number): number {

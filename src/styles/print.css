@@ -54,8 +54,14 @@
   }
 
   .paper-page {
+    page: paper-preview;
     break-after: page;
     overflow: hidden;
+  }
+
+  @page paper-preview {
+    size: var(--paper-page-size);
+    margin: 0;
   }
 
   .paper-page:last-of-type {

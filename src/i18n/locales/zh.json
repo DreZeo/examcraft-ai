@@ -134,26 +134,61 @@
     "mono": "等宽"
   },
   "paperFontSize": {
+    "xiaowu": "小五 / 9pt",
     "wuhao": "五号",
     "xiaosi": "小四",
     "sihao": "四号",
-    "sanhao": "三号"
+    "xiaosan": "小三 / 15pt",
+    "sanhao": "三号",
+    "xiaoer": "小二 / 18pt",
+    "erhao": "二号 / 22pt"
   },
   "paperLineHeight": {
-    "compact": "紧凑",
-    "standard": "标准",
-    "relaxed": "宽松"
+    "single": "1.0",
+    "oneFifteen": "1.15",
+    "oneHalf": "1.5",
+    "double": "2.0",
+    "twoHalf": "2.5",
+    "triple": "3.0"
   },
   "paperMargin": {
+    "normal": "普通",
     "narrow": "窄",
-    "standard": "标准",
-    "wide": "宽"
+    "moderate": "适中",
+    "wide": "宽",
+    "mirrored": "镜像"
   },
   "paperSize": {
     "a4": "A4",
     "a3": "A3",
+    "a5": "A5",
     "b5": "B5",
-    "letter": "Letter"
+    "letter": "Letter",
+    "legal": "Legal",
+    "executive": "Executive"
+  },
+  "paperOrientation": {
+    "portrait": "纵向",
+    "landscape": "横向"
+  },
+  "textColor": {
+    "auto": "自动",
+    "red": "红色",
+    "orange": "橙色",
+    "yellow": "黄色",
+    "green": "绿色",
+    "blue": "蓝色",
+    "purple": "紫色",
+    "gray": "灰色"
+  },
+  "highlightColor": {
+    "none": "无颜色",
+    "yellow": "黄色",
+    "green": "绿色",
+    "cyan": "青色",
+    "pink": "粉色",
+    "blue": "蓝色",
+    "gray": "灰色"
   },
   "paperToolbar": {
     "title": "试卷排版工具栏",
@@ -168,6 +203,7 @@
     "fontSize": "字号",
     "lineHeight": "行距",
     "paperSize": "纸张大小",
+    "orientation": "页面方向",
     "margin": "页边距"
   },
   "editorToolbar": {
@@ -179,6 +215,8 @@
     "orderedList": "有序列表",
     "quote": "引用",
     "code": "行内代码",
+    "textColor": "字体颜色",
+    "highlightColor": "文本突出显示颜色",
     "clear": "清除格式"
   },
   "assistant": {

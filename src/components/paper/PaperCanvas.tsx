@@ -3,6 +3,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type RefObject,
   type ReactNode,
 } from "react";
@@ -302,10 +303,11 @@ function PaperPageShell({
         fontSize: PAPER_FONT_SIZE_STYLES[paperSettings.paperFontSize],
         lineHeight: PAPER_LINE_HEIGHT_STYLES[paperSettings.paperLineHeight],
         padding: pageMetrics.padding,
+        "--paper-page-size": pageMetrics.pageSize,
         width: pageMetrics.width,
         maxWidth: pageMetrics.width,
         minHeight: pageMetrics.height,
-      }}
+      } as CSSProperties}
     >
       {children}
     </section>

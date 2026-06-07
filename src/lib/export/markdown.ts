@@ -10,6 +10,11 @@ import {
   studentAnswerSpaceLines,
   studentBlankUnderlineLength,
 } from "../exam/pagination";
+import {
+  HIGHLIGHT_COLOR_VALUES,
+  TEXT_COLOR_VALUES,
+  renderStyledMarkdownSyntax,
+} from "../exam/markdownStyle";
 
 /**
  * Pure paper -> Markdown assembly. Used by the Markdown file export and as the
@@ -75,6 +80,21 @@ function renderFillBlankContent(question: Question): string {
       ).join(" ")}`;
 }
 
+function renderStyledMarkdown(content: string): string {
+  return renderStyledMarkdownSyntax(content, (marker) => {
+    if (marker.type === "textColor") {
+      const value = TEXT_COLOR_VALUES[marker.color];
+      return value
+        ? `<span style="color:${value}">${marker.text}</span>`
+        : marker.text;
+    }
+    const value = HIGHLIGHT_COLOR_VALUES[marker.color];
+    return value
+      ? `<mark style="background-color:${value}">${marker.text}</mark>`
+      : marker.text;
+    });
+}
+
 /** Preview-aligned answer + explanation lines for teacher output only. */
 function renderAnswer(q: Question): string[] {
   const lines: string[] = [];
@@ -107,9 +127,9 @@ function renderQuestion(
     (!includeAnswers && q.type === "fill-in-blank"
       ? renderFillBlankContent(q)
       : stripLeadingQuestionNumber(q.content));
-  const lines: string[] = [`${number}. ${content} (${q.score})`];
+  const lines: string[] = [`${number}. ${renderStyledMarkdown(content)} (${q.score})`];
   if (choice && choice.options.length > 0) {
-    lines.push("", ...renderOptions(choice.options));
+    lines.push("", ...renderOptions(choice.options.map(renderStyledMarkdown)));
   }
   if (includeAnswers) {
     const answer = renderAnswer(q);
@@ -129,7 +149,7 @@ function renderStudentAnswerSpace(question: Question): string[] {
 }
 
 function blockquoteContent(content: string): string[] {
-  const lines = content.split(/\r?\n/);
+  const lines = renderStyledMarkdown(content).split(/\r?\n/);
   return lines.map((line) => (line.trim() ? `> ${line}` : ">"));
 }
 
@@ -205,7 +225,7 @@ export function paperToMarkdown(
   for (const section of groupQuestionsByType(source)) {
     lines.push(`## ${section.title}`, "");
     if (section.passage?.trim()) {
-      lines.push(section.passage.trim(), "");
+      lines.push(renderStyledMarkdown(section.passage.trim()), "");
     }
     section.questions.forEach((q, i) => {
       lines.push(...renderQuestion(q, i + 1, includeAnswers));

@@ -53,4 +53,54 @@ describe("applyMarkdownFormat", () => {
 
     expect(result.value).toBe("choose one");
   });
+
+  it("applies text color and highlight markers to selected inline text", () => {
+    expect(
+      applyMarkdownFormat("choose one", 0, 6, {
+        type: "textColor",
+        color: "red",
+      }).value,
+    ).toBe("{{color:red|choose}} one");
+    expect(
+      applyMarkdownFormat("choose one", 7, 10, {
+        type: "highlight",
+        color: "yellow",
+      }).value,
+    ).toBe("choose {{mark:yellow|one}}");
+  });
+
+  it("removes text color or highlight markers with automatic choices", () => {
+    expect(
+      applyMarkdownFormat("{{color:red|choose}} one", 12, 18, {
+        type: "textColor",
+        color: "auto",
+      }).value,
+    ).toBe("choose one");
+    expect(
+      applyMarkdownFormat("choose {{mark:yellow|one}}", 21, 24, {
+        type: "highlight",
+        color: "none",
+      }).value,
+    ).toBe("choose one");
+  });
+
+  it("clears text color and highlight custom markers", () => {
+    const result = applyMarkdownFormat(
+      "{{color:blue|choose}} {{mark:yellow|one}}",
+      0,
+      40,
+      "clear",
+    );
+
+    expect(result.value).toBe("choose one");
+  });
+
+  it("allows highlight to be applied inside colored text", () => {
+    const result = applyMarkdownFormat("{{color:red|choose}} one", 12, 18, {
+      type: "highlight",
+      color: "yellow",
+    });
+
+    expect(result.value).toBe("{{color:red|{{mark:yellow|choose}}}} one");
+  });
 });

@@ -3,6 +3,7 @@ import { defaultAppConfig } from "../types/config";
 import { ExamPaperSchema, type ExamPaper } from "../types/exam";
 import {
   buildPaperBlocks,
+  getPageMetrics,
   paginateMeasuredBlocks,
   paginateBlocks,
   studentAnswerSpaceLines,
@@ -112,5 +113,19 @@ describe("pagination", () => {
     }).questions[0];
 
     expect(studentBlankUnderlineLength(question)).toBe(18);
+  });
+
+  it("swaps page dimensions and content height for landscape orientation", () => {
+    const metrics = getPageMetrics({
+      ...settings,
+      paperSize: "a4",
+      paperOrientation: "landscape",
+      paperMargin: "normal",
+    });
+
+    expect(metrics.width).toBe("297mm");
+    expect(metrics.height).toBe("210mm");
+    expect(metrics.padding).toBe("25.4mm 31.8mm 25.4mm 31.8mm");
+    expect(metrics.contentHeightMm).toBeCloseTo(159.2);
   });
 });

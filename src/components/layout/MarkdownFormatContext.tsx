@@ -6,8 +6,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  type HighlightColorPreset,
+  type TextColorPreset,
+} from "../../lib/exam/markdownStyle";
 
-export type MarkdownFormat =
+export type MarkdownSimpleFormat =
   | "bold"
   | "italic"
   | "underline"
@@ -17,6 +21,11 @@ export type MarkdownFormat =
   | "quote"
   | "code"
   | "clear";
+
+export type MarkdownFormat =
+  | MarkdownSimpleFormat
+  | { type: "textColor"; color: TextColorPreset }
+  | { type: "highlight"; color: HighlightColorPreset };
 
 export interface MarkdownFormatTarget {
   apply: (format: MarkdownFormat) => void;

@@ -1,4 +1,8 @@
 import type { MarkdownFormat } from "./MarkdownFormatContext";
+import {
+  isHighlightColorPreset,
+  isTextColorPreset,
+} from "../../lib/exam/markdownStyle";
 
 export interface MarkdownFormatResult {
   value: string;
@@ -13,16 +17,21 @@ export function applyMarkdownFormat(
   format: MarkdownFormat,
 ): MarkdownFormatResult {
   const selected = value.slice(selectionStart, selectionEnd);
+  const formatType = typeof format === "string" ? format : format.type;
 
-  if (format === "clear") {
+  if (typeof format !== "string") {
+    return applyInlineStyleFormat(value, selectionStart, selectionEnd, format);
+  }
+
+  if (formatType === "clear") {
     return clearMarkdownFormat(value, selectionStart, selectionEnd);
   }
 
   if (
-    format === "heading" ||
-    format === "bulletList" ||
-    format === "orderedList" ||
-    format === "quote"
+    formatType === "heading" ||
+    formatType === "bulletList" ||
+    formatType === "orderedList" ||
+    formatType === "quote"
   ) {
     const blockStart = value.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1;
     const blockEndIndex = value.indexOf("\n", selectionEnd);
@@ -30,9 +39,9 @@ export function applyMarkdownFormat(
     const block = value.slice(blockStart, blockEnd);
     const lines = block.length > 0 ? block.split("\n") : [""];
     const everyLineFormatted = lines.every((line) => {
-      if (format === "heading") return /^(\s*)#{1,6}\s+/.test(line);
-      if (format === "bulletList") return /^(\s*)[-*]\s+/.test(line);
-      if (format === "orderedList") return /^(\s*)\d+\.\s+/.test(line);
+      if (formatType === "heading") return /^(\s*)#{1,6}\s+/.test(line);
+      if (formatType === "bulletList") return /^(\s*)[-*]\s+/.test(line);
+      if (formatType === "orderedList") return /^(\s*)\d+\.\s+/.test(line);
       return /^(\s*)>\s*/.test(line);
     });
     const formatted = lines
@@ -42,19 +51,28 @@ export function applyMarkdownFormat(
           "$1",
         );
         if (everyLineFormatted) return stripped;
-        if (format === "heading") return stripped.replace(/^(\s*)/, "$1## ");
-        if (format === "bulletList") return stripped.replace(/^(\s*)/, "$1- ");
-        if (format === "orderedList") return stripped.replace(/^(\s*)/, `$1${index + 1}. `);
+        if (formatType === "heading") return stripped.replace(/^(\s*)/, "$1## ");
+        if (formatType === "bulletList") return stripped.replace(/^(\s*)/, "$1- ");
+        if (formatType === "orderedList") return stripped.replace(/^(\s*)/, `$1${index + 1}. `);
         return stripped.replace(/^(\s*)/, "$1> ");
       })
       .join("\n");
     return replaceRange(value, blockStart, blockEnd, formatted);
   }
 
+  if (
+    formatType !== "bold" &&
+    formatType !== "italic" &&
+    formatType !== "underline" &&
+    formatType !== "code"
+  ) {
+    return { value, selectionStart, selectionEnd };
+  }
+
   const fallback = "text";
   const text = selected || fallback;
   const wrappers: Record<
-    Exclude<MarkdownFormat, "heading" | "bulletList" | "orderedList" | "quote" | "clear">,
+    "bold" | "italic" | "underline" | "code",
     [string, string]
   > = {
     bold: ["**", "**"],
@@ -62,7 +80,7 @@ export function applyMarkdownFormat(
     underline: ["++", "++"],
     code: ["`", "`"],
   };
-  const [prefix, suffix] = wrappers[format];
+  const [prefix, suffix] = wrappers[formatType];
   const inlineRange = selected
     ? trimInlineSelection(value, selectionStart, selectionEnd)
     : { selectionStart, selectionEnd };
@@ -88,6 +106,54 @@ export function applyMarkdownFormat(
     value: next.value,
     selectionStart: inlineRange.selectionStart + prefix.length,
     selectionEnd: inlineRange.selectionStart + prefix.length + inlineText.length,
+  };
+}
+
+function applyInlineStyleFormat(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+  format: Exclude<MarkdownFormat, string>,
+): MarkdownFormatResult {
+  const inlineRange =
+    selectionStart === selectionEnd
+      ? { selectionStart, selectionEnd }
+      : trimInlineSelection(value, selectionStart, selectionEnd);
+  const selected = value.slice(inlineRange.selectionStart, inlineRange.selectionEnd);
+  const fallback = "text";
+  const inlineText = selected || fallback;
+  const cleared = clearStyleAtRange(
+    value,
+    inlineRange.selectionStart,
+    inlineRange.selectionEnd,
+    format.type,
+  );
+  const adjustedStart = cleared.selectionStart;
+  const adjustedEnd = cleared.selectionEnd;
+  const text = value.slice(inlineRange.selectionStart, inlineRange.selectionEnd) || inlineText;
+  const marker =
+    format.type === "textColor"
+      ? format.color === "auto"
+        ? null
+        : `{{color:${format.color}|${text}}}`
+      : format.color === "none"
+        ? null
+        : `{{mark:${format.color}|${text}}}`;
+
+  if (!marker) {
+    return {
+      value: cleared.value,
+      selectionStart: adjustedStart,
+      selectionEnd: adjustedEnd,
+    };
+  }
+
+  const next = replaceRange(cleared.value, adjustedStart, adjustedEnd, marker);
+  const contentOffset = marker.indexOf("|") + 1;
+  return {
+    value: next.value,
+    selectionStart: adjustedStart + contentOffset,
+    selectionEnd: adjustedStart + contentOffset + text.length,
   };
 }
 
@@ -198,6 +264,12 @@ function expandFormatSelection(
 ): { selectionStart: number; selectionEnd: number } {
   const lineExpanded = expandLineFormatSelection(value, selectionStart, selectionEnd);
   if (lineExpanded) return lineExpanded;
+  const styleExpanded = expandStyleFormatSelection(
+    value,
+    selectionStart,
+    selectionEnd,
+  );
+  if (styleExpanded) return styleExpanded;
 
   const pairs: Array<[string, string]> = [
     ["**", "**"],
@@ -228,6 +300,35 @@ function expandFormatSelection(
   return { selectionStart: start, selectionEnd: end };
 }
 
+function expandStyleFormatSelection(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+): { selectionStart: number; selectionEnd: number } | null {
+  const wrappers = findStyleWrappers(value);
+  const startWrapper = wrappers.find(
+    (wrapper) =>
+      selectionStart >= wrapper.contentStart &&
+      selectionStart <= wrapper.contentEnd,
+  );
+  const endWrapper = wrappers.find(
+    (wrapper) =>
+      Math.max(selectionStart, selectionEnd - 1) >= wrapper.contentStart &&
+      Math.max(selectionStart, selectionEnd - 1) <= wrapper.contentEnd,
+  );
+  if (!startWrapper && !endWrapper) return null;
+  return {
+    selectionStart: Math.min(
+      startWrapper?.wrapperStart ?? selectionStart,
+      endWrapper?.wrapperStart ?? selectionStart,
+    ),
+    selectionEnd: Math.max(
+      startWrapper?.wrapperEnd ?? selectionEnd,
+      endWrapper?.wrapperEnd ?? selectionEnd,
+    ),
+  };
+}
+
 function expandLineFormatSelection(
   value: string,
   selectionStart: number,
@@ -252,6 +353,12 @@ function stripMarkdownMarkers(value: string): string {
     .split("\n")
     .map((line) =>
       line
+        .replace(/\{\{color:([a-z]+)\|([^{}]+)\}\}/g, (_match, color: string, text: string) =>
+          isTextColorPreset(color) ? text : _match,
+        )
+        .replace(/\{\{mark:([a-z]+)\|([^{}]+)\}\}/g, (_match, color: string, text: string) =>
+          isHighlightColorPreset(color) ? text : _match,
+        )
         .replace(/^(\s*)(#{1,6}\s+|[-*]\s+|\d+\.\s+|>\s*)/, "$1")
         .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
         .replace(/\*\*([^*]+)\*\*/g, "$1")
@@ -260,6 +367,109 @@ function stripMarkdownMarkers(value: string): string {
         .replace(/\*([^*\n]+)\*/g, "$1"),
     )
     .join("\n");
+}
+
+function clearStyleAtRange(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+  type: "textColor" | "highlight",
+): MarkdownFormatResult {
+  for (const wrapper of findStyleWrappers(value)) {
+    if (wrapper.type !== type) continue;
+    const selectionInside =
+      selectionStart >= wrapper.contentStart && selectionEnd <= wrapper.contentEnd;
+    const selectionCoversWrapper =
+      selectionStart <= wrapper.wrapperStart && selectionEnd >= wrapper.wrapperEnd;
+    if (!selectionInside && !selectionCoversWrapper) continue;
+
+    const nextValue =
+      value.slice(0, wrapper.wrapperStart) +
+      wrapper.text +
+      value.slice(wrapper.wrapperEnd);
+    return {
+      value: nextValue,
+      selectionStart: wrapper.wrapperStart,
+      selectionEnd: wrapper.wrapperStart + wrapper.text.length,
+    };
+  }
+
+  return { value, selectionStart, selectionEnd };
+}
+
+interface StyleWrapper {
+  type: "textColor" | "highlight";
+  wrapperStart: number;
+  wrapperEnd: number;
+  contentStart: number;
+  contentEnd: number;
+  text: string;
+}
+
+function findStyleWrappers(value: string): StyleWrapper[] {
+  const wrappers: StyleWrapper[] = [];
+  let index = 0;
+
+  while (index < value.length) {
+    const marker =
+      value.startsWith("{{color:", index)
+        ? "color"
+        : value.startsWith("{{mark:", index)
+          ? "mark"
+          : null;
+    if (!marker) {
+      index += 1;
+      continue;
+    }
+    const pipe = value.indexOf("|", index);
+    if (pipe === -1) {
+      index += 1;
+      continue;
+    }
+    const color = value.slice(index + marker.length + 3, pipe);
+    const isValid =
+      marker === "color"
+        ? isTextColorPreset(color)
+        : isHighlightColorPreset(color);
+    const wrapperEnd = findStyleWrapperEnd(value, index);
+    if (!isValid || wrapperEnd === -1) {
+      index += 1;
+      continue;
+    }
+    const wrapperStart = index;
+    const contentStart = pipe + 1;
+    wrappers.push({
+      type: marker === "color" ? "textColor" : "highlight",
+      wrapperStart,
+      wrapperEnd,
+      contentStart,
+      contentEnd: wrapperEnd - 2,
+      text: value.slice(contentStart, wrapperEnd - 2),
+    });
+    index += 1;
+  }
+
+  return wrappers;
+}
+
+function findStyleWrapperEnd(value: string, start: number): number {
+  let depth = 0;
+  for (let index = start; index < value.length; index += 1) {
+    if (
+      value.startsWith("{{color:", index) ||
+      value.startsWith("{{mark:", index)
+    ) {
+      depth += 1;
+      index += 1;
+      continue;
+    }
+    if (value.startsWith("}}", index)) {
+      depth -= 1;
+      index += 1;
+      if (depth === 0) return index + 1;
+    }
+  }
+  return -1;
 }
 
 function replaceRange(

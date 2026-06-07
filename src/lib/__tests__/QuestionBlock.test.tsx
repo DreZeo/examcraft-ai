@@ -113,6 +113,43 @@ describe("QuestionBlock", () => {
     expect(container).toHaveTextContent("<u>raw</u>");
   });
 
+  it("renders custom text color and highlight syntax without raw HTML", () => {
+    const question: SingleChoiceQuestion = {
+      id: "q1",
+      type: "single-choice",
+      content: "Mark {{color:red|important}} and {{mark:yellow|review}} text",
+      options: ["A", "B"],
+      correctAnswer: 0,
+      score: 5,
+    };
+
+    const { container } = renderQuestion(question);
+
+    expect(container.querySelector("span[style*='color']"))
+      .toHaveTextContent("important");
+    expect(container.querySelector("mark")).toHaveTextContent("review");
+    expect(container).not.toHaveTextContent("{{color:red|");
+    expect(container).not.toHaveTextContent("{{mark:yellow|");
+  });
+
+  it("renders nested custom text color and highlight syntax", () => {
+    const question: SingleChoiceQuestion = {
+      id: "q1",
+      type: "single-choice",
+      content: "{{color:red|{{mark:yellow|important}}}}",
+      options: ["A", "B"],
+      correctAnswer: 0,
+      score: 5,
+    };
+
+    const { container } = renderQuestion(question);
+
+    const colored = container.querySelector("span[style*='color']");
+    expect(colored).toHaveTextContent("important");
+    expect(colored?.querySelector("mark")).toHaveTextContent("important");
+    expect(container).not.toHaveTextContent("{{mark:yellow|");
+  });
+
   it("renders embedded line options as an aligned option list", () => {
     const question: SingleChoiceQuestion = {
       id: "q1",

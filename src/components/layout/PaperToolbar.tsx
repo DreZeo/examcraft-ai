@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Bold,
+  Baseline,
   CaseSensitive,
   Code,
   Columns3,
@@ -11,8 +12,10 @@ import {
   Italic,
   List,
   ListOrdered,
+  PaintBucket,
   Pilcrow,
   Quote,
+  RotateCwSquare,
   Type,
   Underline,
 } from "lucide-react";
@@ -26,16 +29,27 @@ import {
 } from "./MarkdownFormatContext";
 import { applyMarkdownFormat } from "./markdownFormat";
 import {
+  HIGHLIGHT_COLOR_PRESETS,
+  HIGHLIGHT_COLOR_VALUES,
+  TEXT_COLOR_PRESETS,
+  TEXT_COLOR_VALUES,
+  type HighlightColorPreset,
+  type TextColorPreset,
+} from "../../lib/exam/markdownStyle";
+import { ColorPaletteButton } from "./ColorPaletteButton";
+import {
   PAPER_FONT_OPTIONS,
   PAPER_FONT_SIZE_OPTIONS,
   PAPER_LINE_HEIGHT_OPTIONS,
   PAPER_MARGIN_OPTIONS,
+  PAPER_ORIENTATION_OPTIONS,
   PAPER_SIZE_OPTIONS,
   type AppSettings,
   type PaperFont,
   type PaperFontSize,
   type PaperLineHeight,
   type PaperMargin,
+  type PaperOrientation,
   type PaperSize,
 } from "../../lib/types/config";
 
@@ -44,6 +58,7 @@ type SettingKey =
   | "paperFontSize"
   | "paperLineHeight"
   | "paperMargin"
+  | "paperOrientation"
   | "paperSize";
 
 interface PaperTextSelection {
@@ -199,6 +214,14 @@ export function PaperToolbar() {
               optionKeyPrefix="paperSize"
               onChange={(value) => update("paperSize", value)}
             />
+            <SelectControl<PaperOrientation>
+              icon={<RotateCwSquare className="h-4 w-4" />}
+              label={t("paperToolbar.orientation")}
+              value={settings.paperOrientation}
+              options={PAPER_ORIENTATION_OPTIONS}
+              optionKeyPrefix="paperOrientation"
+              onChange={(value) => update("paperOrientation", value)}
+            />
             <SelectControl<PaperMargin>
               icon={<Columns3 className="h-4 w-4" />}
               label={t("paperToolbar.margin")}
@@ -265,6 +288,26 @@ export function PaperToolbar() {
             icon={<Code className="h-4 w-4" />}
             label={t("editorToolbar.code")}
             disabled={!canFormat}
+            onFormat={applyFormatToActiveSelection}
+          />
+          <ColorPaletteButton<TextColorPreset>
+            type="textColor"
+            icon={<Baseline className="h-4 w-4" />}
+            label={t("editorToolbar.textColor")}
+            disabled={!canFormat}
+            options={TEXT_COLOR_PRESETS}
+            values={TEXT_COLOR_VALUES}
+            optionKeyPrefix="textColor"
+            onFormat={applyFormatToActiveSelection}
+          />
+          <ColorPaletteButton<HighlightColorPreset>
+            type="highlight"
+            icon={<PaintBucket className="h-4 w-4" />}
+            label={t("editorToolbar.highlightColor")}
+            disabled={!canFormat}
+            options={HIGHLIGHT_COLOR_PRESETS}
+            values={HIGHLIGHT_COLOR_VALUES}
+            optionKeyPrefix="highlightColor"
             onFormat={applyFormatToActiveSelection}
           />
           <MarkdownButton
@@ -476,6 +519,15 @@ function visibleMarkdownPositions(markdown: string): number[] {
       }
     }
     if (rest.startsWith("**") || rest.startsWith("++")) {
+      index += 1;
+      continue;
+    }
+    const styleOpen = rest.match(/^\{\{(?:color|mark):[a-z]+\|/);
+    if (styleOpen) {
+      index += styleOpen[0].length - 1;
+      continue;
+    }
+    if (rest.startsWith("}}")) {
       index += 1;
       continue;
     }

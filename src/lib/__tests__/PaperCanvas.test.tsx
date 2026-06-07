@@ -25,9 +25,10 @@ vi.mock("../../stores/configStore", () => ({
         settings: {
           paperFont: "fangsong",
           paperFontSize: "sihao",
-          paperLineHeight: "standard",
-          paperMargin: "standard",
+          paperLineHeight: "oneHalf",
+          paperMargin: "normal",
           paperSize: "b5",
+          paperOrientation: "portrait",
         },
       },
     }),
@@ -54,7 +55,9 @@ describe("PaperCanvas", () => {
       width: "176mm",
       maxWidth: "176mm",
       minHeight: "250mm",
+      padding: "25.4mm 31.8mm 25.4mm 31.8mm",
     });
+    expect(sheet).toHaveStyle("--paper-page-size: 176mm 250mm");
     expect(sheet).not.toHaveStyle({ textAlign: "justify" });
   });
 

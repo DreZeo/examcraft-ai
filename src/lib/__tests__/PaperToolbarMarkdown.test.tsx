@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "../../i18n";
@@ -21,9 +21,10 @@ vi.mock("../../stores/configStore", () => ({
         settings: {
           paperFont: "default",
           paperFontSize: "xiaosi",
-          paperLineHeight: "standard",
-          paperMargin: "standard",
+          paperLineHeight: "oneHalf",
+          paperMargin: "normal",
           paperSize: "a4",
+          paperOrientation: "portrait",
         },
       },
       updateSettings,
@@ -174,6 +175,7 @@ describe("PaperToolbar Markdown tab", () => {
     expect(screen.getByRole("option", { name: "宋体" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "微软雅黑" })).toBeInTheDocument();
     expect(screen.getByLabelText("纸张大小")).toHaveTextContent("A4");
+    expect(screen.getByLabelText("页面方向")).toHaveTextContent("纵向");
     expect(screen.queryByRole("group", { name: "对齐" })).not.toBeInTheDocument();
   });
 
@@ -184,6 +186,15 @@ describe("PaperToolbar Markdown tab", () => {
     await userEvent.click(screen.getByRole("option", { name: "B5" }));
 
     expect(updateSettings).toHaveBeenCalledWith({ paperSize: "b5" });
+  });
+
+  it("updates the paper orientation setting", async () => {
+    renderToolbarWithEditor();
+
+    await userEvent.click(screen.getByRole("button", { name: "页面方向" }));
+    await userEvent.click(screen.getByRole("option", { name: "横向" }));
+
+    expect(updateSettings).toHaveBeenCalledWith({ paperOrientation: "landscape" });
   });
 
   it("uses a primary-color sliding indicator for layout and Markdown tabs", async () => {
@@ -523,6 +534,46 @@ describe("PaperToolbar Markdown tab", () => {
     await userEvent.click(screen.getByRole("button", { name: "清除格式" }));
 
     expect(textarea).toHaveValue("choose one");
+  });
+
+  it("applies text color and highlight from toolbar palettes", async () => {
+    renderToolbarWithEditor(true);
+    const textarea = screen.getByPlaceholderText("输入题干，支持 Markdown 与 $公式$");
+    textarea.focus();
+    (textarea as HTMLTextAreaElement).setSelectionRange(0, 6);
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "字体颜色" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "红色" }));
+
+    expect(textarea).toHaveValue("{{color:red|choose}} one");
+    await waitFor(() =>
+      expect((textarea as HTMLTextAreaElement).selectionStart).toBe(12),
+    );
+
+    (textarea as HTMLTextAreaElement).setSelectionRange(21, 24);
+    await userEvent.click(screen.getByRole("button", { name: "文本突出显示颜色" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "黄色" }));
+
+    expect(textarea).toHaveValue("{{color:red|choose}} {{mark:yellow|one}}");
+  });
+
+  it("renders color and highlight in the paper preview after toolbar click", async () => {
+    const { container } = renderInteractiveToolbarWithQuestionBlock();
+    selectText(screen.getByText("choose one").firstChild, 0, 6);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    await openMarkdownTab();
+    await userEvent.click(screen.getByRole("button", { name: "字体颜色" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "蓝色" }));
+
+    expect(editQuestion).toHaveBeenCalledWith({
+      ...question,
+      content: "{{color:blue|choose}} one",
+    });
+    expect(container.querySelector("span[style*='color']")).toHaveTextContent(
+      "choose",
+    );
   });
 });
 
