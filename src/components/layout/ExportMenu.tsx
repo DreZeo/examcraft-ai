@@ -23,6 +23,7 @@ const FIELD_KEYS: (keyof ExamInfoFields)[] = [
   "totalScore",
 ];
 const NOTICE_TIMEOUT_MS = 3000;
+const PRINT_LAYOUT_TIMEOUT_MS = 1000;
 
 /**
  * Top-bar export menu: save JSON project, import JSON, export Markdown / PDF in
@@ -40,6 +41,7 @@ export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   const paper = usePaperStore((s) => s.paper);
+  const view = usePaperStore((s) => s.view);
   const setView = usePaperStore((s) => s.setView);
   const replacePaper = usePaperStore((s) => s.replacePaper);
   const dataDir = useConfigStore((s) => s.dataDir);
@@ -112,11 +114,15 @@ export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
     setOpen(false);
   }
 
-  function doPdf(includeAnswers: boolean) {
-    setView(includeAnswers ? "teacher" : "student");
+  async function doPdf(includeAnswers: boolean) {
+    const nextView = includeAnswers ? "teacher" : "student";
+    if (view !== nextView) {
+      document.documentElement.dataset.paperPaginationReady = "false";
+    }
+    setView(nextView);
     setOpen(false);
-    // Let React flush the view change before opening the print dialog.
-    setTimeout(() => window.print(), 50);
+    await waitForPrintLayout();
+    window.print();
   }
 
   return (
@@ -204,6 +210,25 @@ export function ExportMenu({ triggerClassName = ghostBtn }: ExportMenuProps) {
       )}
     </div>
   );
+}
+
+function waitForPrintLayout(): Promise<void> {
+  return new Promise((resolve) => {
+    const startedAt = window.performance.now();
+
+    function check() {
+      if (
+        document.documentElement.dataset.paperPaginationReady === "true" ||
+        window.performance.now() - startedAt >= PRINT_LAYOUT_TIMEOUT_MS
+      ) {
+        resolve();
+        return;
+      }
+      window.requestAnimationFrame(check);
+    }
+
+    window.requestAnimationFrame(check);
+  });
 }
 
 function MenuItem({

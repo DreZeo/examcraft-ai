@@ -11,11 +11,22 @@ describe("print.css", () => {
     expect(paperSheetRule).not.toMatch(/padding:\s*0/);
     expect(css).toContain("@page");
     expect(css).toContain("margin: 0;");
+    expect(css).toContain("size: var(--paper-page-size);");
+    expect(css).toContain("width: var(--paper-page-width) !important;");
+    expect(css).toContain("min-height: var(--paper-page-height) !important;");
   });
 
   it("still hides UI chrome and prints each preview page separately", () => {
     expect(css).toMatch(/\.no-print\s*\{[\s\S]*display:\s*none !important;/);
     expect(css).toMatch(/\.paper-page\s*\{[\s\S]*break-after:\s*page;/);
     expect(css).toMatch(/\.paper-page:last-of-type\s*\{[\s\S]*break-after:\s*auto;/);
+  });
+
+  it("does not let the browser re-paginate individual question blocks", () => {
+    const questionBlockRule = css.match(/\.question-block\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body ?? "";
+
+    expect(questionBlockRule).not.toMatch(/break-inside:\s*avoid/);
+    expect(questionBlockRule).not.toMatch(/page-break-inside:\s*avoid/);
   });
 });

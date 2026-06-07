@@ -171,6 +171,18 @@ The double `font-style` provides a fallback: `oblique 12deg` is used by modern b
   `getPageMetrics()`. The live `.paper-page` writes `--paper-page-size`, and
   print CSS uses that variable for `@page size`; do not hardcode A4 or portrait
   in print rules.
+- `@page` rules are evaluated outside normal element scoping in browser print
+  layout. Any dynamic variable used by `@page` (currently `--paper-page-size`)
+  must also be written to `document.documentElement`, not only to `.paper-page`,
+  so PDF export uses the same paper size as the live preview.
+- The app owns pagination before printing. Print CSS must treat each
+  `.paper-page` as an already-paginated page and must not add
+  `break-inside: avoid` / `page-break-inside: avoid` on `.question-block`,
+  because that lets the browser reflow questions again and creates blank areas
+  that do not match the preview.
+- Preview pagination must count both measured block heights and the visual gap
+  between blocks. If the `space-y-*` spacing changes in `PaperCanvas`, update
+  the pagination gap constant and regression tests at the same time.
 
 ### Markdown Preview
 

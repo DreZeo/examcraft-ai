@@ -20,6 +20,7 @@ vi.mock("../../stores/paperStore", () => ({
         title: "测试卷",
         questions: [],
       },
+      view: "teacher",
       setView: mocks.setView,
       replacePaper: mocks.replacePaper,
     }),
@@ -39,6 +40,10 @@ vi.mock("../../lib/export/exportFile", () => ({
 describe("ExportMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    document.documentElement.dataset.paperPaginationReady = "true";
+    mocks.setView.mockImplementation(() => {
+      document.documentElement.dataset.paperPaginationReady = "true";
+    });
     window.print = vi.fn();
   });
 

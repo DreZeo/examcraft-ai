@@ -36,6 +36,9 @@ import { QuestionEditModal } from "./QuestionEditModal";
 import { ExamInfoHeader } from "./ExamInfoHeader";
 import { Markdown } from "./Markdown";
 
+const PAPER_BLOCK_SPACING_CLASS = "space-y-5";
+const PAPER_BLOCK_GAP_MM = pxToMm(20);
+
 interface PaperCanvasProps {
   scrollRootRef?: RefObject<HTMLElement | null>;
   onActiveQuestionChange?: (id: string | null) => void;
@@ -69,7 +72,13 @@ export function PaperCanvas({
     [display, paperSettings, includeAnswers],
   );
   const estimatedPages = useMemo(
-    () => buildPaperPages(display, paperSettings, includeAnswers),
+    () =>
+      buildPaperPages(
+        display,
+        paperSettings,
+        includeAnswers,
+        PAPER_BLOCK_GAP_MM,
+      ),
     [display, paperSettings, includeAnswers],
   );
   const blockSignature = useMemo(
@@ -86,19 +95,41 @@ export function PaperCanvas({
     signature: string;
     pages: PaperPage[];
   } | null>(null);
+  const [readySignature, setReadySignature] = useState<string | null>(null);
   const pages =
     measured?.signature === blockSignature ? measured.pages : estimatedPages;
+  const printLayoutReady =
+    display.questions.length === 0 || readySignature === blockSignature;
 
   const editing = editingId
     ? (paper.questions.find((q) => q.id === editingId) ?? null)
     : null;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--paper-page-size", pageMetrics.pageSize);
+    root.style.setProperty("--paper-page-width", pageMetrics.width);
+    root.style.setProperty("--paper-page-height", pageMetrics.height);
+  }, [pageMetrics.height, pageMetrics.pageSize, pageMetrics.width]);
+
+  useEffect(() => {
+    document.documentElement.dataset.paperPaginationReady = printLayoutReady
+      ? "true"
+      : "false";
+    return () => {
+      delete document.documentElement.dataset.paperPaginationReady;
+    };
+  }, [printLayoutReady]);
 
   function addAndEdit() {
     setNewQuestionDraft(createBlankQuestion("single-choice", uuid()));
   }
 
   useEffect(() => {
-    if (blocks.length === 0) return;
+    if (blocks.length === 0) {
+      setReadySignature(blockSignature);
+      return;
+    }
     const root = measureRef.current;
     if (!root) return;
 
@@ -119,6 +150,7 @@ export function PaperCanvas({
         blocks,
         pageMetrics.contentHeightMm,
         heights,
+        PAPER_BLOCK_GAP_MM,
       );
       setMeasured((current) => {
         if (
@@ -130,6 +162,7 @@ export function PaperCanvas({
         if (samePages(estimatedPages, next)) return null;
         return { signature: blockSignature, pages: next };
       });
+      setReadySignature(blockSignature);
     });
 
     return () => {
@@ -176,8 +209,8 @@ export function PaperCanvas({
   }, [questionIds, onActiveQuestionChange, scrollRootRef]);
 
   return (
-    <div className="flex min-w-fit justify-center px-4 py-8 sm:px-6">
-      <div className="flex flex-col gap-6">
+    <div className="paper-canvas flex min-w-fit justify-center px-4 py-8 sm:px-6">
+      <div className="paper-page-stack flex flex-col gap-6">
         {display.questions.length === 0 ? (
           <PaperPageShell paperSettings={paperSettings} pageMetrics={pageMetrics}>
             <EmptyPaper t={t} addAndEdit={addAndEdit} />
@@ -190,7 +223,7 @@ export function PaperCanvas({
                 paperSettings={paperSettings}
                 pageMetrics={pageMetrics}
               >
-                <div className="space-y-5">
+                <div className={PAPER_BLOCK_SPACING_CLASS}>
                   {page.blocks.map((block) => (
                     <PaperBlock
                       key={block.id}
@@ -267,7 +300,7 @@ function MeasurementLayer({
       style={{ width: pageMetrics.width }}
     >
       <PaperPageShell paperSettings={paperSettings} pageMetrics={pageMetrics}>
-        <div className="space-y-5">
+        <div className={PAPER_BLOCK_SPACING_CLASS}>
           {blocks.map((block) => (
             <PaperBlock
               key={block.id}
@@ -304,6 +337,8 @@ function PaperPageShell({
         lineHeight: PAPER_LINE_HEIGHT_STYLES[paperSettings.paperLineHeight],
         padding: pageMetrics.padding,
         "--paper-page-size": pageMetrics.pageSize,
+        "--paper-page-width": pageMetrics.width,
+        "--paper-page-height": pageMetrics.height,
         width: pageMetrics.width,
         maxWidth: pageMetrics.width,
         minHeight: pageMetrics.height,

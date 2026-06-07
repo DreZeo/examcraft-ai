@@ -78,6 +78,18 @@ describe("pagination", () => {
     expect(pages[0].blocks.map((block) => block.id)).toContain("question-q2");
   });
 
+  it("counts block gaps when paginating measured preview blocks", () => {
+    const blocks = buildPaperBlocks(makePaper(), settings, false).slice(0, 3);
+    const heights = Object.fromEntries(blocks.map((block) => [block.id, 10]));
+
+    const pages = paginateMeasuredBlocks(blocks, 25, heights, 5);
+
+    expect(pages.map((page) => page.blocks.map((block) => block.id))).toEqual([
+      [blocks[0].id, blocks[1].id],
+      [blocks[2].id],
+    ]);
+  });
+
   it("estimates larger student answer space for essays than short answers", () => {
     const essay = makePaper().questions[1];
     const shortAnswer = ExamPaperSchema.parse({

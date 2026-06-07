@@ -110,6 +110,7 @@ export function buildPaperBlocks(
 export function paginateBlocks(
   blocks: PaperLayoutBlock[],
   contentHeightMm: number,
+  blockGapMm = 0,
 ): PaperPage[] {
   return paginateMeasuredBlocks(
     blocks,
@@ -117,6 +118,7 @@ export function paginateBlocks(
     Object.fromEntries(
       blocks.map((block) => [block.id, Math.max(1, block.estimatedHeightMm)]),
     ),
+    blockGapMm,
   );
 }
 
@@ -124,6 +126,7 @@ export function paginateMeasuredBlocks(
   blocks: PaperLayoutBlock[],
   contentHeightMm: number,
   heights: BlockHeightMap,
+  blockGapMm = 0,
 ): PaperPage[] {
   if (blocks.length === 0) return [];
 
@@ -135,9 +138,10 @@ export function paginateMeasuredBlocks(
     const block = blocks[index];
     const height = blockHeight(block, heights);
     const next = blocks[index + 1];
+    const incomingGapBeforeBreak = current.length > 0 ? blockGapMm : 0;
     const sectionWithFirstQuestion =
       block.kind === "section" && next?.kind === "question"
-        ? height + blockHeight(next, heights)
+        ? height + blockGapMm + blockHeight(next, heights)
         : height;
     const followsCurrentSection =
       block.kind === "question" &&
@@ -146,7 +150,8 @@ export function paginateMeasuredBlocks(
     const isOversized = height > contentHeightMm;
     const shouldStartNewPage =
       current.length > 0 &&
-      used + sectionWithFirstQuestion > contentHeightMm + 1 &&
+      used + incomingGapBeforeBreak + sectionWithFirstQuestion >
+        contentHeightMm + 1 &&
       !isOversized &&
       !followsCurrentSection;
 
@@ -156,8 +161,9 @@ export function paginateMeasuredBlocks(
       used = 0;
     }
 
+    const incomingGap = current.length > 0 ? blockGapMm : 0;
     current.push(block);
-    used += height;
+    used += incomingGap + height;
   }
 
   if (current.length > 0) {
@@ -171,11 +177,13 @@ export function buildPaperPages(
   paper: ExamPaper,
   settings: AppSettings,
   includeAnswers: boolean,
+  blockGapMm = 0,
 ): PaperPage[] {
   const metrics = getPageMetrics(settings);
   return paginateBlocks(
     buildPaperBlocks(paper, settings, includeAnswers),
     metrics.contentHeightMm,
+    blockGapMm,
   );
 }
 

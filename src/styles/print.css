@@ -40,9 +40,14 @@
     flex: none !important;
   }
 
-  main > div {
+  main > div,
+  .paper-canvas {
     display: block !important;
     padding: 0 !important;
+  }
+
+  .paper-page-stack {
+    display: block !important;
   }
 
   /* Preserve preview dimensions/padding; remove only screen chrome styling. */
@@ -55,6 +60,9 @@
 
   .paper-page {
     page: paper-preview;
+    width: var(--paper-page-width) !important;
+    min-height: var(--paper-page-height) !important;
+    box-sizing: border-box !important;
     break-after: page;
     overflow: hidden;
   }
@@ -71,12 +79,6 @@
   /* Centered exam title. */
   .paper-sheet h1 {
     text-align: center;
-  }
-
-  /* Avoid splitting a question across a page break where possible. */
-  .question-block {
-    break-inside: avoid;
-    page-break-inside: avoid;
   }
 
   /* Keep answer blocks readable in grayscale print. */

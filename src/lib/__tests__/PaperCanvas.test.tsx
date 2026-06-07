@@ -59,6 +59,8 @@ describe("PaperCanvas", () => {
     });
     expect(sheet).toHaveStyle("--paper-page-size: 176mm 250mm");
     expect(sheet).not.toHaveStyle({ textAlign: "justify" });
+    expect(document.documentElement.style.getPropertyValue("--paper-page-size"))
+      .toBe("176mm 250mm");
   });
 
   it("renders type sections with numbering restarted inside each section", () => {
