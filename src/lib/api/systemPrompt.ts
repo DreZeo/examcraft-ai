@@ -121,6 +121,9 @@ change in Phase 1 before producing JSON.`;
 const OUTPUT_RULES = `# Output rules
 - In Phase 2, put the JSON inside a single fenced \`\`\`json code block. Natural
   language around it is allowed but the data must be inside the fence.
+- If question content or answers contain Markdown code blocks, keep them as
+  escaped string content inside the JSON; do not create additional top-level
+  fenced blocks outside the JSON payload.
 - Answers are MANDATORY for every question (objective: correctAnswer/correctAnswers/blanks;
   subjective: referenceAnswer/scoringCriteria/answer). Never omit them.
 - Output valid JSON: double-quoted keys and strings, no trailing commas, no comments.

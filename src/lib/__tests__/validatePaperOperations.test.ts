@@ -27,6 +27,18 @@ const trueFalseQuestion = {
   score: 6,
 };
 
+const cProgramQuestion = {
+  id: "c-1",
+  type: "short-answer",
+  content:
+    "【程序修改题】\n以下程序用于求最大公约数，请指出错误。\n\n```c\nint gcd(int a, int b) {\n    while (b = 0) {\n        a = b;\n    }\n    return b;\n}\n```",
+  score: 15,
+  referenceAnswer:
+    "错误包括 `while (b = 0)` 应改为 `while (b != 0)`，循环结束后应返回 `a`。",
+  scoringPoints: ["指出赋值与比较错误", "指出返回值错误"],
+  explanation: "考察 C 语言循环条件与辗转相除法。",
+};
+
 describe("validatePaperOperations", () => {
   it("returns operations for a valid fenced payload", () => {
     const reply = `\`\`\`json\n${JSON.stringify({
@@ -123,5 +135,20 @@ describe("validatePaperOperations", () => {
     );
 
     expect(result.ok).toBe(true);
+  });
+
+  it("accepts fenced JSON containing C markdown code fences inside question text", () => {
+    const reply = `\`\`\`json\n${JSON.stringify({
+      operations: [{ type: "appendQuestions", questions: [cProgramQuestion] }],
+    }, null, 2)}\n\`\`\``;
+
+    const result = validatePaperOperations(reply, "append");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.operations[0]).toMatchObject({
+        type: "appendQuestions",
+      });
+    }
   });
 });

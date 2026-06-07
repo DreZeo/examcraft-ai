@@ -92,6 +92,14 @@ Rust hands back **raw JSON strings**; the frontend parses + validates (see
 backend/directory-structure.md). Never trust a JSON string as typed without
 running its schema.
 
+AI output may wrap JSON in a Markdown fence, while question text or answers may
+also contain Markdown code fences inside JSON strings. Do not extract fenced AI
+JSON with a non-greedy `/```...```/` regex; it can stop at an embedded
+` ```c ` or answer fence and truncate valid JSON. Prefer a line-aware extractor:
+find the outer ` ```json ` fence, and only accept a closing ` ``` ` that starts
+at the beginning of a physical line. Cover this with both `extractJson.test.ts`
+and validator tests for C/code-block questions.
+
 ---
 
 ## Gotcha: Zod v4 `.default({})` on an all-optional object fails typing
