@@ -19,6 +19,7 @@ import {
 import { inputCls, secondaryBtn } from "../../lib/ui/styles";
 import { testWebSearch } from "../../lib/storage/tauri";
 import { SelectControl } from "../ui/SelectControl";
+import { SecretInput } from "../ui/SecretInput";
 
 /** Dedicated web-search provider settings for assistant browsing context. */
 export function WebSearchSection() {
@@ -112,7 +113,10 @@ function ProviderCard({
   const [status, setStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    void getWebSearchApiKey(provider).then((key) => setKeyConfigured(!!key));
+    void getWebSearchApiKey(provider).then((key) => {
+      setKeyConfigured(!!key);
+      setApiKey(key ?? "");
+    });
   }, [getWebSearchApiKey, provider]);
 
   async function resolveKey(): Promise<string | null> {
@@ -127,7 +131,6 @@ function ProviderCard({
     setStatus(null);
     try {
       await updateWebSearchApiKey(provider, key);
-      setApiKey("");
       setKeyConfigured(true);
       setStatus({ kind: "ok", text: t("webSearch.keySaved") });
     } catch {
@@ -174,12 +177,10 @@ function ProviderCard({
       </div>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-        <input
-          type="password"
+        <SecretInput
           value={apiKey}
-          onChange={(e) => setApiKey(e.currentTarget.value)}
-          placeholder={keyConfigured ? "••••••• " + t("settings.apiKeyConfigured") : t("settings.apiKey")}
-          className={inputCls}
+          onChange={setApiKey}
+          placeholder={keyConfigured ? "" : t("settings.apiKey")}
         />
         <button
           type="button"

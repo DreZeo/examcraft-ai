@@ -51,16 +51,16 @@ const tabs: TabItem[] = [
     icon: Search,
   },
   {
-    id: "general",
-    labelKey: "settings.general",
-    descriptionKey: "settings.generalDescription",
-    icon: SlidersHorizontal,
-  },
-  {
     id: "data",
     labelKey: "settings.dataDirectory",
     descriptionKey: "settings.dataDirectoryDescription",
     icon: FolderKanban,
+  },
+  {
+    id: "general",
+    labelKey: "settings.general",
+    descriptionKey: "settings.generalDescription",
+    icon: SlidersHorizontal,
   },
 ];
 
