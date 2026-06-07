@@ -9,6 +9,7 @@ import { usePaperStore } from "../../stores/paperStore";
 const tauriMocks = vi.hoisted(() => ({
   invoke: vi.fn(),
   listen: vi.fn(),
+  listeners: {} as Record<string, (event: { payload: unknown }) => void>,
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -69,7 +70,11 @@ function resultMessage(
 describe("assistantStore AI result apply undo", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    tauriMocks.listen.mockResolvedValue(vi.fn());
+    tauriMocks.listeners = {};
+    tauriMocks.listen.mockImplementation((event: string, callback: (event: { payload: unknown }) => void) => {
+      tauriMocks.listeners[event] = callback;
+      return Promise.resolve(vi.fn());
+    });
     tauriMocks.invoke.mockImplementation((command: string) => {
       if (command === "get_api_key") return Promise.resolve("test-key");
       return Promise.resolve();
@@ -153,7 +158,11 @@ describe("assistantStore AI result apply undo", () => {
 describe("assistantStore user message resend", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    tauriMocks.listen.mockResolvedValue(vi.fn());
+    tauriMocks.listeners = {};
+    tauriMocks.listen.mockImplementation((event: string, callback: (event: { payload: unknown }) => void) => {
+      tauriMocks.listeners[event] = callback;
+      return Promise.resolve(vi.fn());
+    });
     tauriMocks.invoke.mockImplementation((command: string) => {
       if (command === "get_api_key") return Promise.resolve("test-key");
       return Promise.resolve();
@@ -275,5 +284,153 @@ describe("assistantStore user message resend", () => {
 
     expect(result).toEqual({ ok: false, reason: "streaming" });
     expect(tauriMocks.invoke).not.toHaveBeenCalled();
+  });
+});
+
+describe("assistantStore web search tool loop", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    tauriMocks.listeners = {};
+    tauriMocks.listen.mockImplementation((event: string, callback: (event: { payload: unknown }) => void) => {
+      tauriMocks.listeners[event] = callback;
+      return Promise.resolve(vi.fn());
+    });
+    tauriMocks.invoke.mockImplementation((command: string) => {
+      if (command === "get_api_key") return Promise.resolve("test-key");
+      if (command === "web_search") {
+        return Promise.resolve([
+          {
+            title: "NCRE C exam trend",
+            url: "https://example.test/ncre-c",
+            snippet: "Recent C programming exam topics.",
+            provider: "tavily",
+          },
+        ]);
+      }
+      return Promise.resolve();
+    });
+    configureModel();
+    useConfigStore.setState({
+      dataDir: null,
+      config: {
+        ...useConfigStore.getState().config,
+        settings: {
+          ...useConfigStore.getState().config.settings,
+          webSearch: {
+            activeProvider: "tavily",
+            resultCount: 5,
+            contentMode: "summary",
+          },
+        },
+      },
+    });
+    usePaperStore.setState({
+      paper: paper(),
+      undoSnapshot: null,
+      activePaperId: "paper-1",
+      saveStatus: "saved",
+    });
+    useAssistantStore.getState().reset();
+  });
+
+  function streamCalls() {
+    return tauriMocks.invoke.mock.calls.filter(
+      ([command]) => command === "stream_chat",
+    );
+  }
+
+  async function finishStreamWith(content: string) {
+    tauriMocks.listeners["chat:chunk"]?.({ payload: content });
+    tauriMocks.listeners["chat:done"]?.({ payload: undefined });
+    await Promise.resolve();
+  }
+
+  async function waitForCondition(
+    predicate: () => boolean,
+    timeoutMs = 1000,
+  ) {
+    const start = Date.now();
+    while (!predicate()) {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error("Timed out waiting for condition");
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
+  it("executes model-requested search and feeds results into the next model call", async () => {
+    await useAssistantStore
+      .getState()
+      .sendMessage("生成计算机二级 C 语言最新趋势题", true);
+
+    expect(streamCalls()).toHaveLength(1);
+    const firstMessages = streamCalls()[0]?.[1]?.messages ?? [];
+    expect(firstMessages[0]?.content).toContain("```search_web");
+
+    await finishStreamWith(`
+\`\`\`search_web
+{"query":"计算机二级 C 语言 考试 趋势"}
+\`\`\`
+`);
+
+    await waitForCondition(() =>
+      tauriMocks.invoke.mock.calls.some(
+        ([command]) => command === "web_search",
+      ),
+    );
+    expect(
+      tauriMocks.invoke.mock.calls.some(
+        ([command, args]) =>
+          command === "web_search" &&
+          args.query === "计算机二级 C 语言 考试 趋势",
+      ),
+    ).toBe(true);
+    expect(useAssistantStore.getState().messages.some((message) => message.kind === "webSearch")).toBe(true);
+    await waitForCondition(() => streamCalls().length === 2);
+    expect(streamCalls()).toHaveLength(2);
+
+    const secondMessages = streamCalls()[1]?.[1]?.messages ?? [];
+    expect(secondMessages.at(-1)?.role).toBe("user");
+    expect(secondMessages.at(-1)?.content).toContain("Web search results for this turn");
+    expect(secondMessages.at(-1)?.content).toContain("NCRE C exam trend");
+  });
+
+  it("keeps search context when confirmation asks for JSON generation", async () => {
+    await useAssistantStore
+      .getState()
+      .sendMessage("生成计算机二级 C 语言最新趋势题", true);
+
+    await finishStreamWith(`
+\`\`\`search_web
+{"query":"计算机二级 C 语言 考试 趋势"}
+\`\`\`
+`);
+    await waitForCondition(() => streamCalls().length === 2);
+    await finishStreamWith("我会基于搜索资料生成题目。");
+    await waitForCondition(() =>
+      useAssistantStore.getState().messages.some((message) => message.kind === "confirmation"),
+    );
+
+    const confirmation = useAssistantStore
+      .getState()
+      .messages.find((message) => message.kind === "confirmation");
+    expect(confirmation?.kind).toBe("confirmation");
+
+    await useAssistantStore.getState().confirm(confirmation?.id ?? "");
+
+    const calls = streamCalls();
+    const lastMessages = calls[calls.length - 1]?.[1]?.messages ?? [];
+    expect(lastMessages.some((message: { content: string }) => message.content.includes("NCRE C exam trend"))).toBe(true);
+    expect(lastMessages.at(-1)?.content).toContain("Confirmed. Generate the paper operations now");
+  });
+
+  it("does not expose search tool instructions when web search is disabled", async () => {
+    await useAssistantStore.getState().sendMessage("生成一份普通试卷", false);
+
+    const messages = streamCalls()[0]?.[1]?.messages ?? [];
+    expect(messages[0]?.content).not.toContain("```search_web");
+    expect(
+      tauriMocks.invoke.mock.calls.some(([command]) => command === "web_search"),
+    ).toBe(false);
   });
 });

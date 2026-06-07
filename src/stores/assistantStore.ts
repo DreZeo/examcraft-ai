@@ -22,6 +22,13 @@ import { buildSystemPrompt } from "../lib/api/systemPrompt";
 import { validatePaperOperations } from "../lib/api/validatePaperOperations";
 import { extractJson } from "../lib/api/extractJson";
 import { type AppError } from "../lib/api/errorMessages";
+import {
+  buildSearchContextMessage,
+  buildSearchToolInstructions,
+  parseSearchWebToolCalls,
+  type SearchWebContext,
+  type SearchWebToolCall,
+} from "../lib/api/webSearchTool";
 import { inferQuestionTypeStrategy } from "../lib/exam/questionTypeStrategy";
 import { summarizePaper } from "../lib/exam/summary";
 import * as storage from "../lib/storage/tauri";
@@ -39,6 +46,7 @@ import { usePaperStore } from "./paperStore";
  */
 
 const MAX_JSON_RETRIES = 3;
+const MAX_SEARCH_STEPS = 3;
 
 type UserMessageResendResult =
   | { ok: true }
@@ -97,6 +105,8 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
   let activeSession: ChatSession | null = null;
   /** JSON self-correction attempts for the current generation turn. */
   let retryCount = 0;
+  let activeSearchContexts: SearchWebContext[] = [];
+  let webSearchEnabledForTurn = false;
   let unlisteners: UnlistenFn[] = [];
   /**
    * Whether the current stream attempt has already been finalized (done OR
@@ -193,7 +203,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
   }
 
   /** Build the full message array for the next API call. */
-  function buildApiMessages(searchResults?: WebSearchResult[]): ApiMessage[] {
+  function buildApiMessages(): ApiMessage[] {
     const configState = useConfigStore.getState();
     const summary = summarizePaper(usePaperStore.getState().paper);
     const questionTypeStrategy = inferQuestionTypeStrategy({
@@ -206,37 +216,13 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       configState.activeAgent(),
       questionTypeStrategy,
     );
+    const searchInstructions = webSearchEnabledForTurn
+      ? `\n\n${buildSearchToolInstructions()}`
+      : "";
     return [
-      { role: "system", content: withSearchInstructions(system, searchResults) },
+      { role: "system", content: `${system}${searchInstructions}` },
       ...apiHistory,
     ];
-  }
-
-  function withSearchInstructions(
-    system: string,
-    searchResults?: WebSearchResult[],
-  ): string {
-    if (!searchResults?.length) return system;
-    return `${system}
-
-Web search context is available for this turn. Use only the sources below for web-backed claims, cite sources inline with bracket numbers like [1], and do not invent citations.
-
-${formatSearchContext(searchResults)}`;
-  }
-
-  function formatSearchContext(results: WebSearchResult[]): string {
-    return results
-      .map((result, index) => {
-        const parts = [
-          `[${index + 1}] ${result.title || result.url}`,
-          `URL: ${result.url}`,
-        ];
-        if (result.publishedAt) parts.push(`Published: ${result.publishedAt}`);
-        if (result.snippet) parts.push(`Snippet: ${result.snippet}`);
-        if (result.content) parts.push(`Content: ${result.content}`);
-        return parts.join("\n");
-      })
-      .join("\n\n");
   }
 
   function userIntentContext(): string {
@@ -261,7 +247,10 @@ ${formatSearchContext(searchResults)}`;
     return text;
   }
 
-  async function performWebSearch(query: string): Promise<WebSearchResult[] | null> {
+  async function performWebSearch(
+    query: string,
+    toolCallId?: string,
+  ): Promise<WebSearchResult[] | null> {
     const { config, getWebSearchApiKey } = useConfigStore.getState();
     const settings = config.settings.webSearch;
     let apiKey: string | null = null;
@@ -293,6 +282,7 @@ ${formatSearchContext(searchResults)}`;
       pushMessage({
         id: uuid(),
         kind: "webSearch",
+        toolCallId,
         provider: settings.activeProvider,
         query,
         contentMode: settings.contentMode,
@@ -384,6 +374,8 @@ ${formatSearchContext(searchResults)}`;
     const requestContext: RequestContext =
       target.message.requestContext ?? { kind: "plain" };
     apiHistory = apiHistory.slice(0, apiIndex);
+    activeSearchContexts = [];
+    webSearchEnabledForTurn = false;
     const nextApiIndex = apiHistory.length;
     apiHistory.push({
       role: "user",
@@ -414,7 +406,7 @@ ${formatSearchContext(searchResults)}`;
   }
 
   /** Stream one assistant turn. Listeners accumulate chunks; done/error finalize. */
-  async function runChat(searchResults?: WebSearchResult[]): Promise<void> {
+  async function runChat(): Promise<void> {
     const active = useConfigStore.getState().activeConfig();
     if (!active) {
       pushMessage({
@@ -467,7 +459,7 @@ ${formatSearchContext(searchResults)}`;
         baseUrl: active.baseUrl,
         apiKey,
         model: active.model,
-        messages: buildApiMessages(searchResults),
+        messages: buildApiMessages(),
         temperature: active.temperature,
         maxTokens: active.maxTokens,
       });
@@ -484,6 +476,18 @@ ${formatSearchContext(searchResults)}`;
     set({ status: "idle", streamBuffer: "" });
 
     const { json, prose } = extractJson(reply);
+
+    if (webSearchEnabledForTurn) {
+      const toolCalls = parseSearchWebToolCalls(reply);
+      if (toolCalls.length > 0) {
+        apiHistory.push({ role: "assistant", content: reply });
+        const ok = await executeSearchToolCalls(toolCalls);
+        if (!ok) return;
+        await persistSession();
+        await runChat();
+        return;
+      }
+    }
 
     // Phase 1: no JSON -> the model is confirming understanding.
     if (!json) {
@@ -547,6 +551,46 @@ ${formatSearchContext(searchResults)}`;
       retryExhausted: true,
     });
     await persistSession();
+  }
+
+  async function executeSearchToolCalls(
+    toolCalls: SearchWebToolCall[],
+  ): Promise<boolean> {
+    if (activeSearchContexts.length >= MAX_SEARCH_STEPS) {
+      pushMessage({
+        id: uuid(),
+        kind: "error",
+        code: "searchFailed",
+        detail: `Search step limit reached (${MAX_SEARCH_STEPS}).`,
+        retryExhausted: false,
+        retryable: false,
+      });
+      await persistSession();
+      return false;
+    }
+
+    const availableSlots = MAX_SEARCH_STEPS - activeSearchContexts.length;
+    const calls = toolCalls.slice(0, availableSlots);
+    const newContexts: SearchWebContext[] = [];
+
+    for (const call of calls) {
+      const results = await performWebSearch(call.query, call.id);
+      if (results == null) return false;
+      newContexts.push({ query: call.query, results });
+    }
+
+    activeSearchContexts = [...activeSearchContexts, ...newContexts];
+    apiHistory.push({
+      role: "user",
+      content: buildSearchContextMessage(activeSearchContexts),
+    });
+    return true;
+  }
+
+  function beginTurn(useWebSearch: boolean) {
+    retryCount = 0;
+    activeSearchContexts = [];
+    webSearchEnabledForTurn = useWebSearch;
   }
 
   async function handleError(error: AppError): Promise<void> {
@@ -654,6 +698,7 @@ ${formatSearchContext(searchResults)}`;
     sendMessage: async (text, useWebSearch = false) => {
       const trimmed = text.trim();
       if (!trimmed || get().status === "streaming") return;
+      beginTurn(useWebSearch);
 
       const focused = get().focusedQuestion;
       const requestContext: RequestContext = focused
@@ -661,7 +706,6 @@ ${formatSearchContext(searchResults)}`;
         : { kind: "plain" };
       const content = requestContent(trimmed, requestContext);
 
-      retryCount = 0;
       const apiHistoryIndex = apiHistory.length;
       apiHistory.push({ role: "user", content });
       pushMessage({
@@ -673,12 +717,6 @@ ${formatSearchContext(searchResults)}`;
         requestContext,
       });
       await persistSession();
-      if (useWebSearch) {
-        const searchResults = await performWebSearch(trimmed);
-        if (searchResults == null) return;
-        await runChat(searchResults);
-        return;
-      }
       await runChat();
     },
 
@@ -692,6 +730,7 @@ ${formatSearchContext(searchResults)}`;
         ),
       }));
       retryCount = 0;
+      webSearchEnabledForTurn = activeSearchContexts.length > 0 || webSearchEnabledForTurn;
       apiHistory.push({
         role: "user",
         content:
@@ -790,6 +829,8 @@ ${formatSearchContext(searchResults)}`;
       retryCount = 0;
       activeSession = null;
       activePaperId = null;
+      activeSearchContexts = [];
+      webSearchEnabledForTurn = false;
       set({
         messages: [],
         status: "idle",

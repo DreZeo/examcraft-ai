@@ -129,26 +129,48 @@ paper, block retry/edit instead of trying to roll back paper state.
 await assistantStore.editAndResendUserMessage(messageId, nextText);
 ```
 
-## Pattern: assistant web search turns
+## Pattern: assistant web search tool turns
 
 When the composer web-search toggle is enabled, `assistantStore.sendMessage`
-must perform search before invoking `stream_chat`:
+must start a turn-local search tool loop rather than pre-searching the raw user
+input. The model receives `search_web` instructions in the system prompt and may
+request searches by returning only fenced `search_web` JSON blocks:
+
+```text
+```search_web
+{"query":"focused search keywords"}
+```
+```
+
+The store owns the loop:
 
 1. Persist the visible user message and private `apiHistory` entry.
-2. Load the active provider key via `configStore.getWebSearchApiKey`.
-3. Call `storage.webSearch({ provider, apiKey, query, resultCount, contentMode })`.
-4. Push a persisted `kind: "webSearch"` source-summary message.
-5. Invoke `runChat(searchResults)` so the system prompt includes bounded source
-   context and citation instructions.
+2. Invoke `stream_chat` with search-tool instructions enabled.
+3. On `chat:done`, parse only tool-only `search_web` responses.
+4. For each request, load the active provider key via
+   `configStore.getWebSearchApiKey`, call
+   `storage.webSearch({ provider, apiKey, query, resultCount, contentMode })`,
+   and push a persisted `kind: "webSearch"` message carrying the actual query.
+5. Append a bounded "Web search results for this turn" user message to
+   `apiHistory`, then invoke `stream_chat` again.
+6. Continue until the model returns ordinary confirmation prose or valid paper
+   JSON.
 
-If the key is missing or the provider call fails, push a non-retryable error
-card and do not call `runChat`. This preserves the product contract that an
-enabled search turn never silently falls back to ordinary chat.
+Search contexts are turn-local and must be retained across the confirmation
+step and JSON self-correction retries so Phase 2 generation still sees the
+sources gathered in Phase 1. Starting a new user turn, retrying, editing, or
+resetting must clear the turn-local search context unless that flow explicitly
+rebuilds it.
 
-Retry/edit/confirm flows should keep their existing behavior and should not
-implicitly repeat web search unless a future product decision explicitly adds
-that branch semantics. The visible `webSearch` message is historical evidence
-of a searched turn; it is not part of `apiHistory`.
+If the key is missing, the provider call fails, or the search-step cap is hit,
+push a non-retryable error card and do not continue to ordinary generation.
+This preserves the product contract that an enabled search turn never silently
+falls back to non-search chat.
+
+The visible `webSearch` message is historical evidence of searched sources and
+may include optional tool metadata such as `toolCallId`; the actual source
+context that affects generation is the structured search-context message added
+to `apiHistory`.
 
 ## Pattern: paper-scoped persistence
 

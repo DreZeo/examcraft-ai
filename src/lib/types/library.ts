@@ -77,6 +77,7 @@ export const ChatMessageSchema = z.discriminatedUnion("kind", [
   z.object({
     id: z.string().min(1),
     kind: z.literal("webSearch"),
+    toolCallId: z.string().min(1).optional(),
     provider: WebSearchProviderSchema,
     query: z.string(),
     contentMode: z.enum(["summary", "deep"]),
