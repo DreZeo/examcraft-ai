@@ -3,7 +3,7 @@ import { create } from "zustand";
 /**
  * Which exam-info header fields to include in an export, configured at export
  * time. Subject / duration / total-score draw their values from the paper
- * metadata when present; class and student name are always fill-in blanks.
+ * metadata when present; class, student name, and score are fill-in blanks.
  */
 export interface ExamInfoFields {
   subject: boolean;
@@ -11,6 +11,7 @@ export interface ExamInfoFields {
   studentName: boolean;
   duration: boolean;
   totalScore: boolean;
+  score: boolean;
 }
 
 interface ExportState {
@@ -27,6 +28,7 @@ export const defaultExamInfoFields = (): ExamInfoFields => ({
   studentName: true,
   duration: true,
   totalScore: true,
+  score: true,
 });
 
 export const useExportStore = create<ExportState>((set) => ({

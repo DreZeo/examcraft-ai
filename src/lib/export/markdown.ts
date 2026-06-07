@@ -4,7 +4,10 @@ import type {
 } from "../types/exam";
 import { toStudentVersion } from "../exam/studentVersion";
 import { totalScore } from "../exam/merge";
-import { groupQuestionsByType } from "../exam/paperSections";
+import {
+  groupQuestionsByType,
+  sectionScoreSummary,
+} from "../exam/paperSections";
 import { choiceDisplay, stripLeadingQuestionNumber } from "../exam/choiceDisplay";
 import {
   studentAnswerSpaceLines,
@@ -32,6 +35,7 @@ export interface ExamInfoFieldFlags {
   studentName: boolean;
   duration: boolean;
   totalScore: boolean;
+  score: boolean;
 }
 
 export interface MarkdownExportOptions {
@@ -56,6 +60,7 @@ function buildHeader(paper: ExamPaper, flags: ExamInfoFieldFlags): string[] {
     const total = meta.totalScore ?? totalScore(paper);
     parts.push(`总分：${total}`);
   }
+  if (flags.score) parts.push(`得分：${BLANK}`);
   return parts.length ? [parts.join("　　"), "", "---", ""] : [];
 }
 
@@ -127,7 +132,7 @@ function renderQuestion(
     (!includeAnswers && q.type === "fill-in-blank"
       ? renderFillBlankContent(q)
       : stripLeadingQuestionNumber(q.content));
-  const lines: string[] = [`${number}. ${renderStyledMarkdown(content)} (${q.score})`];
+  const lines: string[] = [`${number}. ${renderStyledMarkdown(content)}`];
   if (choice && choice.options.length > 0) {
     lines.push("", ...renderOptions(choice.options.map(renderStyledMarkdown)));
   }
@@ -223,7 +228,12 @@ export function paperToMarkdown(
   if (options.header) lines.push(...buildHeader(source, options.header));
 
   for (const section of groupQuestionsByType(source)) {
-    lines.push(`## ${section.title}`, "");
+    lines.push(
+      `## ${section.title} ${formatSectionScoreSummary(
+        sectionScoreSummary(section.questions),
+      )}`,
+      "",
+    );
     if (section.passage?.trim()) {
       lines.push(renderStyledMarkdown(section.passage.trim()), "");
     }
@@ -233,4 +243,13 @@ export function paperToMarkdown(
   }
 
   return lines.join("\n").trimEnd() + "\n";
+}
+
+function formatSectionScoreSummary(
+  summary: ReturnType<typeof sectionScoreSummary>,
+): string {
+  if (summary.perQuestionScore == null) {
+    return `共${summary.count}题 共${summary.totalScore}分`;
+  }
+  return `共${summary.count}题 每小题${summary.perQuestionScore}分 共${summary.totalScore}分`;
 }

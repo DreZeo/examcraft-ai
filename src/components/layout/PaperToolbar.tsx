@@ -15,6 +15,7 @@ import {
   PaintBucket,
   Pilcrow,
   Quote,
+  ScrollText,
   RotateCwSquare,
   Type,
   Underline,
@@ -43,6 +44,7 @@ import {
   PAPER_LINE_HEIGHT_OPTIONS,
   PAPER_MARGIN_OPTIONS,
   PAPER_ORIENTATION_OPTIONS,
+  PAPER_PAGE_NUMBER_STYLE_OPTIONS,
   PAPER_SIZE_OPTIONS,
   type AppSettings,
   type PaperFont,
@@ -50,8 +52,10 @@ import {
   type PaperLineHeight,
   type PaperMargin,
   type PaperOrientation,
+  type PaperPageNumberStyle,
   type PaperSize,
 } from "../../lib/types/config";
+import { inputCls } from "../../lib/ui/styles";
 
 type SettingKey =
   | "paperFont"
@@ -59,7 +63,9 @@ type SettingKey =
   | "paperLineHeight"
   | "paperMargin"
   | "paperOrientation"
-  | "paperSize";
+  | "paperSize"
+  | "paperHeader"
+  | "paperPageNumberStyle";
 
 interface PaperTextSelection {
   questionId: string;
@@ -225,6 +231,30 @@ export function PaperToolbar() {
               options={PAPER_MARGIN_OPTIONS}
               optionKeyPrefix="paperMargin"
               onChange={(value) => update("paperMargin", value)}
+            />
+          </ToolbarGroup>
+
+          <ToolbarGroup label={t("paperToolbar.headerFooter")}>
+            <label className="inline-flex h-8 min-w-44 items-center gap-1.5 rounded border border-border bg-card px-2 text-xs text-foreground">
+              <span className="shrink-0 text-muted-foreground">
+                <ScrollText className="h-4 w-4" />
+              </span>
+              <span className="sr-only">{t("paperToolbar.header")}</span>
+              <input
+                value={settings.paperHeader}
+                onChange={(event) => update("paperHeader", event.currentTarget.value)}
+                placeholder={t("paperToolbar.headerPlaceholder")}
+                aria-label={t("paperToolbar.header")}
+                className={`${inputCls} h-6 border-0 bg-transparent px-0 py-0 text-xs focus:border-transparent focus:ring-0`}
+              />
+            </label>
+            <SelectControl<PaperPageNumberStyle>
+              icon={<FileText className="h-4 w-4" />}
+              label={t("paperToolbar.pageNumber")}
+              value={settings.paperPageNumberStyle}
+              options={PAPER_PAGE_NUMBER_STYLE_OPTIONS}
+              optionKeyPrefix="paperPageNumberStyle"
+              onChange={(value) => update("paperPageNumberStyle", value)}
             />
           </ToolbarGroup>
         </>

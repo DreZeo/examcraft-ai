@@ -28,6 +28,7 @@ import {
   type PaperLayoutBlock,
   type PaperPage,
 } from "../../lib/exam/pagination";
+import { sectionScoreSummary } from "../../lib/exam/paperSections";
 import { primaryBtn, secondaryBtn } from "../../lib/ui/styles";
 import { toStudentVersion } from "../../lib/exam/studentVersion";
 import { createBlankQuestion } from "../../lib/exam/blankQuestion";
@@ -212,16 +213,23 @@ export function PaperCanvas({
     <div className="paper-canvas flex min-w-fit justify-center px-4 py-8 sm:px-6">
       <div className="paper-page-stack flex flex-col gap-6">
         {display.questions.length === 0 ? (
-          <PaperPageShell paperSettings={paperSettings} pageMetrics={pageMetrics}>
+          <PaperPageShell
+            paperSettings={paperSettings}
+            pageMetrics={pageMetrics}
+            pageNumber={1}
+            totalPages={1}
+          >
             <EmptyPaper t={t} addAndEdit={addAndEdit} />
           </PaperPageShell>
         ) : (
           <>
-            {pages.map((page) => (
+            {pages.map((page, pageIndex) => (
               <PaperPageShell
                 key={page.id}
                 paperSettings={paperSettings}
                 pageMetrics={pageMetrics}
+                pageNumber={pageIndex + 1}
+                totalPages={pages.length}
               >
                 <div className={PAPER_BLOCK_SPACING_CLASS}>
                   {page.blocks.map((block) => (
@@ -299,7 +307,12 @@ function MeasurementLayer({
       className="no-print pointer-events-none fixed left-0 top-0 -z-10 opacity-0"
       style={{ width: pageMetrics.width }}
     >
-      <PaperPageShell paperSettings={paperSettings} pageMetrics={pageMetrics}>
+      <PaperPageShell
+        paperSettings={paperSettings}
+        pageMetrics={pageMetrics}
+        pageNumber={1}
+        totalPages={1}
+      >
         <div className={PAPER_BLOCK_SPACING_CLASS}>
           {blocks.map((block) => (
             <PaperBlock
@@ -320,17 +333,27 @@ function MeasurementLayer({
 interface PaperPageShellProps {
   paperSettings: AppSettings;
   pageMetrics: PageMetrics;
+  pageNumber: number;
+  totalPages: number;
   children: ReactNode;
 }
 
 function PaperPageShell({
   paperSettings,
   pageMetrics,
+  pageNumber,
+  totalPages,
   children,
 }: PaperPageShellProps) {
+  const header = paperSettings.paperHeader.trim();
+  const pageNumberText = formatPageNumber(
+    paperSettings.paperPageNumberStyle,
+    pageNumber,
+    totalPages,
+  );
   return (
     <section
-      className="paper-sheet paper-page w-full rounded-lg bg-card shadow-sm"
+      className="paper-sheet paper-page flex w-full flex-col rounded-lg bg-card shadow-sm"
       style={{
         fontFamily: PAPER_FONT_STACKS[paperSettings.paperFont],
         fontSize: PAPER_FONT_SIZE_STYLES[paperSettings.paperFontSize],
@@ -344,9 +367,34 @@ function PaperPageShell({
         minHeight: pageMetrics.height,
       } as CSSProperties}
     >
-      {children}
+      {header && (
+        <div className="paper-header mb-4 border-b border-border pb-2 text-center text-sm text-muted-foreground">
+          {header}
+        </div>
+      )}
+      <div className="paper-page-content min-h-0 flex-1">{children}</div>
+      <div className="paper-footer mt-4 border-t border-border pt-2 text-center text-xs text-muted-foreground">
+        {pageNumberText}
+      </div>
     </section>
   );
+}
+
+function formatPageNumber(
+  style: AppSettings["paperPageNumberStyle"],
+  pageNumber: number,
+  totalPages: number,
+): string {
+  switch (style) {
+    case "plain":
+      return `${pageNumber}`;
+    case "fraction":
+      return `${pageNumber} / ${totalPages}`;
+    case "zhFraction":
+      return `第 ${pageNumber} 页 / 共 ${totalPages} 页`;
+    case "zhPage":
+      return `第 ${pageNumber} 页`;
+  }
 }
 
 function PaperBlock({
@@ -380,10 +428,14 @@ function PaperBlock({
         </div>
       );
     case "section":
+      const summary = sectionScoreSummary(block.section.questions);
       return (
         <div {...attrs}>
           <h2 className="paper-section-title mt-2 border-b border-border pb-1 text-base font-semibold text-foreground">
             {block.section.title}
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
+              {formatSectionScoreSummary(summary)}
+            </span>
           </h2>
           {block.section.passage && (
             <div className="mt-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground">
@@ -404,6 +456,15 @@ function PaperBlock({
         </ol>
       );
   }
+}
+
+function formatSectionScoreSummary(
+  summary: ReturnType<typeof sectionScoreSummary>,
+): string {
+  if (summary.perQuestionScore == null) {
+    return `共${summary.count}题 共${summary.totalScore}分`;
+  }
+  return `共${summary.count}题 每小题${summary.perQuestionScore}分 共${summary.totalScore}分`;
 }
 
 function EmptyPaper({

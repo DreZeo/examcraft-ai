@@ -14,6 +14,7 @@ import {
   countPaperOperationChanges,
   previewPaperOperations,
 } from "../exam/operationPreview";
+import { sectionScoreSummary } from "../exam/paperSections";
 import { toStudentVersion } from "../exam/studentVersion";
 import { summarizePaper } from "../exam/summary";
 
@@ -139,6 +140,21 @@ describe("paper operation preview", () => {
 
     expect(preview.added.map((q) => q.id)).toEqual(["legacy"]);
     expect(countPaperOperationChanges(preview)).toBe(1);
+  });
+});
+
+describe("paper section score summary", () => {
+  it("reports per-question score only when all scores match", () => {
+    expect(sectionScoreSummary([sc("q1", 5), sc("q2", 5)])).toEqual({
+      count: 2,
+      totalScore: 10,
+      perQuestionScore: 5,
+    });
+    expect(sectionScoreSummary([sc("q1", 4), sc("q2", 6)])).toEqual({
+      count: 2,
+      totalScore: 10,
+      perQuestionScore: null,
+    });
   });
 });
 

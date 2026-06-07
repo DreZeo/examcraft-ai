@@ -163,6 +163,7 @@ describe("paperToMarkdown", () => {
         studentName: true,
         duration: true,
         totalScore: true,
+        score: true,
       },
     });
     expect(md).toContain("科目：Math");
@@ -170,6 +171,7 @@ describe("paperToMarkdown", () => {
     expect(md).toContain("时长：90");
     // total score falls back to the sum of question scores (5+5+4+8 = 22)
     expect(md).toContain("总分：22");
+    expect(md).toContain("得分：__________");
     expect(md).toContain("---");
   });
 

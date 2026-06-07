@@ -118,6 +118,12 @@ export const PaperSizeSchema = z.enum([
   "executive",
 ]);
 export const PaperOrientationSchema = z.enum(["portrait", "landscape"]);
+export const PaperPageNumberStyleSchema = z.enum([
+  "zhPage",
+  "plain",
+  "fraction",
+  "zhFraction",
+]);
 
 export type PaperFont = z.infer<typeof PaperFontSchema>;
 export type PaperFontSize = z.infer<typeof PaperFontSizeSchema>;
@@ -125,6 +131,7 @@ export type PaperLineHeight = z.infer<typeof PaperLineHeightSchema>;
 export type PaperMargin = z.infer<typeof PaperMarginSchema>;
 export type PaperSize = z.infer<typeof PaperSizeSchema>;
 export type PaperOrientation = z.infer<typeof PaperOrientationSchema>;
+export type PaperPageNumberStyle = z.infer<typeof PaperPageNumberStyleSchema>;
 
 export const PAPER_FONT_OPTIONS = PaperFontSchema.options;
 export const PAPER_FONT_SIZE_OPTIONS = PaperFontSizeSchema.options;
@@ -132,6 +139,8 @@ export const PAPER_LINE_HEIGHT_OPTIONS = PaperLineHeightSchema.options;
 export const PAPER_MARGIN_OPTIONS = PaperMarginSchema.options;
 export const PAPER_SIZE_OPTIONS = PaperSizeSchema.options;
 export const PAPER_ORIENTATION_OPTIONS = PaperOrientationSchema.options;
+export const PAPER_PAGE_NUMBER_STYLE_OPTIONS =
+  PaperPageNumberStyleSchema.options;
 
 export const PAPER_FONT_STACKS: Record<PaperFont, string> = {
   default: '"Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif',
@@ -298,6 +307,10 @@ export const AppSettingsSchema = z.object({
   paperSize: PaperSizeSchema.default("a4"),
   /** Page orientation used only for paper rendering and printing. */
   paperOrientation: PaperOrientationSchema.default("portrait"),
+  /** Free-text Word-like page header shown on each rendered paper page. */
+  paperHeader: z.string().default(""),
+  /** Footer page-number preset used on each rendered paper page. */
+  paperPageNumberStyle: PaperPageNumberStyleSchema.default("zhPage"),
   /** Legacy field: migrated into an AI agent and no longer shown in settings. */
   customInstructions: z.string().default(""),
   /** Optional web search provider behavior for AI assistant turns. */

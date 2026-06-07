@@ -91,21 +91,16 @@ export function QuestionBlock({
           {index + 1}.
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
-            <div
-              className="min-w-0 flex-1"
-              data-markdown-source="content"
-              data-markdown-text={content}
-            >
-              {studentView && question.type === "fill-in-blank" ? (
-                <FillBlankContent question={question} />
-              ) : (
-                <Markdown>{content}</Markdown>
-              )}
-            </div>
-            <span className="shrink-0 text-xs text-muted-foreground">
-              ({question.score})
-            </span>
+          <div
+            className="min-w-0"
+            data-markdown-source="content"
+            data-markdown-text={content}
+          >
+            {studentView && question.type === "fill-in-blank" ? (
+              <FillBlankContent question={question} />
+            ) : (
+              <Markdown>{content}</Markdown>
+            )}
           </div>
 
           {choice && choice.options.length > 0 && (

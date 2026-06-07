@@ -138,6 +138,24 @@ describe("pagination", () => {
     expect(metrics.width).toBe("297mm");
     expect(metrics.height).toBe("210mm");
     expect(metrics.padding).toBe("25.4mm 31.8mm 25.4mm 31.8mm");
-    expect(metrics.contentHeightMm).toBeCloseTo(159.2);
+    expect(metrics.contentHeightMm).toBeCloseTo(149.2);
+  });
+
+  it("reserves content height for configured paper header and footer", () => {
+    const withoutHeader = getPageMetrics({
+      ...settings,
+      paperHeader: "",
+    });
+    const withHeader = getPageMetrics({
+      ...settings,
+      paperHeader: "期末考试",
+    });
+
+    expect(withoutHeader.contentHeightMm).toBeCloseTo(
+      297 - 25.4 - 25.4 - 10,
+    );
+    expect(withHeader.contentHeightMm).toBeCloseTo(
+      297 - 25.4 - 25.4 - 12 - 10,
+    );
   });
 });

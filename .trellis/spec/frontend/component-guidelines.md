@@ -183,6 +183,10 @@ The double `font-style` provides a fallback: `oblique 12deg` is used by modern b
 - Preview pagination must count both measured block heights and the visual gap
   between blocks. If the `space-y-*` spacing changes in `PaperCanvas`, update
   the pagination gap constant and regression tests at the same time.
+- Page header/footer chrome lives inside each `.paper-page`, so it reduces the
+  usable question content height. Any change to header/footer height, visibility,
+  or placement must update `getPageMetrics()` and pagination tests; otherwise
+  preview pagination can drift from print/PDF.
 
 ### Markdown Preview
 

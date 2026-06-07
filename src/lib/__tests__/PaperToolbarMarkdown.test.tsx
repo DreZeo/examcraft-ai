@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "../../i18n";
@@ -25,6 +25,8 @@ vi.mock("../../stores/configStore", () => ({
           paperMargin: "normal",
           paperSize: "a4",
           paperOrientation: "portrait",
+          paperHeader: "",
+          paperPageNumberStyle: "zhPage",
         },
       },
       updateSettings,
@@ -176,6 +178,7 @@ describe("PaperToolbar Markdown tab", () => {
     expect(screen.getByRole("option", { name: "微软雅黑" })).toBeInTheDocument();
     expect(screen.getByLabelText("纸张大小")).toHaveTextContent("A4");
     expect(screen.getByLabelText("页面方向")).toHaveTextContent("纵向");
+    expect(screen.getByLabelText("页码")).toHaveTextContent("第 1 页");
     expect(screen.queryByRole("group", { name: "对齐" })).not.toBeInTheDocument();
   });
 
@@ -195,6 +198,22 @@ describe("PaperToolbar Markdown tab", () => {
     await userEvent.click(screen.getByRole("option", { name: "横向" }));
 
     expect(updateSettings).toHaveBeenCalledWith({ paperOrientation: "landscape" });
+  });
+
+  it("updates the paper header text and page number style", async () => {
+    renderToolbarWithEditor();
+
+    fireEvent.change(screen.getByLabelText("页眉"), {
+      target: { value: "期末考试" },
+    });
+    expect(updateSettings).toHaveBeenLastCalledWith({ paperHeader: "期末考试" });
+
+    await userEvent.click(screen.getByRole("button", { name: "页码" }));
+    await userEvent.click(screen.getByRole("option", { name: "第 1 页 / 共 5 页" }));
+
+    expect(updateSettings).toHaveBeenCalledWith({
+      paperPageNumberStyle: "zhFraction",
+    });
   });
 
   it("uses a primary-color sliding indicator for layout and Markdown tabs", async () => {

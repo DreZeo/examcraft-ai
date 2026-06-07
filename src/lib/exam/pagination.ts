@@ -44,6 +44,8 @@ export interface PageMetrics {
 }
 
 const PT_TO_MM = 0.352778;
+const PAPER_HEADER_HEIGHT_MM = 12;
+const PAPER_FOOTER_HEIGHT_MM = 10;
 
 export function getPageMetrics(settings: AppSettings): PageMetrics {
   const size = PAPER_SIZE_STYLES[settings.paperSize];
@@ -51,12 +53,19 @@ export function getPageMetrics(settings: AppSettings): PageMetrics {
   const isLandscape = settings.paperOrientation === "landscape";
   const widthMm = isLandscape ? size.heightMm : size.widthMm;
   const heightMm = isLandscape ? size.widthMm : size.heightMm;
+  const headerHeightMm = settings.paperHeader.trim()
+    ? PAPER_HEADER_HEIGHT_MM
+    : 0;
+  const footerHeightMm = PAPER_FOOTER_HEIGHT_MM;
   return {
     width: `${widthMm}mm`,
     height: `${heightMm}mm`,
     padding: `${margin.top}mm ${margin.right}mm ${margin.bottom}mm ${margin.left}mm`,
     pageSize: `${widthMm}mm ${heightMm}mm`,
-    contentHeightMm: Math.max(40, heightMm - margin.top - margin.bottom),
+    contentHeightMm: Math.max(
+      40,
+      heightMm - margin.top - margin.bottom - headerHeightMm - footerHeightMm,
+    ),
   };
 }
 

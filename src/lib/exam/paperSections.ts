@@ -61,6 +61,12 @@ export interface PaperQuestionSection {
   passage?: string;
 }
 
+export interface PaperSectionScoreSummary {
+  count: number;
+  totalScore: number;
+  perQuestionScore: number | null;
+}
+
 export function cnOrdinal(index: number): string {
   return CN_ORDINALS[index] ?? String(index + 1);
 }
@@ -208,5 +214,21 @@ export function questionTypeLabelsForPaper(
   return {
     ...QUESTION_TYPE_LABEL_ZH,
     ...(match?.strategy.sectionLabels ?? {}),
+  };
+}
+
+export function sectionScoreSummary(
+  questions: readonly Question[],
+): PaperSectionScoreSummary {
+  const totalScore = questions.reduce((sum, question) => sum + question.score, 0);
+  const firstScore = questions[0]?.score;
+  const perQuestionScore =
+    firstScore != null && questions.every((question) => question.score === firstScore)
+      ? firstScore
+      : null;
+  return {
+    count: questions.length,
+    totalScore,
+    perQuestionScore,
   };
 }

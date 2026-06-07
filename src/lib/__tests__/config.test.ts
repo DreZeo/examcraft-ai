@@ -16,6 +16,8 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperMargin).toBe("normal");
     expect(config.settings.paperSize).toBe("a4");
     expect(config.settings.paperOrientation).toBe("portrait");
+    expect(config.settings.paperHeader).toBe("");
+    expect(config.settings.paperPageNumberStyle).toBe("zhPage");
   });
 
   it("loads old settings without paper layout presets", () => {
@@ -34,6 +36,8 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperMargin).toBe("normal");
     expect(config.settings.paperSize).toBe("a4");
     expect(config.settings.paperOrientation).toBe("portrait");
+    expect(config.settings.paperHeader).toBe("");
+    expect(config.settings.paperPageNumberStyle).toBe("zhPage");
     expect(config.settings.language).toBe("en");
   });
 
@@ -78,6 +82,8 @@ describe("AppConfigSchema", () => {
         paperMargin: "wide",
         paperSize: "legal",
         paperOrientation: "landscape",
+        paperHeader: "期末考试",
+        paperPageNumberStyle: "zhFraction",
       },
     });
 
@@ -87,6 +93,8 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperMargin).toBe("wide");
     expect(config.settings.paperSize).toBe("legal");
     expect(config.settings.paperOrientation).toBe("landscape");
+    expect(config.settings.paperHeader).toBe("期末考试");
+    expect(config.settings.paperPageNumberStyle).toBe("zhFraction");
   });
 
   it("maps old paper font size presets and ignores old text alignment", () => {

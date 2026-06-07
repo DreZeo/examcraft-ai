@@ -21,6 +21,7 @@ const FIELD_KEYS: (keyof ExamInfoFields)[] = [
   "studentName",
   "duration",
   "totalScore",
+  "score",
 ];
 const NOTICE_TIMEOUT_MS = 3000;
 const PRINT_LAYOUT_TIMEOUT_MS = 1000;

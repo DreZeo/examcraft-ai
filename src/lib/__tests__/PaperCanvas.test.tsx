@@ -9,6 +9,16 @@ import type { ExamPaper } from "../types/exam";
 let paper: ExamPaper;
 let view: "teacher" | "student";
 const appendQuestion = vi.fn();
+const paperSettings = {
+  paperFont: "fangsong",
+  paperFontSize: "sihao",
+  paperLineHeight: "oneHalf",
+  paperMargin: "normal",
+  paperSize: "b5",
+  paperOrientation: "portrait",
+  paperHeader: "机密",
+  paperPageNumberStyle: "zhFraction",
+};
 
 vi.mock("../../stores/paperStore", () => ({
   usePaperStore: () => ({
@@ -22,14 +32,7 @@ vi.mock("../../stores/configStore", () => ({
   useConfigStore: (selector: (state: unknown) => unknown) =>
     selector({
       config: {
-        settings: {
-          paperFont: "fangsong",
-          paperFontSize: "sihao",
-          paperLineHeight: "oneHalf",
-          paperMargin: "normal",
-          paperSize: "b5",
-          paperOrientation: "portrait",
-        },
+        settings: paperSettings,
       },
     }),
 }));
@@ -68,14 +71,44 @@ describe("PaperCanvas", () => {
 
     const { container } = renderCanvas();
 
-    expect(container).toHaveTextContent("一、单选题");
-    expect(container).toHaveTextContent("二、填空题");
-    expect(container).toHaveTextContent("三、论述题");
+    expect(container).toHaveTextContent("一、单选题共1题 每小题5分 共5分");
+    expect(container).toHaveTextContent("二、填空题共1题 每小题4分 共4分");
+    expect(container).toHaveTextContent("三、论述题共1题 每小题20分 共20分");
     expect([
       ...visiblePages(container).flatMap((page) => [
         ...page.querySelectorAll(".question-block > div > span"),
       ]),
     ].map((node) => node.textContent)).toEqual(["1.", "1.", "1."]);
+    expect(container).not.toHaveTextContent("(5)");
+  });
+
+  it("renders configured Word-like header and page number footer on each page", () => {
+    paper = makePaper();
+
+    const { container } = renderCanvas();
+
+    expect(container.querySelector(".paper-header")).toHaveTextContent("机密");
+    expect(container.querySelector(".paper-footer")).toHaveTextContent(
+      "第 1 页 / 共 2 页",
+    );
+  });
+
+  it("renders score as a fill-in field without adding an underline after total score", () => {
+    paper = makePaper();
+
+    const { container } = renderCanvas();
+
+    const totalScore = [...container.querySelectorAll("span")].find((node) =>
+      node.textContent?.startsWith("总分："),
+    );
+    const score = [...container.querySelectorAll("span")].find((node) =>
+      node.textContent?.startsWith("得分："),
+    );
+
+    expect(totalScore).toHaveTextContent("总分：29");
+    expect(totalScore?.querySelector(".border-b")).toBeNull();
+    expect(score).toHaveTextContent("得分：");
+    expect(score?.querySelector(".border-b")).toBeInTheDocument();
   });
 
   it("renders student blank lines and answer space without teacher answers", () => {

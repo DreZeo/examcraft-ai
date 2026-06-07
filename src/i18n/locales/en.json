@@ -178,6 +178,12 @@
     "portrait": "Portrait",
     "landscape": "Landscape"
   },
+  "paperPageNumberStyle": {
+    "zhPage": "Page 1",
+    "plain": "1",
+    "fraction": "1 / 5",
+    "zhFraction": "Page 1 of 5"
+  },
   "textColor": {
     "auto": "Automatic",
     "red": "Red",
@@ -205,6 +211,7 @@
     "typography": "Font",
     "paragraph": "Paragraph",
     "page": "Page",
+    "headerFooter": "Header / footer",
     "markdown": "Markdown",
     "markdownStructure": "Structure",
     "markdownText": "Text",
@@ -215,7 +222,10 @@
     "lineHeight": "Line height",
     "paperSize": "Paper size",
     "orientation": "Orientation",
-    "margin": "Margins"
+    "margin": "Margins",
+    "header": "Header",
+    "headerPlaceholder": "Enter header",
+    "pageNumber": "Page number"
   },
   "editorToolbar": {
     "bold": "Bold",
@@ -354,7 +364,8 @@
     "className": "Class",
     "studentName": "Name",
     "duration": "Duration (min)",
-    "totalScore": "Total score"
+    "totalScore": "Total score",
+    "score": "Score"
   },
   "firstLaunch": {
     "title": "Choose where to store your data",
