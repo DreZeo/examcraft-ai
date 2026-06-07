@@ -17,6 +17,8 @@
     "modelConfigsDescription": "Configure OpenAI-compatible endpoints, model names, and API keys.",
     "aiAgents": "AI agents",
     "aiAgentsDescription": "Create and enable one teacher persona to guide how the AI helps author questions.",
+    "webSearch": "Web search",
+    "webSearchDescription": "Configure Tavily or Exa so the AI assistant can retrieve live web context when needed.",
     "addConfig": "Add configuration",
     "name": "Name",
     "baseUrl": "Base URL",
@@ -54,6 +56,32 @@
     "changeLocation": "Change location",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "webSearch": {
+    "behavior": "Search behavior",
+    "providers": "Search providers",
+    "activeProvider": "Active provider",
+    "contentMode": "Content mode",
+    "resultCount": "Result count",
+    "keySaved": "API key saved",
+    "keySaveFailed": "Could not save API key",
+    "enterApiKey": "Enter an API key first",
+    "toggleOn": "Web search on",
+    "toggleOff": "Web search off",
+    "sourceSummary": "{{provider}} found {{count}} source(s)",
+    "sourceCardTitle": "Web search",
+    "provider": {
+      "tavily": "Tavily",
+      "exa": "Exa"
+    },
+    "providerDescription": {
+      "tavily": "Real-time web search and extraction designed for AI/RAG workflows.",
+      "exa": "Semantic search with summaries and web content extraction."
+    },
+    "contentModeOption": {
+      "summary": "Summary",
+      "deep": "Deep read"
+    }
   },
   "agents": {
     "description": "When enabled, the agent instructions are added to every AI conversation system prompt. Only one agent can be active, and all agents can be disabled.",
@@ -289,6 +317,7 @@
     "quotaExceeded": "Quota exceeded or rate limited. Check your account balance.",
     "timeout": "Request timed out. The network or model may be slow.",
     "network": "Network error. Could not reach the model endpoint.",
+    "searchFailed": "Web search failed. Check search settings or try again later.",
     "jsonRetryExhausted": "The AI could not produce valid question data after several attempts.",
     "unknown": "Something went wrong."
   }

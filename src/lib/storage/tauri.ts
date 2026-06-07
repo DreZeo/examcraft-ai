@@ -5,9 +5,11 @@ import {
   ChatIndexSchema,
   ChatSessionSchema,
   PaperIndexSchema,
+  WebSearchResultSchema,
   type ChatIndex,
   type ChatSession,
   type PaperIndex,
+  type WebSearchResult,
 } from "../types/library";
 
 /**
@@ -188,4 +190,25 @@ export function deleteApiKey(account: string): Promise<void> {
 
 export function hasApiKey(account: string): Promise<boolean> {
   return invoke("has_api_key", { account });
+}
+
+// ---- Web search ----
+
+export async function webSearch(args: {
+  provider: "tavily" | "exa";
+  apiKey: string;
+  query: string;
+  resultCount: number;
+  contentMode: "summary" | "deep";
+}): Promise<WebSearchResult[]> {
+  const raw = await invoke<unknown[]>("web_search", args);
+  return WebSearchResultSchema.array().parse(raw);
+}
+
+export function testWebSearch(args: {
+  provider: "tavily" | "exa";
+  apiKey: string;
+  contentMode: "summary" | "deep";
+}): Promise<void> {
+  return invoke("test_web_search", args);
 }

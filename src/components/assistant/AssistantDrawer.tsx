@@ -5,6 +5,7 @@ import {
   Bot,
   PanelRightClose,
   PanelRightOpen,
+  Search,
   Send,
   Sparkles,
   Square,
@@ -20,6 +21,7 @@ import { ResultCard } from "./ResultCard";
 import { ErrorCard } from "./ErrorCard";
 import { ChatHistoryPanel } from "./ChatHistoryPanel";
 import { UserMessageBubble } from "./UserMessageBubble";
+import { WebSearchCard } from "./WebSearchCard";
 
 interface AssistantDrawerProps {
   open: boolean;
@@ -56,6 +58,7 @@ export function AssistantDrawer({
   const clearFocus = useAssistantStore((s) => s.clearFocus);
 
   const [draft, setDraft] = useState("");
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const [drawerWidth, setDrawerWidth] = useState(DEFAULT_DRAWER_WIDTH);
   const [resizing, setResizing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -69,7 +72,7 @@ export function AssistantDrawer({
     const text = draft.trim();
     if (!text || streaming || !activeConfig) return;
     setDraft("");
-    void sendMessage(text);
+    void sendMessage(text, webSearchEnabled);
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -249,6 +252,24 @@ export function AssistantDrawer({
               placeholder={t("assistant.placeholder")}
               className={`${inputCls} min-h-9 flex-1 resize-none bg-background shadow-inner rounded-xl shadow-none focus:shadow-sm transition-shadow`}
             />
+            <button
+              type="button"
+              aria-label={
+                webSearchEnabled ? t("webSearch.toggleOn") : t("webSearch.toggleOff")
+              }
+              title={
+                webSearchEnabled ? t("webSearch.toggleOn") : t("webSearch.toggleOff")
+              }
+              onClick={() => setWebSearchEnabled((value) => !value)}
+              disabled={!activeConfig || streaming}
+              className={
+                webSearchEnabled
+                  ? "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-shadow hover:shadow-md hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+                  : "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+              }
+            >
+              <Search className="h-4 w-4" />
+            </button>
             {streaming ? (
               <button
                 type="button"
@@ -330,7 +351,16 @@ function MessageItem({
           detail={message.detail}
           raw={message.raw}
           retryExhausted={message.retryExhausted}
+          retryable={message.retryable}
           onCheckSettings={onOpenSettings}
+        />
+      );
+    case "webSearch":
+      return (
+        <WebSearchCard
+          provider={message.provider}
+          query={message.query}
+          results={message.results}
         />
       );
     default:

@@ -17,6 +17,8 @@
     "modelConfigsDescription": "配置 OpenAI 兼容接口、模型名称和 API Key。",
     "aiAgents": "AI 智能体",
     "aiAgentsDescription": "创建并启用一个教师角色，让 AI 按指定风格辅助出题。",
+    "webSearch": "联网搜索",
+    "webSearchDescription": "配置 Tavily 或 Exa，让 AI 助手在需要时检索实时网页资料。",
     "addConfig": "添加配置",
     "name": "名称",
     "baseUrl": "Base URL",
@@ -54,6 +56,32 @@
     "changeLocation": "更改位置",
     "save": "保存",
     "cancel": "取消"
+  },
+  "webSearch": {
+    "behavior": "搜索行为",
+    "providers": "搜索服务",
+    "activeProvider": "当前搜索源",
+    "contentMode": "内容模式",
+    "resultCount": "结果数量",
+    "keySaved": "API Key 已保存",
+    "keySaveFailed": "API Key 保存失败",
+    "enterApiKey": "请先填写 API Key",
+    "toggleOn": "联网搜索已开启",
+    "toggleOff": "联网搜索已关闭",
+    "sourceSummary": "{{provider}} 搜索到 {{count}} 个来源",
+    "sourceCardTitle": "联网搜索",
+    "provider": {
+      "tavily": "Tavily",
+      "exa": "Exa"
+    },
+    "providerDescription": {
+      "tavily": "适合 AI/RAG 场景的实时网页搜索与内容抽取。",
+      "exa": "适合语义搜索、摘要和网页内容提取。"
+    },
+    "contentModeOption": {
+      "summary": "摘要模式",
+      "deep": "深度阅读"
+    }
   },
   "agents": {
     "description": "启用后，智能体指令会加入每次 AI 对话的系统提示词。一次只能启用一个，也可以全部停用。",
@@ -289,6 +317,7 @@
     "quotaExceeded": "余额不足或触发限流，请检查账户额度。",
     "timeout": "请求超时，网络或模型响应可能较慢。",
     "network": "网络错误，无法连接到模型接口。",
+    "searchFailed": "联网搜索失败，请检查搜索设置或稍后重试。",
     "jsonRetryExhausted": "多次尝试后 AI 仍未能生成合法的题目数据。",
     "unknown": "出现了一些问题。"
   }

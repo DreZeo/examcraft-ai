@@ -2,6 +2,7 @@ mod error;
 mod keychain;
 mod openai;
 mod storage;
+mod web_search;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -36,6 +37,8 @@ pub fn run() {
             openai::abort_chat,
             openai::list_models,
             openai::test_connection,
+            web_search::web_search,
+            web_search::test_web_search,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

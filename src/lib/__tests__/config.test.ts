@@ -4,6 +4,7 @@ import {
   DEFAULT_AGENTS,
   GLOBAL_FONT_OPTIONS,
   GLOBAL_FONT_STACKS,
+  WEB_SEARCH_KEY_ACCOUNTS,
 } from "../types/config";
 
 describe("AppConfigSchema", () => {
@@ -152,5 +153,30 @@ describe("AppConfigSchema", () => {
     );
     expect(migrated?.instructions).toBe("Always use metric units.");
     expect(config.activeAgentId).toBe("legacy-custom-instructions");
+  });
+
+  it("defaults web search settings for fresh config", () => {
+    const config = AppConfigSchema.parse({});
+    expect(config.settings.webSearch).toEqual({
+      activeProvider: "tavily",
+      resultCount: 5,
+      contentMode: "summary",
+    });
+  });
+
+  it("validates web search result count bounds", () => {
+    expect(() =>
+      AppConfigSchema.parse({ settings: { webSearch: { resultCount: 2 } } }),
+    ).toThrow();
+    expect(() =>
+      AppConfigSchema.parse({ settings: { webSearch: { resultCount: 11 } } }),
+    ).toThrow();
+  });
+
+  it("uses prefixed keychain accounts for web search keys", () => {
+    expect(WEB_SEARCH_KEY_ACCOUNTS).toEqual({
+      tavily: "web-search:tavily",
+      exa: "web-search:exa",
+    });
   });
 });

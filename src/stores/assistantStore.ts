@@ -8,6 +8,7 @@ import type {
   ChatMessage,
   ChatSession,
   ChatSessionMeta,
+  WebSearchResult,
 } from "../lib/types/library";
 import {
   createChatIndex,
@@ -71,7 +72,7 @@ interface AssistantState {
   openSession: (id: string) => Promise<void>;
   renameSession: (id: string, title: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string, useWebSearch?: boolean) => Promise<void>;
   confirm: (cardId: string) => Promise<void>;
   dismissConfirmation: (cardId: string) => void;
   retry: () => Promise<void>;
@@ -192,7 +193,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
   }
 
   /** Build the full message array for the next API call. */
-  function buildApiMessages(): ApiMessage[] {
+  function buildApiMessages(searchResults?: WebSearchResult[]): ApiMessage[] {
     const configState = useConfigStore.getState();
     const summary = summarizePaper(usePaperStore.getState().paper);
     const questionTypeStrategy = inferQuestionTypeStrategy({
@@ -205,7 +206,37 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       configState.activeAgent(),
       questionTypeStrategy,
     );
-    return [{ role: "system", content: system }, ...apiHistory];
+    return [
+      { role: "system", content: withSearchInstructions(system, searchResults) },
+      ...apiHistory,
+    ];
+  }
+
+  function withSearchInstructions(
+    system: string,
+    searchResults?: WebSearchResult[],
+  ): string {
+    if (!searchResults?.length) return system;
+    return `${system}
+
+Web search context is available for this turn. Use only the sources below for web-backed claims, cite sources inline with bracket numbers like [1], and do not invent citations.
+
+${formatSearchContext(searchResults)}`;
+  }
+
+  function formatSearchContext(results: WebSearchResult[]): string {
+    return results
+      .map((result, index) => {
+        const parts = [
+          `[${index + 1}] ${result.title || result.url}`,
+          `URL: ${result.url}`,
+        ];
+        if (result.publishedAt) parts.push(`Published: ${result.publishedAt}`);
+        if (result.snippet) parts.push(`Snippet: ${result.snippet}`);
+        if (result.content) parts.push(`Content: ${result.content}`);
+        return parts.join("\n");
+      })
+      .join("\n\n");
   }
 
   function userIntentContext(): string {
@@ -228,6 +259,60 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       return `Modify the following question (keep its id "${context.question.id}"):\n${JSON.stringify(context.question)}\n\nRequest: ${text}`;
     }
     return text;
+  }
+
+  async function performWebSearch(query: string): Promise<WebSearchResult[] | null> {
+    const { config, getWebSearchApiKey } = useConfigStore.getState();
+    const settings = config.settings.webSearch;
+    let apiKey: string | null = null;
+    try {
+      apiKey = await getWebSearchApiKey(settings.activeProvider);
+    } catch {
+      apiKey = null;
+    }
+    if (!apiKey) {
+      pushMessage({
+        id: uuid(),
+        kind: "error",
+        code: "auth",
+        detail: "Missing web search API key",
+        retryExhausted: false,
+        retryable: false,
+      });
+      return null;
+    }
+
+    try {
+      const results = await storage.webSearch({
+        provider: settings.activeProvider,
+        apiKey,
+        query,
+        resultCount: settings.resultCount,
+        contentMode: settings.contentMode,
+      });
+      pushMessage({
+        id: uuid(),
+        kind: "webSearch",
+        provider: settings.activeProvider,
+        query,
+        contentMode: settings.contentMode,
+        results,
+      });
+      await persistSession();
+      return results;
+    } catch (err) {
+      const error = toAppError(err);
+      pushMessage({
+        id: uuid(),
+        kind: "error",
+        code: error.code === "unknown" ? "searchFailed" : error.code,
+        detail: error.detail,
+        retryExhausted: false,
+        retryable: false,
+      });
+      await persistSession();
+      return null;
+    }
   }
 
   function findUserMessage(messageId: string): {
@@ -329,7 +414,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
   }
 
   /** Stream one assistant turn. Listeners accumulate chunks; done/error finalize. */
-  async function runChat(): Promise<void> {
+  async function runChat(searchResults?: WebSearchResult[]): Promise<void> {
     const active = useConfigStore.getState().activeConfig();
     if (!active) {
       pushMessage({
@@ -382,7 +467,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         baseUrl: active.baseUrl,
         apiKey,
         model: active.model,
-        messages: buildApiMessages(),
+        messages: buildApiMessages(searchResults),
         temperature: active.temperature,
         maxTokens: active.maxTokens,
       });
@@ -566,7 +651,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       if (session) await activateSession(paperId, session);
     },
 
-    sendMessage: async (text) => {
+    sendMessage: async (text, useWebSearch = false) => {
       const trimmed = text.trim();
       if (!trimmed || get().status === "streaming") return;
 
@@ -588,6 +673,12 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         requestContext,
       });
       await persistSession();
+      if (useWebSearch) {
+        const searchResults = await performWebSearch(trimmed);
+        if (searchResults == null) return;
+        await runChat(searchResults);
+        return;
+      }
       await runChat();
     },
 

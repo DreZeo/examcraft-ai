@@ -6,6 +6,8 @@ import {
   type AppConfig,
   type AppSettings,
   type ModelConfig,
+  type WebSearchProvider,
+  WEB_SEARCH_KEY_ACCOUNTS,
 } from "../lib/types/config";
 import * as storage from "../lib/storage/tauri";
 import i18n from "../i18n";
@@ -44,6 +46,12 @@ interface ConfigState {
   ) => Promise<void>;
   deleteAgent: (id: string) => Promise<void>;
   setActiveAgent: (id: string | null) => Promise<void>;
+  updateWebSearchApiKey: (
+    provider: WebSearchProvider,
+    apiKey: string,
+  ) => Promise<void>;
+  deleteWebSearchApiKey: (provider: WebSearchProvider) => Promise<void>;
+  getWebSearchApiKey: (provider: WebSearchProvider) => Promise<string | null>;
 
   activeConfig: () => ModelConfig | null;
   activeAgent: () => AgentConfig | null;
@@ -172,6 +180,17 @@ export const useConfigStore = create<ConfigState>((set, get) => {
         id && cur.agents.some((agent) => agent.id === id) ? id : null;
       await persist({ ...cur, activeAgentId });
     },
+
+    updateWebSearchApiKey: async (provider, apiKey) => {
+      await storage.storeApiKey(WEB_SEARCH_KEY_ACCOUNTS[provider], apiKey);
+    },
+
+    deleteWebSearchApiKey: async (provider) => {
+      await storage.deleteApiKey(WEB_SEARCH_KEY_ACCOUNTS[provider]);
+    },
+
+    getWebSearchApiKey: async (provider) =>
+      storage.getApiKey(WEB_SEARCH_KEY_ACCOUNTS[provider]),
 
     activeConfig: () => {
       const { config } = get();

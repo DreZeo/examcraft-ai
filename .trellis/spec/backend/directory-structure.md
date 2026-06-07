@@ -168,6 +168,82 @@ await openPath(dataDir);
 await openDataDir(dataDir);
 ```
 
+## Scenario: Web Search Provider Proxy
+
+### 1. Scope / Trigger
+
+- Trigger: assistant web search calls third-party search APIs before a model
+  turn, then returns normalized sources to the frontend.
+- This crosses frontend settings/chat state → Tauri command → provider HTTP API
+  → frontend Zod validation → assistant prompt injection.
+
+### 2. Signatures
+
+- Rust command:
+  `web_search(provider, api_key, query, result_count, content_mode) -> AppResult<Vec<WebSearchResult>>`
+- Rust command:
+  `test_web_search(provider, api_key, content_mode) -> AppResult<()>`
+- Frontend wrappers:
+  `webSearch(args): Promise<WebSearchResult[]>`
+  and `testWebSearch(args): Promise<void>`
+
+### 3. Contracts
+
+- `provider`: `"tavily" | "exa"`.
+- `api_key`: secret from OS keychain; never persisted in `config.json`.
+- `query`: user message text used for the search.
+- `result_count`: bounded to 3-10 before provider calls.
+- `content_mode`: `"summary" | "deep"`.
+- Response result:
+  `{ title, url, snippet, content?, publishedAt?, provider }`.
+- Rust owns provider-specific HTTP request/response mapping.
+- TypeScript owns persisted config and chat-history validation with Zod.
+
+### 4. Validation & Error Matrix
+
+| Condition | Result |
+|-----------|--------|
+| Missing key | Frontend blocks before command or returns non-retryable auth error |
+| Provider 401/403 | `AppError::Auth` |
+| Provider 429 | `AppError::Quota` |
+| Timeout/connect failure | `AppError::Timeout` / `AppError::Network` |
+| Other provider status/body parse issue | `AppError::Http` / `AppError::Serde` |
+| Too-low/too-high result count | Clamp to 3-10 in Rust and validate in TS settings |
+
+### 5. Good/Base/Bad Cases
+
+- Good: configured provider returns normalized sources; frontend injects them
+  into the model prompt and renders a persisted source card.
+- Base: provider returns some sparse fields; normalization keeps URL and empty
+  strings rather than panicking.
+- Bad: search fails and assistant silently falls back to ordinary chat. The
+  required behavior is to block the model call so the user is not misled.
+
+### 6. Tests Required
+
+- Rust unit tests for result-count bounds and Unicode-safe truncation.
+- Frontend schema tests for web-search settings defaults/bounds and persisted
+  `webSearch` chat messages.
+- `cargo check`, `cargo test`, `npm run typecheck`, and `npm test` after command
+  or payload changes.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+// Search failed, but this still invokes the model with no web context.
+await runChat();
+```
+
+#### Correct
+
+```tsx
+const results = await performWebSearch(trimmed);
+if (results == null) return;
+await runChat(results);
+```
+
 ### Gotcha: `fs:default` does not grant file writes
 
 `fs:default` only covers app-specific directory reads and directory creation. If

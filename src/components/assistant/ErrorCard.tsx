@@ -9,6 +9,7 @@ interface ErrorCardProps {
   detail?: string;
   raw?: string;
   retryExhausted: boolean;
+  retryable?: boolean;
   onCheckSettings: () => void;
 }
 
@@ -23,6 +24,7 @@ export function ErrorCard({
   detail,
   raw,
   retryExhausted,
+  retryable = true,
   onCheckSettings,
 }: ErrorCardProps) {
   const { t } = useTranslation();
@@ -44,7 +46,7 @@ export function ErrorCard({
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {!retryExhausted && (
+        {!retryExhausted && retryable && (
           <button
             type="button"
             disabled={streaming}

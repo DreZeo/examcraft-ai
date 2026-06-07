@@ -168,6 +168,21 @@ export const AgentConfigSchema = z.object({
   builtIn: z.boolean().optional(),
 });
 
+export const WebSearchProviderSchema = z.enum(["tavily", "exa"]);
+export const WebSearchContentModeSchema = z.enum(["summary", "deep"]);
+export const WEB_SEARCH_PROVIDERS = WebSearchProviderSchema.options;
+export const WEB_SEARCH_CONTENT_MODES = WebSearchContentModeSchema.options;
+export const WEB_SEARCH_KEY_ACCOUNTS: Record<WebSearchProvider, string> = {
+  tavily: "web-search:tavily",
+  exa: "web-search:exa",
+};
+
+export const WebSearchSettingsSchema = z.object({
+  activeProvider: WebSearchProviderSchema.default("tavily"),
+  resultCount: z.number().int().min(3).max(10).default(5),
+  contentMode: WebSearchContentModeSchema.default("summary"),
+});
+
 export const DEFAULT_AGENTS = [
   {
     id: "builtin-english-teacher",
@@ -218,6 +233,8 @@ export const AppSettingsSchema = z.object({
   paperSize: PaperSizeSchema.default("a4"),
   /** Legacy field: migrated into an AI agent and no longer shown in settings. */
   customInstructions: z.string().default(""),
+  /** Optional web search provider behavior for AI assistant turns. */
+  webSearch: WebSearchSettingsSchema.prefault({}),
 });
 
 const AppConfigBaseSchema = z.object({
@@ -266,6 +283,9 @@ export const AppConfigSchema = AppConfigBaseSchema.transform((config) => {
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;
+export type WebSearchProvider = z.infer<typeof WebSearchProviderSchema>;
+export type WebSearchContentMode = z.infer<typeof WebSearchContentModeSchema>;
+export type WebSearchSettings = z.infer<typeof WebSearchSettingsSchema>;
 export type ExplanationTier = z.infer<typeof ExplanationTierSchema>;
 export type Theme = z.infer<typeof ThemeSchema>;
 export type AppSettings = z.infer<typeof AppSettingsSchema>;

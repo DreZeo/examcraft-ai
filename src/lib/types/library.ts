@@ -30,6 +30,17 @@ const RequestContextSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+export const WebSearchProviderSchema = z.enum(["tavily", "exa"]);
+
+export const WebSearchResultSchema = z.object({
+  title: z.string(),
+  url: z.string(),
+  snippet: z.string(),
+  content: z.string().optional(),
+  publishedAt: z.string().optional(),
+  provider: WebSearchProviderSchema,
+});
+
 export const ChatMessageSchema = z.discriminatedUnion("kind", [
   z.object({
     id: z.string().min(1),
@@ -61,6 +72,15 @@ export const ChatMessageSchema = z.discriminatedUnion("kind", [
     detail: z.string().optional(),
     raw: z.string().optional(),
     retryExhausted: z.boolean(),
+    retryable: z.boolean().optional(),
+  }),
+  z.object({
+    id: z.string().min(1),
+    kind: z.literal("webSearch"),
+    provider: WebSearchProviderSchema,
+    query: z.string(),
+    contentMode: z.enum(["summary", "deep"]),
+    results: z.array(WebSearchResultSchema),
   }),
 ]);
 
@@ -92,6 +112,7 @@ export type PaperMeta = z.infer<typeof PaperMetaSchema>;
 export type PaperIndex = z.infer<typeof PaperIndexSchema>;
 export type ApiRole = z.infer<typeof ApiRoleSchema>;
 export type ApiMessage = z.infer<typeof ApiMessageSchema>;
+export type WebSearchResult = z.infer<typeof WebSearchResultSchema>;
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export type ChatSessionMeta = z.infer<typeof ChatSessionMetaSchema>;
 export type ChatIndex = z.infer<typeof ChatIndexSchema>;

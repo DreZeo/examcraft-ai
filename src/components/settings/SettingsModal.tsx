@@ -5,6 +5,7 @@ import {
   Check,
   FolderKanban,
   GraduationCap,
+  Search,
   Settings2,
   SlidersHorizontal,
   X,
@@ -15,12 +16,13 @@ import { ModelConfigSection } from "./ModelConfigSection";
 import { GeneralSection } from "./GeneralSection";
 import { DataDirSection } from "./DataDirSection";
 import { AgentSection } from "./AgentSection";
+import { WebSearchSection } from "./WebSearchSection";
 
 interface SettingsModalProps {
   onClose: () => void;
 }
 
-type Tab = "models" | "agents" | "general" | "data";
+type Tab = "models" | "agents" | "webSearch" | "general" | "data";
 
 interface TabItem {
   id: Tab;
@@ -41,6 +43,12 @@ const tabs: TabItem[] = [
     labelKey: "settings.aiAgents",
     descriptionKey: "settings.aiAgentsDescription",
     icon: GraduationCap,
+  },
+  {
+    id: "webSearch",
+    labelKey: "settings.webSearch",
+    descriptionKey: "settings.webSearchDescription",
+    icon: Search,
   },
   {
     id: "general",
@@ -135,6 +143,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
             <div className="min-h-0 overflow-auto p-4 sm:p-6">
               {tab === "models" && <ModelConfigSection />}
               {tab === "agents" && <AgentSection />}
+              {tab === "webSearch" && <WebSearchSection />}
               {tab === "general" && <GeneralSection />}
               {tab === "data" && <DataDirSection />}
             </div>

@@ -19,6 +19,7 @@ const CODE_TO_KEY: Record<string, string> = {
   quota: "errors.quotaExceeded",
   timeout: "errors.timeout",
   network: "errors.network",
+  searchFailed: "errors.searchFailed",
 };
 
 /** Resolve an AppError code to its `errors.*` i18n key. */

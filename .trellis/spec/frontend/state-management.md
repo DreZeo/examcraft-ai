@@ -129,6 +129,27 @@ paper, block retry/edit instead of trying to roll back paper state.
 await assistantStore.editAndResendUserMessage(messageId, nextText);
 ```
 
+## Pattern: assistant web search turns
+
+When the composer web-search toggle is enabled, `assistantStore.sendMessage`
+must perform search before invoking `stream_chat`:
+
+1. Persist the visible user message and private `apiHistory` entry.
+2. Load the active provider key via `configStore.getWebSearchApiKey`.
+3. Call `storage.webSearch({ provider, apiKey, query, resultCount, contentMode })`.
+4. Push a persisted `kind: "webSearch"` source-summary message.
+5. Invoke `runChat(searchResults)` so the system prompt includes bounded source
+   context and citation instructions.
+
+If the key is missing or the provider call fails, push a non-retryable error
+card and do not call `runChat`. This preserves the product contract that an
+enabled search turn never silently falls back to ordinary chat.
+
+Retry/edit/confirm flows should keep their existing behavior and should not
+implicitly repeat web search unless a future product decision explicitly adds
+that branch semantics. The visible `webSearch` message is historical evidence
+of a searched turn; it is not part of `apiHistory`.
+
 ## Pattern: paper-scoped persistence
 
 The app manages a local paper library rather than a single anonymous document.
