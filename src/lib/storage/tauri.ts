@@ -195,7 +195,7 @@ export function hasApiKey(account: string): Promise<boolean> {
 // ---- Web search ----
 
 export async function webSearch(args: {
-  provider: "tavily" | "exa";
+  provider: "tavily" | "exa" | "firecrawl";
   apiKey: string;
   query: string;
   resultCount: number;
@@ -206,7 +206,7 @@ export async function webSearch(args: {
 }
 
 export function testWebSearch(args: {
-  provider: "tavily" | "exa";
+  provider: "tavily" | "exa" | "firecrawl";
   apiKey: string;
   contentMode: "summary" | "deep";
 }): Promise<void> {

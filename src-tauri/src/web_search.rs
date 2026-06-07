@@ -10,6 +10,7 @@ use std::time::Duration;
 const SHORT_TIMEOUT: Duration = Duration::from_secs(30);
 const TAVILY_BASE_URL: &str = "https://api.tavily.com";
 const EXA_BASE_URL: &str = "https://api.exa.ai";
+const FIRECRAWL_BASE_URL: &str = "https://api.firecrawl.dev/v1";
 const MAX_BODY_CHARS: usize = 500;
 const MAX_DEEP_CONTENT_CHARS: usize = 3000;
 
@@ -18,6 +19,7 @@ const MAX_DEEP_CONTENT_CHARS: usize = 3000;
 pub enum WebSearchProvider {
     Tavily,
     Exa,
+    Firecrawl,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
@@ -89,6 +91,9 @@ pub async fn web_search(
         }
         WebSearchProvider::Exa => {
             exa_search(api_key, query, clamp_result_count(result_count), content_mode).await
+        }
+        WebSearchProvider::Firecrawl => {
+            firecrawl_search(api_key, query, clamp_result_count(result_count), content_mode).await
         }
     }
 }
@@ -262,6 +267,77 @@ async fn exa_search(
                 content,
                 published_at: result.published_date,
                 provider: WebSearchProvider::Exa,
+            }
+        })
+        .collect())
+}
+
+// --- Firecrawl ---------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+struct FirecrawlSearchResponse {
+    #[serde(default)]
+    data: Vec<FirecrawlResult>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FirecrawlResult {
+    #[serde(default)]
+    url: String,
+    #[serde(default)]
+    title: String,
+    #[serde(default)]
+    description: String,
+    #[serde(default)]
+    markdown: Option<String>,
+}
+
+async fn firecrawl_search(
+    api_key: String,
+    query: String,
+    result_count: u8,
+    content_mode: WebSearchContentMode,
+) -> AppResult<Vec<WebSearchResult>> {
+    let mut body = serde_json::json!({
+        "query": query,
+        "limit": result_count,
+        "timeout": 30000,
+        "ignoreInvalidURLs": true,
+    });
+    if matches!(content_mode, WebSearchContentMode::Deep) {
+        body["scrapeOptions"] = serde_json::json!({
+            "formats": ["markdown"],
+        });
+    }
+
+    let resp = client()?
+        .post(format!("{}/search", FIRECRAWL_BASE_URL))
+        .bearer_auth(api_key)
+        .json(&body)
+        .send()
+        .await?;
+
+    if !resp.status().is_success() {
+        return Err(status_error(resp).await);
+    }
+
+    let parsed: FirecrawlSearchResponse = resp.json().await?;
+    Ok(parsed
+        .data
+        .into_iter()
+        .filter(|result| !result.url.is_empty())
+        .map(|result| {
+            let content = result
+                .markdown
+                .filter(|value| !value.trim().is_empty())
+                .map(|value| truncate(&value, MAX_DEEP_CONTENT_CHARS));
+            WebSearchResult {
+                title: result.title,
+                url: result.url,
+                snippet: result.description,
+                content,
+                published_at: None,
+                provider: WebSearchProvider::Firecrawl,
             }
         })
         .collect())

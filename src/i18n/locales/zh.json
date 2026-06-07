@@ -18,7 +18,7 @@
     "aiAgents": "AI 智能体",
     "aiAgentsDescription": "创建并启用一个教师角色，让 AI 按指定风格辅助出题。",
     "webSearch": "联网搜索",
-    "webSearchDescription": "配置 Tavily 或 Exa，让 AI 助手在需要时检索实时网页资料。",
+    "webSearchDescription": "配置 Tavily、Exa 或 Firecrawl，让 AI 助手在需要时检索实时网页资料。",
     "addConfig": "添加配置",
     "name": "名称",
     "baseUrl": "Base URL",
@@ -72,11 +72,13 @@
     "sourceCardTitle": "联网搜索",
     "provider": {
       "tavily": "Tavily",
-      "exa": "Exa"
+      "exa": "Exa",
+      "firecrawl": "Firecrawl"
     },
     "providerDescription": {
       "tavily": "适合 AI/RAG 场景的实时网页搜索与内容抽取。",
-      "exa": "适合语义搜索、摘要和网页内容提取。"
+      "exa": "适合语义搜索、摘要和网页内容提取。",
+      "firecrawl": "适合网页搜索，并可直接抓取 Markdown 内容。"
     },
     "contentModeOption": {
       "summary": "摘要模式",

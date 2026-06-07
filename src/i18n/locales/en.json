@@ -18,7 +18,7 @@
     "aiAgents": "AI agents",
     "aiAgentsDescription": "Create and enable one teacher persona to guide how the AI helps author questions.",
     "webSearch": "Web search",
-    "webSearchDescription": "Configure Tavily or Exa so the AI assistant can retrieve live web context when needed.",
+    "webSearchDescription": "Configure Tavily, Exa, or Firecrawl so the AI assistant can retrieve live web context when needed.",
     "addConfig": "Add configuration",
     "name": "Name",
     "baseUrl": "Base URL",
@@ -72,11 +72,13 @@
     "sourceCardTitle": "Web search",
     "provider": {
       "tavily": "Tavily",
-      "exa": "Exa"
+      "exa": "Exa",
+      "firecrawl": "Firecrawl"
     },
     "providerDescription": {
       "tavily": "Real-time web search and extraction designed for AI/RAG workflows.",
-      "exa": "Semantic search with summaries and web content extraction."
+      "exa": "Semantic search with summaries and web content extraction.",
+      "firecrawl": "Web search with optional Markdown scraping for deep reading."
     },
     "contentModeOption": {
       "summary": "Summary",

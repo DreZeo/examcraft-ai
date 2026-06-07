@@ -168,13 +168,14 @@ export const AgentConfigSchema = z.object({
   builtIn: z.boolean().optional(),
 });
 
-export const WebSearchProviderSchema = z.enum(["tavily", "exa"]);
+export const WebSearchProviderSchema = z.enum(["tavily", "exa", "firecrawl"]);
 export const WebSearchContentModeSchema = z.enum(["summary", "deep"]);
 export const WEB_SEARCH_PROVIDERS = WebSearchProviderSchema.options;
 export const WEB_SEARCH_CONTENT_MODES = WebSearchContentModeSchema.options;
 export const WEB_SEARCH_KEY_ACCOUNTS: Record<WebSearchProvider, string> = {
   tavily: "web-search:tavily",
   exa: "web-search:exa",
+  firecrawl: "web-search:firecrawl",
 };
 
 export const WebSearchSettingsSchema = z.object({

@@ -177,6 +177,7 @@ describe("AppConfigSchema", () => {
     expect(WEB_SEARCH_KEY_ACCOUNTS).toEqual({
       tavily: "web-search:tavily",
       exa: "web-search:exa",
+      firecrawl: "web-search:firecrawl",
     });
   });
 });

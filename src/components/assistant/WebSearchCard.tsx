@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight, ExternalLink, Search } from "lucide-react";
 import type { WebSearchResult } from "../../lib/types/library";
 
 interface WebSearchCardProps {
-  provider: "tavily" | "exa";
+  provider: "tavily" | "exa" | "firecrawl";
   query: string;
   results: WebSearchResult[];
 }

@@ -189,7 +189,7 @@ await openDataDir(dataDir);
 
 ### 3. Contracts
 
-- `provider`: `"tavily" | "exa"`.
+- `provider`: `"tavily" | "exa" | "firecrawl"`.
 - `api_key`: secret from OS keychain; never persisted in `config.json`.
 - `query`: user message text used for the search.
 - `result_count`: bounded to 3-10 before provider calls.

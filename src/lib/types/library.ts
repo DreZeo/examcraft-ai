@@ -30,7 +30,7 @@ const RequestContextSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
-export const WebSearchProviderSchema = z.enum(["tavily", "exa"]);
+export const WebSearchProviderSchema = z.enum(["tavily", "exa", "firecrawl"]);
 
 export const WebSearchResultSchema = z.object({
   title: z.string(),
