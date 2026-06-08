@@ -192,6 +192,12 @@ The double `font-style` provides a fallback: `oblique 12deg` is used by modern b
   padding, and pagination inputs unchanged. Print CSS must reset the zoom
   wrapper (`width`/`height: auto`) and page stack transform (`transform: none`)
   so PDF export uses the real paper metrics rather than the viewport zoom.
+- Only observe the preview scroll container size for adaptive zoom modes such as
+  fit-width or whole-page. Fixed zoom presets must not subscribe to workbench
+  width changes, because outline/assistant width animations can otherwise
+  trigger repeated paper rerenders and make the side rails feel sluggish.
+  Coalesce `ResizeObserver` updates with `requestAnimationFrame` and skip state
+  updates when the measured size is unchanged.
 
 ### Markdown Preview
 

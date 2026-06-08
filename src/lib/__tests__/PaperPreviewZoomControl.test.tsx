@@ -27,16 +27,16 @@ describe("PaperPreviewZoomControl", () => {
     delete document.documentElement.dataset.paperPreviewScale;
   });
 
-  it("renders as a floating compact preview control with the current zoom", () => {
+  it("renders as a compact inline preview control with the current zoom", () => {
     const { container } = render(<PaperPreviewZoomControl />);
 
     expect(screen.getByRole("button", { name: "缩放" })).toHaveTextContent(
       "100%",
     );
-    expect(container.firstElementChild).toHaveClass("absolute");
-    expect(container.firstElementChild).toHaveClass("bottom-4");
-    expect(container.firstElementChild).toHaveClass("right-4");
-    expect(container.firstElementChild).toHaveClass("no-print");
+    expect(container.firstElementChild).toHaveClass("relative");
+    expect(container.firstElementChild).toHaveClass("inline-flex");
+    expect(container.firstElementChild).not.toHaveClass("absolute");
+    expect(container.firstElementChild).not.toHaveClass("no-print");
   });
 
   it("updates zoom from the plus and minus buttons", async () => {

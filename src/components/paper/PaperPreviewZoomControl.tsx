@@ -8,7 +8,7 @@ import {
   type PaperPreviewZoom,
 } from "../../lib/types/config";
 
-/** Floating document-view zoom control for the paper preview only. */
+/** Compact document-view zoom control for the paper preview only. */
 export function PaperPreviewZoomControl() {
   const { t } = useTranslation();
   const value = useConfigStore((state) => state.config.settings.paperPreviewZoom);
@@ -43,13 +43,12 @@ export function PaperPreviewZoomControl() {
   }
 
   return (
-    <div className="no-print pointer-events-none absolute bottom-4 right-4 z-30">
-      <div ref={containerRef} className="pointer-events-auto relative">
+    <div ref={containerRef} className="relative inline-flex">
         {open && (
           <div
             role="listbox"
             aria-label={t("paperToolbar.previewZoom")}
-            className="absolute bottom-9 right-0 w-[7.5rem] animate-fade-in rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+            className="absolute right-0 top-8 z-50 w-[7.5rem] animate-fade-in rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg"
           >
             {PAPER_PREVIEW_ZOOM_OPTIONS.map((option) => (
               <button
@@ -107,7 +106,6 @@ export function PaperPreviewZoomControl() {
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
-      </div>
     </div>
   );
 }

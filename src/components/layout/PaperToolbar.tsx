@@ -24,6 +24,7 @@ import {
   Underline,
 } from "lucide-react";
 import { SelectControl } from "../ui/SelectControl";
+import { PaperPreviewZoomControl } from "../paper/PaperPreviewZoomControl";
 import { useConfigStore } from "../../stores/configStore";
 import { usePaperStore } from "../../stores/paperStore";
 import type { Question } from "../../lib/types/exam";
@@ -424,6 +425,10 @@ export function PaperToolbar() {
           </ToolbarGroup>
         </>
       )}
+
+      <div className="ml-auto">
+        <PaperPreviewZoomControl />
+      </div>
 
     </section>
   );

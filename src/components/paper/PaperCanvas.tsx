@@ -77,7 +77,10 @@ export function PaperCanvas({
   const measureRef = useRef<HTMLDivElement | null>(null);
   const pageStackRef = useRef<HTMLDivElement | null>(null);
   const pageMetrics = getPageMetrics(paperSettings);
-  const scrollRootSize = useElementSize(scrollRootRef);
+  const adaptivePreviewZoom = !isPaperPreviewFixedZoom(
+    paperSettings.paperPreviewZoom,
+  );
+  const scrollRootSize = useElementSize(scrollRootRef, adaptivePreviewZoom);
   const stackSize = useElementSize(pageStackRef);
   const previewScale = previewScaleForSettings(
     paperSettings,
@@ -645,31 +648,53 @@ interface ElementSize {
 
 function useElementSize(
   ref: RefObject<HTMLElement | null> | undefined,
+  enabled = true,
 ): ElementSize {
   const [size, setSize] = useState<ElementSize>({ width: 0, height: 0 });
 
   useEffect(() => {
+    if (!enabled) return;
     const node = ref?.current;
     if (!node) return;
     const element = node;
+    let frame: number | null = null;
 
-    function update() {
-      setSize({
+    function readSize() {
+      const next = {
         width: element.clientWidth || element.getBoundingClientRect().width,
         height: element.clientHeight || element.getBoundingClientRect().height,
+      };
+      setSize((current) =>
+        current.width === next.width && current.height === next.height
+          ? current
+          : next,
+      );
+    }
+
+    function scheduleUpdate() {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        readSize();
       });
     }
 
-    update();
+    readSize();
     if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", update);
-      return () => window.removeEventListener("resize", update);
+      window.addEventListener("resize", scheduleUpdate);
+      return () => {
+        if (frame !== null) window.cancelAnimationFrame(frame);
+        window.removeEventListener("resize", scheduleUpdate);
+      };
     }
 
-    const observer = new ResizeObserver(update);
+    const observer = new ResizeObserver(scheduleUpdate);
     observer.observe(element);
-    return () => observer.disconnect();
-  }, [ref]);
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [enabled, ref]);
 
   return size;
 }

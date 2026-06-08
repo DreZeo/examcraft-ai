@@ -10,7 +10,6 @@ import { MarkdownFormatProvider } from "./components/layout/MarkdownFormatContex
 import { PaperOutline } from "./components/paper/PaperOutline";
 import { PaperCanvas } from "./components/paper/PaperCanvas";
 import { PaperErrorBoundary } from "./components/paper/PaperErrorBoundary";
-import { PaperPreviewZoomControl } from "./components/paper/PaperPreviewZoomControl";
 import { AssistantDrawer } from "./components/assistant/AssistantDrawer";
 import { SettingsModal } from "./components/settings/SettingsModal";
 import { PaperManagerModal } from "./components/paper/PaperManagerModal";
@@ -97,17 +96,14 @@ export default function App() {
           onToggle={() => setOutlineOpen((value) => !value)}
           onActiveQuestionChange={setActiveQuestionId}
         />
-        <div className="paper-preview-shell relative min-h-0 min-w-0 flex-1">
-          <main ref={paperScrollRef} className="h-full min-w-0 overflow-auto">
-            <PaperErrorBoundary key={activePaperId ?? "none"}>
-              <PaperCanvas
-                scrollRootRef={paperScrollRef}
-                onActiveQuestionChange={setActiveQuestionId}
-              />
-            </PaperErrorBoundary>
-          </main>
-          <PaperPreviewZoomControl />
-        </div>
+        <main ref={paperScrollRef} className="min-w-0 flex-1 overflow-auto">
+          <PaperErrorBoundary key={activePaperId ?? "none"}>
+            <PaperCanvas
+              scrollRootRef={paperScrollRef}
+              onActiveQuestionChange={setActiveQuestionId}
+            />
+          </PaperErrorBoundary>
+        </main>
         <AssistantDrawer
           open={drawerOpen}
           onToggle={() => setDrawerOpen((v) => !v)}
