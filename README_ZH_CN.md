@@ -2,84 +2,221 @@
 
 # AI 试卷生成器
 
-> 把与 AI 模型的一段对话，变成可直接打印的试卷。
+> 一个本地优先的桌面试卷工作台，用 AI 生成题目，用接近 Word 的方式排版、预览、打印和导出。
 
-AI 试卷生成器是一款面向教师与教育工作者的本地优先桌面应用（基于 [Tauri](https://tauri.app/) 构建）。用自然语言描述你想要的试卷，助手会分析需求、确认理解，然后生成结构化、经 schema 校验的题目，并实时排版成可分页打印的试卷。
+AI 试卷生成器是一款面向教师、培训者和教育内容创作者的 Tauri 桌面应用。你可以用自然语言描述试卷需求，应用会让 AI 先分析并确认理解，再生成结构化题目数据；题目 JSON 经过严格校验后，才能进入试卷，并实时渲染为分页的纸张预览。
+
+这个项目的核心不是“让 AI 随便吐一段题目”，而是把 AI 放进真实出卷流程里：它可以帮你分析、检索、生成和修改，但最终是否应用、如何排版、如何打印，仍然由教师控制。
 
 <!-- screenshot: 在此处放置应用截图或短 GIF -->
 
-## 功能特性
+## 项目亮点
 
-- **对话式两阶段生成** —— 助手先分析你的需求并确认理解，再生成题目。生成的题目**绝不会自动应用**：你在结果卡中审阅后手动应用，并可一键撤销。
-- **7 种题型，强校验** —— 单选、多选、判断、填空、简答、论述、计算。每条 AI 回复在进入试卷前都先经 [Zod](https://zod.dev/) 校验，格式错误时自动纠错（最多重试 3 次）。
-- **联网搜索联动** —— 可选让模型在出题前发起联网搜索（Tavily、Exa 或 Firecrawl）。搜索结果会回灌进本轮上下文（最多 3 次搜索），使题目能基于最新来源。
-- **实时分页预览 + 打印 / 导出** —— 试卷按物理纸张（A4 等）实时分页排版，支持教师版（显示答案）与学生版（保留答题区、隐藏答案）。
-- **富文本题干** —— 题干支持 Markdown、KaTeX 数学公式、GFM 表格与代码高亮。
-- **自带模型端点** —— 兼容任意 OpenAI 协议端点（OpenAI、DeepSeek、Ollama、中转站、本地模型）。可配置 base URL、模型、temperature 与 max tokens。
-- **本地优先、隐私友好** —— 试卷与会话存储在你自己的磁盘；API Key 保存在系统钥匙串（keychain）中，不以明文落盘。
-- **中英双语界面** —— English 与简体中文（i18next）。
-- **多试卷与聊天历史** —— 管理多份试卷，每份试卷拥有各自独立的多会话聊天历史。
+- **AI 辅助出卷** —— 用自然语言描述学科、年级、难度、题型结构、分值规则和特殊要求。
+- **两阶段生成流程** —— 助手先分析需求并等待确认，再生成最终题目操作。
+- **强 schema 校验** —— AI 输出必须经过 JSON 提取、Zod 校验和题型策略校验，格式错误会自动自我修正。
+- **联网搜索联动** —— 可选接入 Tavily、Exa、Firecrawl，让模型在出题前按需搜索资料，并把结果带入同一轮生成上下文。
+- **接近 Word 的试卷排版** —— 支持纸张大小、方向、页边距、字体、中文字号、行距、页眉、页脚、页码和预览缩放。
+- **实时分页预览** —— 按真实纸张分页显示，支持教师版和学生版。
+- **打印与导出** —— 支持 JSON 导入导出、Markdown 导出，以及基于实时版式的教师版/学生版打印。
+- **富文本题目内容** —— 题干、答案和解析支持 Markdown、GFM 表格、KaTeX 数学公式和代码高亮。
+- **本地优先存储** —— 试卷、工作稿和聊天记录保存在用户选择的数据目录中。
+- **安全的数据目录迁移** —— 更改目录时先完整复制旧数据，成功后再切换路径，并可选择迁移成功后删除旧目录。
+- **密钥安全存储** —— 模型和联网搜索 API Key 存入系统钥匙串，不明文写入配置文件。
+- **中英双语界面** —— 支持 English 和简体中文。
+
+## 它和普通 AI 出题工具的区别
+
+很多工具只能生成一段题目文本。这个项目更关注出卷后的完整工作流：
+
+- AI 输出会被当作**结构化试卷操作**处理，而不是直接塞进页面。
+- 校验链路会阻止非法题目数据污染试卷。
+- 预览是**文档式分页版式**，排版调整能直接对应最终打印效果。
+- 教师版和学生版是同一份试卷数据的不同视图。
+- 联网搜索不是简单把搜索结果塞进提示词，而是参与同一轮生成流程。
+- 数据目录由用户控制，便于备份、迁移和长期保存。
+
+## 基本工作流
+
+1. **首次启动选择数据目录**，用于存放试卷、会话和本地配置。
+2. **在设置中配置模型**，可使用任意 OpenAI 兼容端点。
+3. **创建或打开试卷**，进入试卷编辑与预览界面。
+4. **向 AI 助手描述需求**，例如生成整套试卷、补充某类题目或调整难度。
+5. **审阅助手分析**，确认后再进入题目生成。
+6. **检查结果卡片**，满意后手动应用到试卷，可撤销。
+7. **使用工具栏调整排版和标记**，同时查看分页预览。
+8. **导出或打印**教师版/学生版。
+
+## AI 生成机制
+
+助手采用受控的两阶段流程：
+
+- **Phase 1：分析与确认** —— 模型总结出题意图、题型策略、难度、分值和约束。
+- **Phase 2：结构化生成** —— 模型输出 JSON 操作，经过校验后才能更新试卷。
+
+支持的题型包括：
+
+- 单选题
+- 多选题
+- 判断题
+- 填空题
+- 简答题
+- 论述题
+- 计算题
+
+题目可以包含分值、参考答案、评分点、解析、代码片段、公式和 Markdown 内容。JSON 提取逻辑能够处理题干或答案字符串中的 Markdown 代码块，适合生成计算机、数学、理科等包含代码或公式的试卷。
+
+## 联网搜索
+
+在 AI 助手输入框旁可以开启联网搜索。开启后，模型可以在同一轮生成过程中按需提出搜索请求，而不是只基于用户原始输入搜索一次。
+
+支持的搜索供应商：
+
+- Tavily
+- Exa
+- Firecrawl
+
+设置项包括当前供应商、结果数量和内容模式。各供应商 API Key 在设置中单独配置，并通过系统钥匙串保存。
+
+## 试卷排版
+
+预览界面面向真实试卷制作，而不是普通文本编辑。当前支持：
+
+- A3、A4、A5、B5、Letter、Legal、Executive 等纸张
+- 横向 / 纵向页面方向
+- Word 风格页边距预设
+- 试卷字体预设，包含常见中文字体
+- 中文字号预设，例如小五、五号、小四、四号
+- 段落行距预设
+- 页眉文本、页眉字号、左中右对齐
+- 页脚页码预设：`1`、`1 / 5`、`第 1 页`、`第 1 页 / 共 5 页`
+- 页眉页脚横线开关
+- 预览缩放：适合页宽、整页和固定百分比
+- 小窗口下的整体工作区等比缩放
+
+预览支持教师版和学生版。教师版显示答案、解析和评分信息；学生版隐藏答案，并在需要作答的位置保留空白。
+
+## 导出与打印
+
+支持的输出方式：
+
+- **JSON 导入 / 导出** —— 保存和恢复完整试卷数据。
+- **Markdown 导出** —— 导出教师版或学生版内容，便于备份或二次编辑。
+- **打印 / PDF** —— 通过实时分页版式打印教师版或学生版。
+
+打印流程复用当前试卷预览的分页布局，尽量保证导出结果与预览一致。
+
+## 数据与隐私
+
+应用采用本地优先设计：
+
+- `config.json` 保存非敏感配置。
+- `working-paper.json` 保存当前工作试卷。
+- `papers/` 保存试卷库。
+- `chats/` 保存 AI 助手会话。
+- API Key 存入操作系统钥匙串。
+
+更改数据目录时，应用会先把旧目录内容递归复制到目标目录，复制成功后才更新启动指针。旧目录默认保留作为备份；如果开启“迁移成功后删除旧目录”，应用会在迁移完成后尝试清理旧目录。
+
+## 模型配置
+
+应用支持 OpenAI 兼容的聊天补全接口，例如：
+
+- OpenAI
+- DeepSeek
+- Ollama 或其他本地模型端点
+- 遵循 OpenAI API 结构的中转站或自部署服务
+
+每个模型配置可以设置：
+
+- 显示名称
+- Base URL
+- 模型名称
+- API Key
+- Temperature
+- Max tokens
+
+API Key 输入框默认以隐藏圆点显示，右侧眼睛按钮可临时显示或再次隐藏密钥。
 
 ## 技术栈
 
-- **前端：** React 19 · TypeScript · Vite 7 · Tailwind CSS v4 · Zustand · Zod · i18next
-- **渲染：** react-markdown · rehype-katex · rehype-highlight · remark-gfm / remark-math · lucide-react
-- **后端（Rust / Tauri 2）：** reqwest · tokio（SSE 流式 + 取消）· serde · 系统钥匙串
+- **前端：** React 19、TypeScript、Vite 7、Tailwind CSS v4、Zustand、Zod、i18next
+- **内容渲染：** react-markdown、remark-gfm、remark-math、rehype-katex、rehype-highlight
+- **桌面后端：** Tauri 2、Rust、serde、tokio、reqwest
+- **存储与安全：** JSON 文件存储、系统钥匙串集成
+- **测试：** Vitest、Testing Library、Rust 单元测试
 
 ## 快速开始
 
 ### 前置要求
 
-- **Node.js** 20.19+ 或 22.12+（Vite 7 要求）
-- **Rust**（stable），通过 [rustup](https://rustup.rs/) 安装
-- 各平台的 Tauri 系统依赖 —— 参见 [Tauri 前置依赖指南](https://tauri.app/start/prerequisites/)
+- Node.js 20.19+ 或 22.12+
+- Rust stable，通过 [rustup](https://rustup.rs/) 安装
+- 各平台 Tauri 前置依赖，参考 [Tauri 官方指南](https://tauri.app/start/prerequisites/)
 
-### 安装
+### 安装依赖
 
 ```bash
 npm install
 ```
 
-### 开发
+### 开发运行
 
 ```bash
-npm run tauri dev    # 运行完整桌面应用
-npm run dev          # 或仅运行 Web 前端（Vite）
+npm run tauri dev
+```
+
+只启动前端 Vite 开发服务器：
+
+```bash
+npm run dev
 ```
 
 ### 构建
 
 ```bash
-npm run tauri build  # 产出各平台安装包 / 可执行文件
+npm run tauri build
 ```
 
-### 测试与类型检查
+### 验证
 
 ```bash
-npm test             # 运行测试套件（Vitest）
-npm run typecheck    # TypeScript 类型检查（tsc --noEmit）
+npm run typecheck
+npm test
+cargo check --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml
 ```
-
-## 配置
-
-1. 首次启动时，选择一个用于存储试卷与会话的**数据目录**。
-2. 打开**设置**（`Ctrl` / `Cmd` + `,`），配置模型：**API Key**、**base URL** 与**模型**名称。
-3. *（可选）* 开启**联网搜索**，并为所选 provider（Tavily / Exa / Firecrawl）填入 API Key。
-
-API Key 保存在操作系统的钥匙串中。
 
 ## 项目结构
 
-```
-src/                 React 前端
-  components/          按域划分的 UI —— paper / assistant / settings / layout
-  stores/              Zustand 状态 —— paper / assistant / config / export
-  lib/                 exam（领域逻辑）· api（AI 协议）· storage · types
-  i18n/                en / zh 语言包
-src-tauri/           Rust 后端（Tauri 2）
-  src/                 openai.rs（流式）· web_search.rs · keychain.rs · storage.rs
+```text
+src/
+  components/
+    assistant/      AI 助手、结果卡、确认卡、联网搜索卡片
+    layout/         顶栏、工具栏、导出菜单
+    paper/          分页预览、题目索引、题目块
+    settings/       模型、联网搜索、通用设置、数据目录设置
+    ui/             密钥输入框、选择控件等复用 UI
+  hooks/            主题和全局字体 hooks
+  i18n/             英文和中文语言包
+  lib/
+    api/            AI 提示词、JSON 提取、校验、搜索工具协议
+    exam/           试卷领域逻辑、分页、汇总、题型辅助
+    export/         JSON 和 Markdown 导入导出
+    storage/        Tauri 存储桥接
+    types/          配置、试卷、会话等 schema
+  stores/           试卷、配置、助手、导出相关 Zustand 状态
+
+src-tauri/
+  src/
+    lib.rs          Tauri 命令注册和运行时设置
+    openai.rs       OpenAI 兼容流式客户端
+    web_search.rs   Tavily / Exa / Firecrawl 搜索集成
+    storage.rs      数据目录、JSON 存储、目录迁移
+    keychain.rs     系统钥匙串 API Key 存储
 ```
 
-## 许可证
+## 说明
 
-暂未指定。
+- 当前项目仍是私有 / 内部项目（`package.json` 标记为 `private`）。
+- 许可证暂未指定。
