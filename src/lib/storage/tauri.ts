@@ -28,6 +28,10 @@ export function setDataDir(dataDir: string): Promise<void> {
   return invoke("set_data_dir", { dataDir });
 }
 
+export function relocateDataDir(targetDir: string): Promise<void> {
+  return invoke("relocate_data_dir", { targetDir });
+}
+
 export function defaultDataDir(): Promise<string> {
   return invoke("default_data_dir");
 }

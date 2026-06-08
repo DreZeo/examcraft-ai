@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
-import { FolderOpen, FolderInput, HardDrive } from "lucide-react";
+import { FolderOpen, FolderInput, HardDrive, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { openDataDir as openDataDirInFileManager } from "../../lib/storage/tauri";
 import { useConfigStore } from "../../stores/configStore";
@@ -13,14 +13,27 @@ export function DataDirSection() {
   const chooseDataDir = useConfigStore((state) => state.chooseDataDir);
   const [openError, setOpenError] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
+  const [relocateError, setRelocateError] = useState(false);
+  const [isRelocating, setIsRelocating] = useState(false);
 
   async function relocate() {
+    if (isRelocating) return;
     const selected = await open({ directory: true, multiple: false });
-    if (typeof selected === "string") await chooseDataDir(selected);
+    if (typeof selected !== "string") return;
+    setIsRelocating(true);
+    setRelocateError(false);
+    try {
+      await chooseDataDir(selected);
+    } catch (error) {
+      console.error("Failed to relocate data directory", error);
+      setRelocateError(true);
+    } finally {
+      setIsRelocating(false);
+    }
   }
 
   async function openDataDir() {
-    if (!dataDir || isOpening) return;
+    if (!dataDir || isOpening || isRelocating) return;
     setIsOpening(true);
     setOpenError(false);
     try {
@@ -53,21 +66,40 @@ export function DataDirSection() {
             {t("settings.openDataDirectoryFailed")}
           </p>
         )}
+        {relocateError && (
+          <p
+            className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive"
+            role="status"
+          >
+            {t("settings.relocateDataDirectoryFailed")}
+          </p>
+        )}
       </div>
 
       <div className="mt-auto flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
-          disabled={!dataDir || isOpening}
+          disabled={!dataDir || isOpening || isRelocating}
           onClick={openDataDir}
           className={secondaryBtn}
         >
           <FolderOpen className="h-4 w-4" />
           {t("settings.openInExplorer")}
         </button>
-        <button type="button" onClick={relocate} className={secondaryBtn}>
-          <FolderInput className="h-4 w-4" />
-          {t("settings.changeLocation")}
+        <button
+          type="button"
+          disabled={isRelocating}
+          onClick={relocate}
+          className={secondaryBtn}
+        >
+          {isRelocating ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FolderInput className="h-4 w-4" />
+          )}
+          {isRelocating
+            ? t("settings.relocatingDataDirectory")
+            : t("settings.changeLocation")}
         </button>
       </div>
     </div>

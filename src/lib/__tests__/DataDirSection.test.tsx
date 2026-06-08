@@ -33,6 +33,7 @@ describe("DataDirSection", () => {
     vi.clearAllMocks();
     dataDir = "E:\\Coding\\paper-data";
     mocks.openDataDir.mockResolvedValue(undefined);
+    mocks.chooseDataDir.mockResolvedValue(undefined);
   });
 
   it("opens the configured data directory in the system file manager", async () => {
@@ -66,5 +67,34 @@ describe("DataDirSection", () => {
 
     expect(screen.getByRole("button", { name: "在文件管理器中打开" }))
       .toBeDisabled();
+  });
+
+  it("relocates to the selected data directory", async () => {
+    const user = userEvent.setup();
+    mocks.openDialog.mockResolvedValue("E:\\Coding\\paper-data-new");
+
+    render(<DataDirSection />);
+
+    await user.click(screen.getByRole("button", { name: "更改位置" }));
+
+    expect(mocks.chooseDataDir).toHaveBeenCalledWith(
+      "E:\\Coding\\paper-data-new",
+    );
+  });
+
+  it("shows a localized error when data directory relocation fails", async () => {
+    const user = userEvent.setup();
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.openDialog.mockResolvedValue("E:\\Coding\\paper-data-new");
+    mocks.chooseDataDir.mockRejectedValue(new Error("copy failed"));
+
+    render(<DataDirSection />);
+
+    await user.click(screen.getByRole("button", { name: "更改位置" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "迁移数据目录失败",
+    );
+    consoleError.mockRestore();
   });
 });

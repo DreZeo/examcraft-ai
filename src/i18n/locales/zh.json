@@ -63,6 +63,8 @@
     "dataDirectoryDescription": "查看或更改试卷和设置保存的位置。",
     "openInExplorer": "在文件管理器中打开",
     "openDataDirectoryFailed": "无法打开数据目录，请检查该路径是否存在或系统权限。",
+    "relocatingDataDirectory": "迁移中…",
+    "relocateDataDirectoryFailed": "迁移数据目录失败，已保留原目录位置。请检查目标路径或系统权限。",
     "changeLocation": "更改位置",
     "save": "保存",
     "cancel": "取消"

@@ -28,6 +28,7 @@ pub fn run() {
             keychain::has_api_key,
             storage::get_data_dir,
             storage::set_data_dir,
+            storage::relocate_data_dir,
             storage::default_data_dir,
             storage::open_data_dir,
             storage::load_config,

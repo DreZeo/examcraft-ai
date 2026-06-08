@@ -53,6 +53,7 @@ Args are snake_case in Rust, called as camelCase from JS (`invoke('name', { came
 pointer lives in the Tauri app-data dir:
 - `get_data_dir() -> AppResult<Option<String>>`
 - `set_data_dir(data_dir) -> AppResult<()>`
+- `relocate_data_dir(target_dir) -> AppResult<()>`  (copy current data dir contents, then update bootstrap pointer)
 - `default_data_dir() -> AppResult<String>`  (Documents/AI试卷)
 - `open_data_dir(data_dir) -> AppResult<()>`  (create if missing, then open in platform file manager)
 - `load_config(data_dir) / save_config(data_dir, contents)`  (raw JSON string)
@@ -166,6 +167,78 @@ await openPath(dataDir);
 
 ```tsx
 await openDataDir(dataDir);
+```
+
+## Scenario: Relocating the User Data Directory
+
+### 1. Scope / Trigger
+
+- Trigger: settings UI lets the user move the configured data directory.
+- This crosses frontend component → config store → TS storage wrapper → Rust
+  command → filesystem/bootstrap pointer, so the migration contract belongs in
+  backend code-spec.
+
+### 2. Signatures
+
+- Rust command: `relocate_data_dir(target_dir: String) -> AppResult<()>`
+- Frontend wrapper: `relocateDataDir(targetDir: string): Promise<void>`
+- Store action: `configStore.chooseDataDir(dir)` calls relocation before it
+  changes in-memory `dataDir`.
+
+### 3. Contracts
+
+- Request field `target_dir`: user-selected absolute or platform-valid
+  directory path.
+- Behavior: create `target_dir`, read the current bootstrap pointer, recursively
+  copy all current data-dir contents into `target_dir`, then update
+  `bootstrap.json` only after copy succeeds.
+- If no current data dir is configured, or the configured source no longer
+  exists, behave like first launch: create the target and update the pointer.
+- API keys are not migrated because they live in OS keychain, not in the data
+  directory.
+- Response: `Ok(())` means the app now points at `target_dir`; the old directory
+  is left in place as a backup.
+
+### 4. Validation & Error Matrix
+
+| Condition | Result |
+|-----------|--------|
+| Target equals current directory | no-op success |
+| Current source missing/unconfigured | create target, update bootstrap |
+| Target is inside current directory | `AppError::Io` to avoid recursive self-copy |
+| Directory create/copy denied | `AppError::Io`; bootstrap remains unchanged |
+| Target has existing files | merge, overwriting same-name files with current data |
+
+### 5. Good/Base/Bad Cases
+
+- Good: current directory has `config.json`, `working-paper.json`, `papers/`,
+  and `chats/`; all appear in the target before bootstrap changes.
+- Base: user selects an empty new folder; migration succeeds and old folder is
+  retained.
+- Bad: frontend calls `setDataDir(target)` directly for relocation. This points
+  the app at an empty/new folder before data is copied and can make data appear
+  lost.
+
+### 6. Tests Required
+
+- Rust tests for full recursive copy, overwrite merge, same-directory no-op,
+  missing-source first-launch behavior, and nested-target rejection.
+- Frontend store test asserts `chooseDataDir` invokes `relocate_data_dir`, not
+  `set_data_dir`, and keeps the old `dataDir` when relocation rejects.
+- Settings component test asserts relocation failures show localized feedback.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+await setDataDir(targetDir);
+```
+
+#### Correct
+
+```tsx
+await relocateDataDir(targetDir);
 ```
 
 ## Scenario: Web Search Provider Proxy

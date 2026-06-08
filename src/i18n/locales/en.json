@@ -63,6 +63,8 @@
     "dataDirectoryDescription": "View or change where papers and settings are saved.",
     "openInExplorer": "Open in file manager",
     "openDataDirectoryFailed": "Could not open the data directory. Check that the path exists and the system allows access.",
+    "relocatingDataDirectory": "Relocating…",
+    "relocateDataDirectoryFailed": "Could not relocate the data directory. The original location is still in use. Check the target path or system permissions.",
     "changeLocation": "Change location",
     "save": "Save",
     "cancel": "Cancel"

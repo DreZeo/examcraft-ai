@@ -85,7 +85,7 @@ export const useConfigStore = create<ConfigState>((set, get) => {
     },
 
     chooseDataDir: async (dir) => {
-      await storage.setDataDir(dir);
+      await storage.relocateDataDir(dir);
       const existing = await storage.loadConfig(dir);
       const config = existing ?? get().config;
       set({ dataDir: dir });
