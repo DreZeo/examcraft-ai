@@ -1,14 +1,14 @@
 **English** · [简体中文](./README_ZH_CN.md)
 
-# AI Exam Generator
+# ExamCraft AI
 
 > A local-first desktop workspace for generating, editing, previewing, and printing exam papers with AI.
 
-AI Exam Generator is a Tauri desktop application for teachers, trainers, and education content creators. It turns natural-language requirements into structured exam questions, validates the generated JSON before it can affect the paper, and renders the result as a Word-like paginated paper that can be previewed, printed, exported, and revised.
+ExamCraft AI is a Tauri desktop application for teachers, trainers, and education content creators. It turns natural-language requirements into structured exam questions, validates the generated JSON before it can affect the paper, and renders the result as a Word-like paginated paper that can be previewed, printed, exported, and revised.
 
 The project is designed around one practical idea: AI should help draft the exam, but the teacher keeps control. The assistant analyzes the request, asks for confirmation, can search the web when needed, and returns an auditable result card. Nothing is applied automatically.
 
-<!-- screenshot: add a screenshot or short GIF of the app here -->
+![ExamCraft AI paper preview with AI assistant](./docs/images/paper-preview-ai.png)
 
 ## Highlights
 
@@ -78,9 +78,17 @@ Supported providers:
 
 Search settings include active provider, result count, and content mode. Search API keys are configured in Settings and stored through the OS keychain.
 
+## AI Agents
+
+The app includes configurable assistant personas for subject-specific paper generation and revision.
+
+![AI agent settings](./docs/images/agent-settings.png)
+
 ## Paper Layout
 
 The preview is built for exam-paper production rather than a generic text editor. It includes:
+
+![Word-like multi-page preview zoom](./docs/images/paper-zoom-pages.png)
 
 - Paper sizes: A3, A4, A5, B5, Letter, Legal, Executive
 - Portrait and landscape orientation
@@ -99,6 +107,8 @@ The preview supports teacher and student modes. Teacher mode shows answers and e
 ## Export and Printing
 
 Available output workflows:
+
+![Student print preview](./docs/images/print-preview-student.png)
 
 - **JSON export/import** — save and restore complete paper data.
 - **Markdown export** — export teacher or student content for backup or external editing.
