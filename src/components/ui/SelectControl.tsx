@@ -8,6 +8,7 @@ interface SelectControlProps<T extends string> {
   value: T;
   options: readonly T[];
   optionKeyPrefix: string;
+  optionLabel?: (option: T) => string;
   onChange: (value: T) => void;
 }
 
@@ -17,6 +18,7 @@ export function SelectControl<T extends string>({
   value,
   options,
   optionKeyPrefix,
+  optionLabel,
   onChange,
 }: SelectControlProps<T>) {
   const { t } = useTranslation();
@@ -59,7 +61,7 @@ export function SelectControl<T extends string>({
         className="inline-flex h-8 items-center gap-1.5 rounded border border-border bg-card px-2 text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
       >
         <span className="text-muted-foreground">{icon}</span>
-        <span className="max-w-20 truncate">{t(`${optionKeyPrefix}.${value}`)}</span>
+        <span className="max-w-20 truncate">{optionLabel?.(value) ?? t(`${optionKeyPrefix}.${value}`)}</span>
         <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
       {open && pos && (
@@ -78,7 +80,7 @@ export function SelectControl<T extends string>({
               onClick={() => { onChange(option); setOpen(false); setPos(null); }}
               className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer ${option === value ? "text-primary font-medium" : ""}`}
             >
-              {t(`${optionKeyPrefix}.${option}`)}
+              {optionLabel?.(option) ?? t(`${optionKeyPrefix}.${option}`)}
             </button>
           ))}
         </div>

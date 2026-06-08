@@ -26,6 +26,8 @@ vi.mock("../../stores/configStore", () => ({
           paperSize: "a4",
           paperOrientation: "portrait",
           paperHeader: "",
+          paperHeaderFontSize: "pt9",
+          paperHeaderAlign: "center",
           paperPageNumberStyle: "zhPage",
         },
       },
@@ -179,6 +181,7 @@ describe("PaperToolbar Markdown tab", () => {
     expect(screen.getByLabelText("纸张大小")).toHaveTextContent("A4");
     expect(screen.getByLabelText("页面方向")).toHaveTextContent("纵向");
     expect(screen.getByLabelText("页码")).toHaveTextContent("第 1 页");
+    expect(screen.getByRole("button", { name: "页眉" })).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: "对齐" })).not.toBeInTheDocument();
   });
 
@@ -200,16 +203,30 @@ describe("PaperToolbar Markdown tab", () => {
     expect(updateSettings).toHaveBeenCalledWith({ paperOrientation: "landscape" });
   });
 
-  it("updates the paper header text and page number style", async () => {
+  it("updates the paper header text, size, alignment, and page number style", async () => {
     renderToolbarWithEditor();
 
-    fireEvent.change(screen.getByLabelText("页眉"), {
+    await userEvent.click(screen.getByRole("button", { name: "页眉" }));
+    fireEvent.change(screen.getByLabelText("页眉文本"), {
       target: { value: "期末考试" },
     });
     expect(updateSettings).toHaveBeenLastCalledWith({ paperHeader: "期末考试" });
 
+    await userEvent.click(screen.getByRole("button", { name: "页眉字号" }));
+    await userEvent.click(screen.getByRole("option", { name: "8pt" }));
+    expect(updateSettings).toHaveBeenCalledWith({ paperHeaderFontSize: "pt8" });
+
+    await userEvent.click(screen.getByRole("button", { name: "右对齐" }));
+    expect(updateSettings).toHaveBeenCalledWith({ paperHeaderAlign: "right" });
+
     await userEvent.click(screen.getByRole("button", { name: "页码" }));
-    await userEvent.click(screen.getByRole("option", { name: "第 1 页 / 共 5 页" }));
+    expect(screen.getAllByRole("option").map((node) => node.textContent)).toEqual([
+      "1",
+      "1 / 1",
+      "第 1 页",
+      "第 1 页 / 共 1 页",
+    ]);
+    await userEvent.click(screen.getByRole("option", { name: "第 1 页 / 共 1 页" }));
 
     expect(updateSettings).toHaveBeenCalledWith({
       paperPageNumberStyle: "zhFraction",

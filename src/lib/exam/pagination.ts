@@ -1,4 +1,5 @@
 import {
+  PAPER_HEADER_FONT_SIZE_STYLES,
   PAPER_FONT_SIZE_STYLES,
   PAPER_LINE_HEIGHT_STYLES,
   PAPER_MARGIN_STYLES,
@@ -44,7 +45,7 @@ export interface PageMetrics {
 }
 
 const PT_TO_MM = 0.352778;
-const PAPER_HEADER_HEIGHT_MM = 12;
+const PAPER_HEADER_VERTICAL_CHROME_MM = 8;
 const PAPER_FOOTER_HEIGHT_MM = 10;
 
 export function getPageMetrics(settings: AppSettings): PageMetrics {
@@ -54,7 +55,7 @@ export function getPageMetrics(settings: AppSettings): PageMetrics {
   const widthMm = isLandscape ? size.heightMm : size.widthMm;
   const heightMm = isLandscape ? size.widthMm : size.heightMm;
   const headerHeightMm = settings.paperHeader.trim()
-    ? PAPER_HEADER_HEIGHT_MM
+    ? headerHeightMmForSettings(settings)
     : 0;
   const footerHeightMm = PAPER_FOOTER_HEIGHT_MM;
   return {
@@ -284,6 +285,13 @@ function estimateTextLines(text: string | undefined): number {
 function fontLineHeightMm(settings: AppSettings): number {
   const fontSizePt = parseFloat(PAPER_FONT_SIZE_STYLES[settings.paperFontSize]);
   return fontSizePt * PT_TO_MM * PAPER_LINE_HEIGHT_STYLES[settings.paperLineHeight];
+}
+
+function headerHeightMmForSettings(settings: AppSettings): number {
+  const fontSizePt = parseFloat(
+    PAPER_HEADER_FONT_SIZE_STYLES[settings.paperHeaderFontSize],
+  );
+  return Math.ceil(fontSizePt * PT_TO_MM + PAPER_HEADER_VERTICAL_CHROME_MM);
 }
 
 function clamp(value: number, min: number, max: number): number {

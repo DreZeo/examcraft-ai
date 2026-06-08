@@ -119,11 +119,19 @@ export const PaperSizeSchema = z.enum([
 ]);
 export const PaperOrientationSchema = z.enum(["portrait", "landscape"]);
 export const PaperPageNumberStyleSchema = z.enum([
-  "zhPage",
   "plain",
   "fraction",
+  "zhPage",
   "zhFraction",
 ]);
+export const PaperHeaderFontSizeSchema = z.enum([
+  "pt6",
+  "pt7",
+  "pt8",
+  "pt9",
+  "pt10_5",
+]);
+export const PaperHeaderAlignSchema = z.enum(["left", "center", "right"]);
 
 export type PaperFont = z.infer<typeof PaperFontSchema>;
 export type PaperFontSize = z.infer<typeof PaperFontSizeSchema>;
@@ -132,6 +140,8 @@ export type PaperMargin = z.infer<typeof PaperMarginSchema>;
 export type PaperSize = z.infer<typeof PaperSizeSchema>;
 export type PaperOrientation = z.infer<typeof PaperOrientationSchema>;
 export type PaperPageNumberStyle = z.infer<typeof PaperPageNumberStyleSchema>;
+export type PaperHeaderFontSize = z.infer<typeof PaperHeaderFontSizeSchema>;
+export type PaperHeaderAlign = z.infer<typeof PaperHeaderAlignSchema>;
 
 export const PAPER_FONT_OPTIONS = PaperFontSchema.options;
 export const PAPER_FONT_SIZE_OPTIONS = PaperFontSizeSchema.options;
@@ -141,6 +151,8 @@ export const PAPER_SIZE_OPTIONS = PaperSizeSchema.options;
 export const PAPER_ORIENTATION_OPTIONS = PaperOrientationSchema.options;
 export const PAPER_PAGE_NUMBER_STYLE_OPTIONS =
   PaperPageNumberStyleSchema.options;
+export const PAPER_HEADER_FONT_SIZE_OPTIONS = PaperHeaderFontSizeSchema.options;
+export const PAPER_HEADER_ALIGN_OPTIONS = PaperHeaderAlignSchema.options;
 
 export const PAPER_FONT_STACKS: Record<PaperFont, string> = {
   default: '"Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif',
@@ -171,6 +183,14 @@ export const PAPER_FONT_SIZE_STYLES: Record<PaperFontSize, string> = {
   sanhao: "16pt",
   xiaoer: "18pt",
   erhao: "22pt",
+};
+
+export const PAPER_HEADER_FONT_SIZE_STYLES: Record<PaperHeaderFontSize, string> = {
+  pt6: "6pt",
+  pt7: "7pt",
+  pt8: "8pt",
+  pt9: "9pt",
+  pt10_5: "10.5pt",
 };
 
 export const PAPER_LINE_HEIGHT_STYLES: Record<PaperLineHeight, number> = {
@@ -309,6 +329,10 @@ export const AppSettingsSchema = z.object({
   paperOrientation: PaperOrientationSchema.default("portrait"),
   /** Free-text Word-like page header shown on each rendered paper page. */
   paperHeader: z.string().default(""),
+  /** Small font preset used only for page header chrome. */
+  paperHeaderFontSize: PaperHeaderFontSizeSchema.default("pt9"),
+  /** Horizontal alignment used only for page header chrome. */
+  paperHeaderAlign: PaperHeaderAlignSchema.default("center"),
   /** Whether to draw Word-like separator lines for the page header and footer. */
   paperHeaderFooterLine: z.boolean().default(false),
   /** Footer page-number preset used on each rendered paper page. */

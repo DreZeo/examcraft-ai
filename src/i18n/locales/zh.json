@@ -182,10 +182,22 @@
     "landscape": "横向"
   },
   "paperPageNumberStyle": {
-    "zhPage": "第 1 页",
     "plain": "1",
     "fraction": "1 / 5",
+    "zhPage": "第 1 页",
     "zhFraction": "第 1 页 / 共 5 页"
+  },
+  "paperHeaderFontSize": {
+    "pt6": "6pt",
+    "pt7": "7pt",
+    "pt8": "8pt",
+    "pt9": "9pt",
+    "pt10_5": "10.5pt"
+  },
+  "paperHeaderAlign": {
+    "left": "左对齐",
+    "center": "居中",
+    "right": "右对齐"
   },
   "textColor": {
     "auto": "自动",
@@ -227,8 +239,16 @@
     "orientation": "页面方向",
     "margin": "页边距",
     "header": "页眉",
+    "headerSettings": "页眉设置",
+    "headerText": "页眉文本",
+    "headerFontSize": "页眉字号",
+    "headerAlign": "页眉对齐",
     "headerPlaceholder": "输入页眉",
-    "pageNumber": "页码"
+    "pageNumber": "页码",
+    "pageNumberPreview": {
+      "zhPage": "第 1 页",
+      "zhFraction": "第 1 页 / 共 {{total}} 页"
+    }
   },
   "editorToolbar": {
     "bold": "加粗",

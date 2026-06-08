@@ -182,10 +182,22 @@
     "landscape": "Landscape"
   },
   "paperPageNumberStyle": {
-    "zhPage": "Page 1",
     "plain": "1",
     "fraction": "1 / 5",
+    "zhPage": "Page 1",
     "zhFraction": "Page 1 of 5"
+  },
+  "paperHeaderFontSize": {
+    "pt6": "6pt",
+    "pt7": "7pt",
+    "pt8": "8pt",
+    "pt9": "9pt",
+    "pt10_5": "10.5pt"
+  },
+  "paperHeaderAlign": {
+    "left": "Align left",
+    "center": "Center",
+    "right": "Align right"
   },
   "textColor": {
     "auto": "Automatic",
@@ -227,8 +239,16 @@
     "orientation": "Orientation",
     "margin": "Margins",
     "header": "Header",
+    "headerSettings": "Header settings",
+    "headerText": "Header text",
+    "headerFontSize": "Header size",
+    "headerAlign": "Header alignment",
     "headerPlaceholder": "Enter header",
-    "pageNumber": "Page number"
+    "pageNumber": "Page number",
+    "pageNumberPreview": {
+      "zhPage": "Page 1",
+      "zhFraction": "Page 1 of {{total}}"
+    }
   },
   "editorToolbar": {
     "bold": "Bold",

@@ -21,6 +21,8 @@ function defaultPaperSettings() {
     paperSize: "b5",
     paperOrientation: "portrait",
     paperHeader: "机密",
+    paperHeaderFontSize: "pt8",
+    paperHeaderAlign: "right",
     paperHeaderFooterLine: false,
     paperPageNumberStyle: "zhFraction",
   };
@@ -111,6 +113,7 @@ describe("PaperCanvas", () => {
 
     expect(header).toHaveTextContent("机密");
     expect(footer).toHaveTextContent("第 1 页 / 共 2 页");
+    expect(header).toHaveStyle({ fontSize: "8pt", textAlign: "right" });
     expect(header?.className).not.toContain("border-b");
     expect(footer?.className).not.toContain("border-t");
   });

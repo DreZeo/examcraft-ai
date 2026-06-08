@@ -14,6 +14,7 @@ import { usePaperStore } from "../../stores/paperStore";
 import { useConfigStore } from "../../stores/configStore";
 import {
   PAPER_FONT_SIZE_STYLES,
+  PAPER_HEADER_FONT_SIZE_STYLES,
   PAPER_FONT_STACKS,
   PAPER_LINE_HEIGHT_STYLES,
 } from "../../lib/types/config";
@@ -88,9 +89,24 @@ export function PaperCanvas({
         view,
         includeAnswers ? "answers" : "student",
         pageMetrics.contentHeightMm,
+        paperSettings.paperHeader,
+        paperSettings.paperHeaderFontSize,
+        paperSettings.paperHeaderAlign,
+        paperSettings.paperHeaderFooterLine,
+        paperSettings.paperPageNumberStyle,
         blocks.map(blockContentSignature).join("|"),
       ].join("::"),
-    [blocks, includeAnswers, pageMetrics.contentHeightMm, view],
+    [
+      blocks,
+      includeAnswers,
+      pageMetrics.contentHeightMm,
+      paperSettings.paperHeader,
+      paperSettings.paperHeaderAlign,
+      paperSettings.paperHeaderFontSize,
+      paperSettings.paperHeaderFooterLine,
+      paperSettings.paperPageNumberStyle,
+      view,
+    ],
   );
   const [measured, setMeasured] = useState<{
     signature: string;
@@ -352,7 +368,7 @@ function PaperPageShell({
     totalPages,
   );
   const headerClassName = [
-    "paper-header mb-4 text-center text-sm text-muted-foreground",
+    "paper-header mb-4 text-muted-foreground",
     paperSettings.paperHeaderFooterLine ? "border-b border-border pb-2" : "",
   ].filter(Boolean).join(" ");
   const footerClassName = [
@@ -376,7 +392,13 @@ function PaperPageShell({
       } as CSSProperties}
     >
       {header && (
-        <div className={headerClassName}>
+        <div
+          className={headerClassName}
+          style={{
+            fontSize: PAPER_HEADER_FONT_SIZE_STYLES[paperSettings.paperHeaderFontSize],
+            textAlign: paperSettings.paperHeaderAlign,
+          }}
+        >
           {header}
         </div>
       )}

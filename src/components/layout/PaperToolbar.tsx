@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   Bold,
   Baseline,
   CaseSensitive,
@@ -41,6 +44,8 @@ import { ColorPaletteButton } from "./ColorPaletteButton";
 import {
   PAPER_FONT_OPTIONS,
   PAPER_FONT_SIZE_OPTIONS,
+  PAPER_HEADER_ALIGN_OPTIONS,
+  PAPER_HEADER_FONT_SIZE_OPTIONS,
   PAPER_LINE_HEIGHT_OPTIONS,
   PAPER_MARGIN_OPTIONS,
   PAPER_ORIENTATION_OPTIONS,
@@ -49,6 +54,8 @@ import {
   type AppSettings,
   type PaperFont,
   type PaperFontSize,
+  type PaperHeaderAlign,
+  type PaperHeaderFontSize,
   type PaperLineHeight,
   type PaperMargin,
   type PaperOrientation,
@@ -65,6 +72,8 @@ type SettingKey =
   | "paperOrientation"
   | "paperSize"
   | "paperHeader"
+  | "paperHeaderFontSize"
+  | "paperHeaderAlign"
   | "paperPageNumberStyle";
 
 interface PaperTextSelection {
@@ -84,9 +93,11 @@ export function PaperToolbar() {
   const editQuestion = usePaperStore((state) => state.editQuestion);
   const { hasTarget, applyFormat } = useMarkdownFormat();
   const [activeTab, setActiveTab] = useState<"layout" | "markdown">("layout");
+  const [headerPanelOpen, setHeaderPanelOpen] = useState(false);
   const [paperSelection, setPaperSelection] =
     useState<PaperTextSelection | null>(null);
   const canFormat = hasTarget || paperSelection !== null;
+  const pageCount = useVisiblePaperPageCount();
 
   const refreshPaperSelection = useCallback(() => {
     const nextSelection = readPaperTextSelection();
@@ -235,25 +246,82 @@ export function PaperToolbar() {
           </ToolbarGroup>
 
           <ToolbarGroup label={t("paperToolbar.headerFooter")}>
-            <label className="inline-flex h-8 min-w-44 items-center gap-1.5 rounded border border-border bg-card px-2 text-xs text-foreground">
-              <span className="shrink-0 text-muted-foreground">
-                <ScrollText className="h-4 w-4" />
-              </span>
-              <span className="sr-only">{t("paperToolbar.header")}</span>
-              <input
-                value={settings.paperHeader}
-                onChange={(event) => update("paperHeader", event.currentTarget.value)}
-                placeholder={t("paperToolbar.headerPlaceholder")}
+            <div className="relative">
+              <button
+                type="button"
+                aria-expanded={headerPanelOpen}
+                aria-haspopup="dialog"
                 aria-label={t("paperToolbar.header")}
-                className={`${inputCls} h-6 border-0 bg-transparent px-0 py-0 text-xs focus:border-transparent focus:ring-0`}
-              />
-            </label>
+                title={t("paperToolbar.header")}
+                onClick={() => setHeaderPanelOpen((open) => !open)}
+                className={[
+                  "relative inline-flex h-8 items-center gap-1.5 rounded border border-border bg-card px-2 text-xs text-foreground",
+                  "transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer",
+                  headerPanelOpen ? "bg-accent text-accent-foreground" : "",
+                ].filter(Boolean).join(" ")}
+              >
+                <ScrollText className="h-4 w-4 text-muted-foreground" />
+                <span>{t("paperToolbar.header")}</span>
+                {settings.paperHeader.trim() && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary"
+                  />
+                )}
+              </button>
+              {headerPanelOpen && (
+                <div
+                  role="dialog"
+                  aria-label={t("paperToolbar.headerSettings")}
+                  className="absolute left-0 top-9 z-50 w-72 animate-fade-in rounded-md border border-border bg-popover p-3 text-popover-foreground shadow-lg"
+                >
+                  <label className="block text-xs font-medium text-muted-foreground">
+                    {t("paperToolbar.headerText")}
+                    <input
+                      value={settings.paperHeader}
+                      onChange={(event) =>
+                        update("paperHeader", event.currentTarget.value)
+                      }
+                      placeholder={t("paperToolbar.headerPlaceholder")}
+                      aria-label={t("paperToolbar.headerText")}
+                      className={`${inputCls} mt-1 h-8 py-1.5 text-xs`}
+                    />
+                  </label>
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <SelectControl<PaperHeaderFontSize>
+                      icon={<CaseSensitive className="h-4 w-4" />}
+                      label={t("paperToolbar.headerFontSize")}
+                      value={settings.paperHeaderFontSize}
+                      options={PAPER_HEADER_FONT_SIZE_OPTIONS}
+                      optionKeyPrefix="paperHeaderFontSize"
+                      onChange={(value) => update("paperHeaderFontSize", value)}
+                    />
+                    <div
+                      role="group"
+                      aria-label={t("paperToolbar.headerAlign")}
+                      className="inline-flex h-8 rounded border border-border bg-card p-0.5"
+                    >
+                      {PAPER_HEADER_ALIGN_OPTIONS.map((align) => (
+                        <HeaderAlignButton
+                          key={align}
+                          align={align}
+                          active={settings.paperHeaderAlign === align}
+                          label={t(`paperHeaderAlign.${align}`)}
+                          onClick={() => update("paperHeaderAlign", align)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <SelectControl<PaperPageNumberStyle>
               icon={<FileText className="h-4 w-4" />}
               label={t("paperToolbar.pageNumber")}
               value={settings.paperPageNumberStyle}
               options={PAPER_PAGE_NUMBER_STYLE_OPTIONS}
               optionKeyPrefix="paperPageNumberStyle"
+              optionLabel={(style) => formatToolbarPageNumber(style, pageCount, t)}
               onChange={(value) => update("paperPageNumberStyle", value)}
             />
           </ToolbarGroup>
@@ -381,6 +449,84 @@ function TabButton({
       {label}
     </button>
   );
+}
+
+function HeaderAlignButton({
+  align,
+  active,
+  label,
+  onClick,
+}: {
+  align: PaperHeaderAlign;
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  const icon =
+    align === "left" ? (
+      <AlignLeft className="h-4 w-4" />
+    ) : align === "center" ? (
+      <AlignCenter className="h-4 w-4" />
+    ) : (
+      <AlignRight className="h-4 w-4" />
+    );
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={[
+        "inline-flex h-7 w-7 items-center justify-center rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer",
+        active
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+      ].join(" ")}
+    >
+      {icon}
+    </button>
+  );
+}
+
+function formatToolbarPageNumber(
+  style: PaperPageNumberStyle,
+  totalPages: number,
+  t: ReturnType<typeof useTranslation>["t"],
+): string {
+  const pages = Math.max(1, totalPages);
+  switch (style) {
+    case "plain":
+      return "1";
+    case "fraction":
+      return `1 / ${pages}`;
+    case "zhPage":
+      return t("paperToolbar.pageNumberPreview.zhPage");
+    case "zhFraction":
+      return t("paperToolbar.pageNumberPreview.zhFraction", { total: pages });
+  }
+}
+
+function useVisiblePaperPageCount(): number {
+  const [count, setCount] = useState(1);
+
+  useEffect(() => {
+    function updateCount() {
+      const pages = [...document.querySelectorAll<HTMLElement>(".paper-page")]
+        .filter((page) => !page.closest("[aria-hidden='true']"));
+      setCount(Math.max(1, pages.length));
+    }
+
+    updateCount();
+    const observer = new MutationObserver(updateCount);
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("resize", updateCount);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateCount);
+    };
+  }, []);
+
+  return count;
 }
 
 function tabButton(active: boolean): string {
