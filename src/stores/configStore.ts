@@ -11,6 +11,7 @@ import {
 } from "../lib/types/config";
 import * as storage from "../lib/storage/tauri";
 import i18n from "../i18n";
+import type { RelocateDataDirResult } from "../lib/storage/tauri";
 
 /**
  * Global app configuration: data directory, model configs, and settings.
@@ -25,7 +26,10 @@ interface ConfigState {
   /** Resolve the bootstrap pointer + load config.json (first-launch aware). */
   init: () => Promise<void>;
   /** Set the data directory (first launch or relocation) and persist. */
-  chooseDataDir: (dir: string) => Promise<void>;
+  chooseDataDir: (
+    dir: string,
+    options?: { deleteOldDir?: boolean },
+  ) => Promise<RelocateDataDirResult>;
 
   addConfig: (
     config: Omit<ModelConfig, "id">,
@@ -84,12 +88,16 @@ export const useConfigStore = create<ConfigState>((set, get) => {
       set({ dataDir: dir, config, loaded: true });
     },
 
-    chooseDataDir: async (dir) => {
-      await storage.relocateDataDir(dir);
+    chooseDataDir: async (dir, options = {}) => {
+      const result = await storage.relocateDataDir(
+        dir,
+        options.deleteOldDir ?? false,
+      );
       const existing = await storage.loadConfig(dir);
       const config = existing ?? get().config;
       set({ dataDir: dir });
       await persist(config);
+      return result;
     },
 
     addConfig: async (config, apiKey) => {

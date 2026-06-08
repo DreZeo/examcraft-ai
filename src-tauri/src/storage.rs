@@ -20,6 +20,17 @@ pub struct Bootstrap {
     pub data_dir: String,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RelocateDataDirResult {
+    pub old_dir_deleted: bool,
+    pub old_dir_delete_failed: bool,
+}
+
+struct RelocateDataDirPlan {
+    source_to_delete: Option<PathBuf>,
+}
+
 fn app_data_dir(app: &AppHandle) -> AppResult<PathBuf> {
     let dir = app
         .path()
@@ -64,11 +75,15 @@ pub fn set_data_dir(app: AppHandle, data_dir: String) -> AppResult<()> {
 
 /// Move the data directory pointer after copying current data into the target.
 #[tauri::command]
-pub fn relocate_data_dir(app: AppHandle, target_dir: String) -> AppResult<()> {
+pub fn relocate_data_dir(
+    app: AppHandle,
+    target_dir: String,
+    delete_old_dir: bool,
+) -> AppResult<RelocateDataDirResult> {
     let current = get_data_dir(app.clone())?;
-    relocate_data_dir_inner(current.as_deref(), Path::new(&target_dir))?;
+    let plan = relocate_data_dir_inner(current.as_deref(), Path::new(&target_dir))?;
     write_bootstrap(&app, target_dir)?;
-    Ok(())
+    Ok(delete_old_data_dir_after_relocation(plan, delete_old_dir))
 }
 
 /// A recommended default data directory (Documents/AI试卷), for first launch.
@@ -127,21 +142,30 @@ fn write_json_file(dir: &Path, file: &str, contents: &str) -> AppResult<()> {
     Ok(())
 }
 
-fn relocate_data_dir_inner(current_dir: Option<&str>, target_dir: &Path) -> AppResult<()> {
+fn relocate_data_dir_inner(
+    current_dir: Option<&str>,
+    target_dir: &Path,
+) -> AppResult<RelocateDataDirPlan> {
     fs::create_dir_all(target_dir)?;
     let Some(current_dir) = current_dir else {
-        return Ok(());
+        return Ok(RelocateDataDirPlan {
+            source_to_delete: None,
+        });
     };
 
     let source = Path::new(current_dir);
     if !source.exists() {
-        return Ok(());
+        return Ok(RelocateDataDirPlan {
+            source_to_delete: None,
+        });
     }
 
     let source = source.canonicalize()?;
     let target = target_dir.canonicalize()?;
     if source == target {
-        return Ok(());
+        return Ok(RelocateDataDirPlan {
+            source_to_delete: None,
+        });
     }
 
     if target.starts_with(&source) {
@@ -150,7 +174,10 @@ fn relocate_data_dir_inner(current_dir: Option<&str>, target_dir: &Path) -> AppR
         ));
     }
 
-    copy_dir_contents(&source, &target)
+    copy_dir_contents(&source, &target)?;
+    Ok(RelocateDataDirPlan {
+        source_to_delete: Some(source),
+    })
 }
 
 fn copy_dir_contents(source: &Path, target: &Path) -> AppResult<()> {
@@ -174,6 +201,27 @@ fn copy_dir_contents(source: &Path, target: &Path) -> AppResult<()> {
         }
     }
     Ok(())
+}
+
+fn delete_old_data_dir_after_relocation(
+    plan: RelocateDataDirPlan,
+    delete_old_dir: bool,
+) -> RelocateDataDirResult {
+    let mut result = RelocateDataDirResult {
+        old_dir_deleted: false,
+        old_dir_delete_failed: false,
+    };
+
+    if delete_old_dir {
+        if let Some(source) = plan.source_to_delete {
+            match fs::remove_dir_all(source) {
+                Ok(()) => result.old_dir_deleted = true,
+                Err(_) => result.old_dir_delete_failed = true,
+            }
+        }
+    }
+
+    result
 }
 
 fn safe_json_name(id: &str) -> String {
@@ -369,7 +417,7 @@ mod tests {
             r#"{"messages":[]}"#,
         );
 
-        relocate_data_dir_inner(Some(source.to_str().unwrap()), &target).unwrap();
+        let plan = relocate_data_dir_inner(Some(source.to_str().unwrap()), &target).unwrap();
 
         assert_eq!(
             fs::read_to_string(target.join(CONFIG_FILE)).unwrap(),
@@ -392,6 +440,11 @@ mod tests {
             )
             .unwrap(),
             r#"{"messages":[]}"#
+        );
+        let canonical_source = source.canonicalize().unwrap();
+        assert_eq!(
+            plan.source_to_delete.as_deref(),
+            Some(canonical_source.as_path())
         );
 
         let _ = fs::remove_dir_all(source);
@@ -453,6 +506,42 @@ mod tests {
         let result = relocate_data_dir_inner(Some(source.to_str().unwrap()), &target);
 
         assert!(result.is_err());
+        let _ = fs::remove_dir_all(source);
+    }
+
+    #[test]
+    fn relocation_cleanup_removes_old_directory_when_requested() {
+        let source = temp_path("cleanup-source");
+        write(&source.join(CONFIG_FILE), "config");
+
+        let result = delete_old_data_dir_after_relocation(
+            RelocateDataDirPlan {
+                source_to_delete: Some(source.clone()),
+            },
+            true,
+        );
+
+        assert!(result.old_dir_deleted);
+        assert!(!result.old_dir_delete_failed);
+        assert!(!source.exists());
+    }
+
+    #[test]
+    fn relocation_cleanup_keeps_old_directory_by_default() {
+        let source = temp_path("cleanup-keep-source");
+        write(&source.join(CONFIG_FILE), "config");
+
+        let result = delete_old_data_dir_after_relocation(
+            RelocateDataDirPlan {
+                source_to_delete: Some(source.clone()),
+            },
+            false,
+        );
+
+        assert!(!result.old_dir_deleted);
+        assert!(!result.old_dir_delete_failed);
+        assert!(source.exists());
+
         let _ = fs::remove_dir_all(source);
     }
 }

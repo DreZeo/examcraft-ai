@@ -6,6 +6,7 @@ import { DataDirSection } from "../../components/settings/DataDirSection";
 
 const mocks = vi.hoisted(() => ({
   chooseDataDir: vi.fn(),
+  defaultDataDir: vi.fn(),
   openDialog: vi.fn(),
   openDataDir: vi.fn(),
 }));
@@ -25,6 +26,7 @@ vi.mock("@tauri-apps/plugin-dialog", () => ({
 }));
 
 vi.mock("../../lib/storage/tauri", () => ({
+  defaultDataDir: mocks.defaultDataDir,
   openDataDir: mocks.openDataDir,
 }));
 
@@ -32,8 +34,12 @@ describe("DataDirSection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     dataDir = "E:\\Coding\\paper-data";
+    mocks.defaultDataDir.mockResolvedValue("C:\\Users\\admin\\Documents\\AI试卷");
     mocks.openDataDir.mockResolvedValue(undefined);
-    mocks.chooseDataDir.mockResolvedValue(undefined);
+    mocks.chooseDataDir.mockResolvedValue({
+      oldDirDeleted: false,
+      oldDirDeleteFailed: false,
+    });
   });
 
   it("opens the configured data directory in the system file manager", async () => {
@@ -79,7 +85,82 @@ describe("DataDirSection", () => {
 
     expect(mocks.chooseDataDir).toHaveBeenCalledWith(
       "E:\\Coding\\paper-data-new",
+      { deleteOldDir: false },
     );
+  });
+
+  it("passes the old-directory cleanup option when enabled", async () => {
+    const user = userEvent.setup();
+    mocks.openDialog.mockResolvedValue("E:\\Coding\\paper-data-new");
+
+    render(<DataDirSection />);
+
+    await user.click(
+      screen.getByRole("checkbox", { name: /迁移成功后删除旧目录/ }),
+    );
+    await user.click(screen.getByRole("button", { name: "更改位置" }));
+
+    expect(mocks.chooseDataDir).toHaveBeenCalledWith(
+      "E:\\Coding\\paper-data-new",
+      { deleteOldDir: true },
+    );
+  });
+
+  it("shows a cleanup warning when old directory deletion fails after relocation", async () => {
+    const user = userEvent.setup();
+    mocks.openDialog.mockResolvedValue("E:\\Coding\\paper-data-new");
+    mocks.chooseDataDir.mockResolvedValue({
+      oldDirDeleted: false,
+      oldDirDeleteFailed: true,
+    });
+
+    render(<DataDirSection />);
+
+    await user.click(
+      screen.getByRole("checkbox", { name: /迁移成功后删除旧目录/ }),
+    );
+    await user.click(screen.getByRole("button", { name: "更改位置" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "旧目录删除失败",
+    );
+  });
+
+  it("shows an app-styled dialog before restoring the default data directory", async () => {
+    const user = userEvent.setup();
+
+    render(<DataDirSection />);
+
+    await user.click(screen.getByRole("button", { name: "恢复默认路径" }));
+
+    expect(screen.getByRole("dialog", { name: "恢复默认路径" })).toBeInTheDocument();
+    expect(screen.getByText("确认恢复到默认路径？")).toBeInTheDocument();
+    expect(
+      screen.getByText("C:\\Users\\admin\\Documents\\AI试卷"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("默认路径中已有的同名数据会被当前数据覆盖。"),
+    ).toBeInTheDocument();
+    expect(mocks.chooseDataDir).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "确认恢复" }));
+
+    expect(mocks.chooseDataDir).toHaveBeenCalledWith(
+      "C:\\Users\\admin\\Documents\\AI试卷",
+      { deleteOldDir: false },
+    );
+  });
+
+  it("does not restore the default data directory when the app dialog is canceled", async () => {
+    const user = userEvent.setup();
+
+    render(<DataDirSection />);
+
+    await user.click(screen.getByRole("button", { name: "恢复默认路径" }));
+    await user.click(screen.getByRole("button", { name: "取消" }));
+
+    expect(mocks.chooseDataDir).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog", { name: "恢复默认路径" })).toBeNull();
   });
 
   it("shows a localized error when data directory relocation fails", async () => {

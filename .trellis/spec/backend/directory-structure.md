@@ -53,7 +53,7 @@ Args are snake_case in Rust, called as camelCase from JS (`invoke('name', { came
 pointer lives in the Tauri app-data dir:
 - `get_data_dir() -> AppResult<Option<String>>`
 - `set_data_dir(data_dir) -> AppResult<()>`
-- `relocate_data_dir(target_dir) -> AppResult<()>`  (copy current data dir contents, then update bootstrap pointer)
+- `relocate_data_dir(target_dir, delete_old_dir) -> AppResult<RelocateDataDirResult>`  (copy current data dir contents, then update bootstrap pointer)
 - `default_data_dir() -> AppResult<String>`  (Documents/AI试卷)
 - `open_data_dir(data_dir) -> AppResult<()>`  (create if missing, then open in platform file manager)
 - `load_config(data_dir) / save_config(data_dir, contents)`  (raw JSON string)
@@ -180,8 +180,10 @@ await openDataDir(dataDir);
 
 ### 2. Signatures
 
-- Rust command: `relocate_data_dir(target_dir: String) -> AppResult<()>`
-- Frontend wrapper: `relocateDataDir(targetDir: string): Promise<void>`
+- Rust command:
+  `relocate_data_dir(target_dir: String, delete_old_dir: bool) -> AppResult<RelocateDataDirResult>`
+- Frontend wrapper:
+  `relocateDataDir(targetDir: string, deleteOldDir?: boolean): Promise<RelocateDataDirResult>`
 - Store action: `configStore.chooseDataDir(dir)` calls relocation before it
   changes in-memory `dataDir`.
 
@@ -189,6 +191,11 @@ await openDataDir(dataDir);
 
 - Request field `target_dir`: user-selected absolute or platform-valid
   directory path.
+- Request field `delete_old_dir`: default-false frontend option. When true,
+  Rust deletes the old data directory only after copy succeeds and bootstrap
+  points to the new directory.
+- Response fields:
+  `{ oldDirDeleted: boolean, oldDirDeleteFailed: boolean }`.
 - Behavior: create `target_dir`, read the current bootstrap pointer, recursively
   copy all current data-dir contents into `target_dir`, then update
   `bootstrap.json` only after copy succeeds.
@@ -196,8 +203,9 @@ await openDataDir(dataDir);
   exists, behave like first launch: create the target and update the pointer.
 - API keys are not migrated because they live in OS keychain, not in the data
   directory.
-- Response: `Ok(())` means the app now points at `target_dir`; the old directory
-  is left in place as a backup.
+- `Ok(result)` means the app now points at `target_dir`. If
+  `oldDirDeleteFailed` is true, migration succeeded but cleanup should be shown
+  as a warning rather than a relocation failure.
 
 ### 4. Validation & Error Matrix
 
@@ -208,6 +216,7 @@ await openDataDir(dataDir);
 | Target is inside current directory | `AppError::Io` to avoid recursive self-copy |
 | Directory create/copy denied | `AppError::Io`; bootstrap remains unchanged |
 | Target has existing files | merge, overwriting same-name files with current data |
+| Old directory deletion denied after successful migration | `Ok({ oldDirDeleteFailed: true })`; bootstrap remains on target |
 
 ### 5. Good/Base/Bad Cases
 
@@ -215,6 +224,8 @@ await openDataDir(dataDir);
   and `chats/`; all appear in the target before bootstrap changes.
 - Base: user selects an empty new folder; migration succeeds and old folder is
   retained.
+- Cleanup: user enables deletion; old folder is removed only after migration
+  success. If removal fails, UI warns while keeping the new directory active.
 - Bad: frontend calls `setDataDir(target)` directly for relocation. This points
   the app at an empty/new folder before data is copied and can make data appear
   lost.
@@ -222,10 +233,13 @@ await openDataDir(dataDir);
 ### 6. Tests Required
 
 - Rust tests for full recursive copy, overwrite merge, same-directory no-op,
-  missing-source first-launch behavior, and nested-target rejection.
+  missing-source first-launch behavior, nested-target rejection, and optional
+  old-directory cleanup.
 - Frontend store test asserts `chooseDataDir` invokes `relocate_data_dir`, not
-  `set_data_dir`, and keeps the old `dataDir` when relocation rejects.
+  `set_data_dir`, passes `deleteOldDir`, and keeps the old `dataDir` when
+  relocation rejects.
 - Settings component test asserts relocation failures show localized feedback.
+  Also cover the cleanup toggle and cleanup warning.
 
 ### 7. Wrong vs Correct
 
@@ -238,7 +252,7 @@ await setDataDir(targetDir);
 #### Correct
 
 ```tsx
-await relocateDataDir(targetDir);
+await relocateDataDir(targetDir, deleteOldDir);
 ```
 
 ## Scenario: Web Search Provider Proxy

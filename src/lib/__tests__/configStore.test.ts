@@ -20,6 +20,12 @@ describe("configStore data directory relocation", () => {
     });
     tauriMocks.invoke.mockImplementation((command: string) => {
       if (command === "load_config") return Promise.resolve(null);
+      if (command === "relocate_data_dir") {
+        return Promise.resolve({
+          oldDirDeleted: false,
+          oldDirDeleteFailed: false,
+        });
+      }
       return Promise.resolve();
     });
   });
@@ -29,6 +35,7 @@ describe("configStore data directory relocation", () => {
 
     expect(tauriMocks.invoke).toHaveBeenCalledWith("relocate_data_dir", {
       targetDir: "E:\\Coding\\paper-data-new",
+      deleteOldDir: false,
     });
     expect(tauriMocks.invoke).not.toHaveBeenCalledWith(
       "set_data_dir",
@@ -39,6 +46,17 @@ describe("configStore data directory relocation", () => {
       "save_config",
       expect.objectContaining({ dataDir: "E:\\Coding\\paper-data-new" }),
     );
+  });
+
+  it("passes the old-directory cleanup option to the backend", async () => {
+    await useConfigStore
+      .getState()
+      .chooseDataDir("E:\\Coding\\paper-data-new", { deleteOldDir: true });
+
+    expect(tauriMocks.invoke).toHaveBeenCalledWith("relocate_data_dir", {
+      targetDir: "E:\\Coding\\paper-data-new",
+      deleteOldDir: true,
+    });
   });
 
   it("keeps the old data directory when relocation fails", async () => {

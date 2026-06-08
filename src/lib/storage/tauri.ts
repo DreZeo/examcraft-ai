@@ -28,8 +28,16 @@ export function setDataDir(dataDir: string): Promise<void> {
   return invoke("set_data_dir", { dataDir });
 }
 
-export function relocateDataDir(targetDir: string): Promise<void> {
-  return invoke("relocate_data_dir", { targetDir });
+export interface RelocateDataDirResult {
+  oldDirDeleted: boolean;
+  oldDirDeleteFailed: boolean;
+}
+
+export function relocateDataDir(
+  targetDir: string,
+  deleteOldDir = false,
+): Promise<RelocateDataDirResult> {
+  return invoke("relocate_data_dir", { targetDir, deleteOldDir });
 }
 
 export function defaultDataDir(): Promise<string> {
