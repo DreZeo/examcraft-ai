@@ -146,20 +146,12 @@ export function ModelConfigForm({ configId, onDone }: ModelConfigFormProps) {
           </Field>
           <Field label={t("settings.model")}>
             {models.length > 0 ? (
-              <select
+              <ModelDropdown
+                label={t("settings.model")}
                 value={model}
-                onChange={(e) => setModel(e.currentTarget.value)}
-                className={inputCls}
-              >
-                {!models.includes(model) && model && (
-                  <option value={model}>{model}</option>
-                )}
-                {models.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
+                models={models}
+                onChange={setModel}
+              />
             ) : (
               <input
                 value={model}
@@ -293,6 +285,67 @@ export function ModelConfigForm({ configId, onDone }: ModelConfigFormProps) {
           {t("settings.save")}
         </button>
       </div>
+    </div>
+  );
+}
+
+function ModelDropdown({
+  label,
+  value,
+  models,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  models: string[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const options = value && !models.includes(value) ? [value, ...models] : models;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={label}
+        title={label}
+        onClick={() => setOpen((next) => !next)}
+        className={`${inputCls} flex items-center justify-between gap-2 text-left`}
+      >
+        <span className="min-w-0 flex-1 truncate">{value}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          aria-label={label}
+          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 animate-fade-in overflow-auto rounded-md border border-border bg-popover p-1 text-sm text-popover-foreground shadow-lg"
+        >
+          {options.map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="option"
+              aria-selected={option === value}
+              onClick={() => {
+                onChange(option);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center rounded px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer ${
+                option === value ? "font-medium text-primary" : ""
+              }`}
+            >
+              <span className="min-w-0 truncate">{option}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
