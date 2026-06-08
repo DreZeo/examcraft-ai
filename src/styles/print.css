@@ -46,8 +46,15 @@
     padding: 0 !important;
   }
 
+  .paper-preview-zoom-stage {
+    width: auto !important;
+    height: auto !important;
+  }
+
   .paper-page-stack {
     display: block !important;
+    width: auto !important;
+    transform: none !important;
   }
 
   /* Preserve preview dimensions/padding; remove only screen chrome styling. */

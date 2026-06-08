@@ -22,6 +22,8 @@ import {
   RotateCwSquare,
   Type,
   Underline,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { SelectControl } from "../ui/SelectControl";
 import { useConfigStore } from "../../stores/configStore";
@@ -50,7 +52,9 @@ import {
   PAPER_MARGIN_OPTIONS,
   PAPER_ORIENTATION_OPTIONS,
   PAPER_PAGE_NUMBER_STYLE_OPTIONS,
+  PAPER_PREVIEW_ZOOM_OPTIONS,
   PAPER_SIZE_OPTIONS,
+  stepPaperPreviewZoom,
   type AppSettings,
   type PaperFont,
   type PaperFontSize,
@@ -60,6 +64,7 @@ import {
   type PaperMargin,
   type PaperOrientation,
   type PaperPageNumberStyle,
+  type PaperPreviewZoom,
   type PaperSize,
 } from "../../lib/types/config";
 import { inputCls } from "../../lib/ui/styles";
@@ -74,7 +79,8 @@ type SettingKey =
   | "paperHeader"
   | "paperHeaderFontSize"
   | "paperHeaderAlign"
-  | "paperPageNumberStyle";
+  | "paperPageNumberStyle"
+  | "paperPreviewZoom";
 
 interface PaperTextSelection {
   questionId: string;
@@ -424,6 +430,15 @@ export function PaperToolbar() {
           </ToolbarGroup>
         </>
       )}
+
+      <div className="ml-auto">
+        <ToolbarGroup label={t("paperToolbar.preview")}>
+          <PaperZoomControl
+            value={settings.paperPreviewZoom}
+            onChange={(value) => update("paperPreviewZoom", value)}
+          />
+        </ToolbarGroup>
+      </div>
     </section>
   );
 }
@@ -504,6 +519,59 @@ function formatToolbarPageNumber(
     case "zhFraction":
       return t("paperToolbar.pageNumberPreview.zhFraction", { total: pages });
   }
+}
+
+function PaperZoomControl({
+  value,
+  onChange,
+}: {
+  value: PaperPreviewZoom;
+  onChange: (value: PaperPreviewZoom) => void;
+}) {
+  const { t } = useTranslation();
+
+  function step(direction: -1 | 1) {
+    onChange(stepPaperPreviewZoom(value, direction, readCurrentPreviewScale()));
+  }
+
+  return (
+    <div className="inline-flex h-8 items-center rounded border border-border bg-card">
+      <button
+        type="button"
+        aria-label={t("paperToolbar.zoomOut")}
+        title={t("paperToolbar.zoomOut")}
+        onClick={() => step(-1)}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+      >
+        <ZoomOut className="h-4 w-4" />
+      </button>
+      <div className="-mx-px">
+        <SelectControl<PaperPreviewZoom>
+          icon={<ZoomIn className="h-4 w-4" />}
+          label={t("paperToolbar.previewZoom")}
+          value={value}
+          options={PAPER_PREVIEW_ZOOM_OPTIONS}
+          optionKeyPrefix="paperPreviewZoom"
+          onChange={onChange}
+        />
+      </div>
+      <button
+        type="button"
+        aria-label={t("paperToolbar.zoomIn")}
+        title={t("paperToolbar.zoomIn")}
+        onClick={() => step(1)}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+      >
+        <ZoomIn className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function readCurrentPreviewScale(): number | undefined {
+  const raw = document.documentElement.dataset.paperPreviewScale;
+  const parsed = raw ? Number(raw) : Number.NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function useVisiblePaperPageCount(): number {

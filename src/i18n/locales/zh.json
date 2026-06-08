@@ -199,6 +199,16 @@
     "center": "居中",
     "right": "右对齐"
   },
+  "paperPreviewZoom": {
+    "fitWidth": "适合页宽",
+    "fitPage": "整页",
+    "pct50": "50%",
+    "pct75": "75%",
+    "pct100": "100%",
+    "pct125": "125%",
+    "pct150": "150%",
+    "pct200": "200%"
+  },
   "textColor": {
     "auto": "自动",
     "red": "红色",
@@ -232,6 +242,7 @@
     "markdownText": "文字",
     "markdownColor": "颜色",
     "markdownClear": "清除",
+    "preview": "预览",
     "font": "字体",
     "fontSize": "字号",
     "lineHeight": "行距",
@@ -245,6 +256,9 @@
     "headerAlign": "页眉对齐",
     "headerPlaceholder": "输入页眉",
     "pageNumber": "页码",
+    "previewZoom": "缩放",
+    "zoomOut": "缩小",
+    "zoomIn": "放大",
     "pageNumberPreview": {
       "zhPage": "第 1 页",
       "zhFraction": "第 1 页 / 共 {{total}} 页"

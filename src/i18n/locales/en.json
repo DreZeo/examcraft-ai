@@ -199,6 +199,16 @@
     "center": "Center",
     "right": "Align right"
   },
+  "paperPreviewZoom": {
+    "fitWidth": "Fit width",
+    "fitPage": "Whole page",
+    "pct50": "50%",
+    "pct75": "75%",
+    "pct100": "100%",
+    "pct125": "125%",
+    "pct150": "150%",
+    "pct200": "200%"
+  },
   "textColor": {
     "auto": "Automatic",
     "red": "Red",
@@ -232,6 +242,7 @@
     "markdownText": "Text",
     "markdownColor": "Color",
     "markdownClear": "Clear",
+    "preview": "Preview",
     "font": "Font",
     "fontSize": "Font size",
     "lineHeight": "Line height",
@@ -245,6 +256,9 @@
     "headerAlign": "Header alignment",
     "headerPlaceholder": "Enter header",
     "pageNumber": "Page number",
+    "previewZoom": "Zoom",
+    "zoomOut": "Zoom out",
+    "zoomIn": "Zoom in",
     "pageNumberPreview": {
       "zhPage": "Page 1",
       "zhFraction": "Page 1 of {{total}}"

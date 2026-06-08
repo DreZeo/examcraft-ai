@@ -29,6 +29,7 @@ vi.mock("../../stores/configStore", () => ({
           paperHeaderFontSize: "pt9",
           paperHeaderAlign: "center",
           paperPageNumberStyle: "zhPage",
+          paperPreviewZoom: "pct100",
         },
       },
       updateSettings,
@@ -181,6 +182,7 @@ describe("PaperToolbar Markdown tab", () => {
     expect(screen.getByLabelText("纸张大小")).toHaveTextContent("A4");
     expect(screen.getByLabelText("页面方向")).toHaveTextContent("纵向");
     expect(screen.getByLabelText("页码")).toHaveTextContent("第 1 页");
+    expect(screen.getByLabelText("缩放")).toHaveTextContent("100%");
     expect(screen.getByRole("button", { name: "页眉" })).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: "对齐" })).not.toBeInTheDocument();
   });
@@ -231,6 +233,20 @@ describe("PaperToolbar Markdown tab", () => {
     expect(updateSettings).toHaveBeenCalledWith({
       paperPageNumberStyle: "zhFraction",
     });
+  });
+
+  it("updates preview zoom from the toolbar dropdown and step buttons", async () => {
+    renderToolbarWithEditor();
+
+    await userEvent.click(screen.getByRole("button", { name: "缩放" }));
+    await userEvent.click(screen.getByRole("option", { name: "适合页宽" }));
+    expect(updateSettings).toHaveBeenCalledWith({ paperPreviewZoom: "fitWidth" });
+
+    await userEvent.click(screen.getByRole("button", { name: "放大" }));
+    expect(updateSettings).toHaveBeenCalledWith({ paperPreviewZoom: "pct125" });
+
+    await userEvent.click(screen.getByRole("button", { name: "缩小" }));
+    expect(updateSettings).toHaveBeenCalledWith({ paperPreviewZoom: "pct75" });
   });
 
   it("uses a primary-color sliding indicator for layout and Markdown tabs", async () => {

@@ -124,6 +124,22 @@ export const PaperPageNumberStyleSchema = z.enum([
   "zhPage",
   "zhFraction",
 ]);
+export const PAPER_PREVIEW_FIXED_ZOOM_OPTIONS = [
+  "pct50",
+  "pct75",
+  "pct100",
+  "pct125",
+  "pct150",
+  "pct200",
+] as const;
+export const PaperPreviewFixedZoomSchema = z.enum(
+  PAPER_PREVIEW_FIXED_ZOOM_OPTIONS,
+);
+export const PaperPreviewZoomSchema = z.enum([
+  "fitWidth",
+  "fitPage",
+  ...PAPER_PREVIEW_FIXED_ZOOM_OPTIONS,
+]);
 export const PaperHeaderFontSizeSchema = z.enum([
   "pt6",
   "pt7",
@@ -140,6 +156,10 @@ export type PaperMargin = z.infer<typeof PaperMarginSchema>;
 export type PaperSize = z.infer<typeof PaperSizeSchema>;
 export type PaperOrientation = z.infer<typeof PaperOrientationSchema>;
 export type PaperPageNumberStyle = z.infer<typeof PaperPageNumberStyleSchema>;
+export type PaperPreviewFixedZoom = z.infer<
+  typeof PaperPreviewFixedZoomSchema
+>;
+export type PaperPreviewZoom = z.infer<typeof PaperPreviewZoomSchema>;
 export type PaperHeaderFontSize = z.infer<typeof PaperHeaderFontSizeSchema>;
 export type PaperHeaderAlign = z.infer<typeof PaperHeaderAlignSchema>;
 
@@ -151,6 +171,7 @@ export const PAPER_SIZE_OPTIONS = PaperSizeSchema.options;
 export const PAPER_ORIENTATION_OPTIONS = PaperOrientationSchema.options;
 export const PAPER_PAGE_NUMBER_STYLE_OPTIONS =
   PaperPageNumberStyleSchema.options;
+export const PAPER_PREVIEW_ZOOM_OPTIONS = PaperPreviewZoomSchema.options;
 export const PAPER_HEADER_FONT_SIZE_OPTIONS = PaperHeaderFontSizeSchema.options;
 export const PAPER_HEADER_ALIGN_OPTIONS = PaperHeaderAlignSchema.options;
 
@@ -201,6 +222,50 @@ export const PAPER_LINE_HEIGHT_STYLES: Record<PaperLineHeight, number> = {
   twoHalf: 2.5,
   triple: 3,
 };
+
+export const PAPER_PREVIEW_FIXED_ZOOM_SCALES: Record<
+  PaperPreviewFixedZoom,
+  number
+> = {
+  pct50: 0.5,
+  pct75: 0.75,
+  pct100: 1,
+  pct125: 1.25,
+  pct150: 1.5,
+  pct200: 2,
+};
+
+export function isPaperPreviewFixedZoom(
+  value: PaperPreviewZoom,
+): value is PaperPreviewFixedZoom {
+  return PAPER_PREVIEW_FIXED_ZOOM_OPTIONS.includes(
+    value as PaperPreviewFixedZoom,
+  );
+}
+
+export function stepPaperPreviewZoom(
+  current: PaperPreviewZoom,
+  direction: -1 | 1,
+  currentScale?: number,
+): PaperPreviewFixedZoom {
+  const scale =
+    isPaperPreviewFixedZoom(current) && currentScale == null
+      ? PAPER_PREVIEW_FIXED_ZOOM_SCALES[current]
+      : (currentScale ?? 1);
+  const options = PAPER_PREVIEW_FIXED_ZOOM_OPTIONS;
+  if (direction > 0) {
+    return (
+      options.find((option) => PAPER_PREVIEW_FIXED_ZOOM_SCALES[option] > scale + 0.01) ??
+      options[options.length - 1]
+    );
+  }
+  return (
+    [...options]
+      .reverse()
+      .find((option) => PAPER_PREVIEW_FIXED_ZOOM_SCALES[option] < scale - 0.01) ??
+    options[0]
+  );
+}
 
 export interface PaperMarginStyle {
   top: number;
@@ -337,6 +402,8 @@ export const AppSettingsSchema = z.object({
   paperHeaderFooterLine: z.boolean().default(false),
   /** Footer page-number preset used on each rendered paper page. */
   paperPageNumberStyle: PaperPageNumberStyleSchema.default("zhPage"),
+  /** Visual-only paper preview zoom. Does not affect pagination or export. */
+  paperPreviewZoom: PaperPreviewZoomSchema.default("pct100"),
   /** Legacy field: migrated into an AI agent and no longer shown in settings. */
   customInstructions: z.string().default(""),
   /** Optional web search provider behavior for AI assistant turns. */

@@ -21,6 +21,7 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperHeaderAlign).toBe("center");
     expect(config.settings.paperHeaderFooterLine).toBe(false);
     expect(config.settings.paperPageNumberStyle).toBe("zhPage");
+    expect(config.settings.paperPreviewZoom).toBe("pct100");
   });
 
   it("loads old settings without paper layout presets", () => {
@@ -44,6 +45,7 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperHeaderAlign).toBe("center");
     expect(config.settings.paperHeaderFooterLine).toBe(false);
     expect(config.settings.paperPageNumberStyle).toBe("zhPage");
+    expect(config.settings.paperPreviewZoom).toBe("pct100");
     expect(config.settings.language).toBe("en");
   });
 
@@ -93,6 +95,7 @@ describe("AppConfigSchema", () => {
         paperHeaderAlign: "right",
         paperHeaderFooterLine: true,
         paperPageNumberStyle: "zhFraction",
+        paperPreviewZoom: "fitWidth",
       },
     });
 
@@ -107,6 +110,7 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperHeaderAlign).toBe("right");
     expect(config.settings.paperHeaderFooterLine).toBe(true);
     expect(config.settings.paperPageNumberStyle).toBe("zhFraction");
+    expect(config.settings.paperPreviewZoom).toBe("fitWidth");
   });
 
   it("maps old paper font size presets and ignores old text alignment", () => {

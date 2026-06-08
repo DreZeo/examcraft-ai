@@ -17,6 +17,9 @@ import {
   PAPER_HEADER_FONT_SIZE_STYLES,
   PAPER_FONT_STACKS,
   PAPER_LINE_HEIGHT_STYLES,
+  PAPER_PREVIEW_FIXED_ZOOM_SCALES,
+  isPaperPreviewFixedZoom,
+  stepPaperPreviewZoom,
 } from "../../lib/types/config";
 import type { AppSettings } from "../../lib/types/config";
 import type { ExamPaper, Question } from "../../lib/types/exam";
@@ -40,6 +43,10 @@ import { Markdown } from "./Markdown";
 
 const PAPER_BLOCK_SPACING_CLASS = "space-y-5";
 const PAPER_BLOCK_GAP_MM = pxToMm(20);
+const MM_TO_PX = 96 / 25.4;
+const AUTO_ZOOM_MIN = 0.35;
+const AUTO_ZOOM_MAX = 2;
+const AUTO_ZOOM_PADDING_PX = 48;
 
 interface PaperCanvasProps {
   scrollRootRef?: RefObject<HTMLElement | null>;
@@ -59,6 +66,7 @@ export function PaperCanvas({
   const { t } = useTranslation();
   const { paper, view, appendQuestion } = usePaperStore();
   const paperSettings = useConfigStore((s) => s.config.settings);
+  const updateSettings = useConfigStore((s) => s.updateSettings);
   const display = useMemo(
     () => (view === "student" ? toStudentVersion(paper) : paper),
     [paper, view],
@@ -67,7 +75,22 @@ export function PaperCanvas({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newQuestionDraft, setNewQuestionDraft] = useState<Question | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
+  const pageStackRef = useRef<HTMLDivElement | null>(null);
   const pageMetrics = getPageMetrics(paperSettings);
+  const scrollRootSize = useElementSize(scrollRootRef);
+  const stackSize = useElementSize(pageStackRef);
+  const previewScale = previewScaleForSettings(
+    paperSettings,
+    pageMetrics,
+    scrollRootSize,
+  );
+  const naturalWidthPx = stackSize.width || mmToPx(parseFloat(pageMetrics.width));
+  const naturalHeightPx =
+    stackSize.height || mmToPx(parseFloat(pageMetrics.height));
+  const zoomStageStyle = {
+    width: `${naturalWidthPx * previewScale}px`,
+    height: `${naturalHeightPx * previewScale}px`,
+  };
   const includeAnswers = view !== "student";
   const blocks = useMemo(
     () => buildPaperBlocks(display, paperSettings, includeAnswers),
@@ -137,6 +160,40 @@ export function PaperCanvas({
       delete document.documentElement.dataset.paperPaginationReady;
     };
   }, [printLayoutReady]);
+
+  useEffect(() => {
+    document.documentElement.dataset.paperPreviewScale =
+      previewScale.toFixed(4);
+    return () => {
+      delete document.documentElement.dataset.paperPreviewScale;
+    };
+  }, [previewScale]);
+
+  useEffect(() => {
+    const root = scrollRootRef?.current ?? null;
+    if (!root) return;
+
+    function onWheel(event: WheelEvent) {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      const direction = event.deltaY > 0 ? -1 : 1;
+      void updateSettings({
+        paperPreviewZoom: stepPaperPreviewZoom(
+          paperSettings.paperPreviewZoom,
+          direction,
+          previewScale,
+        ),
+      });
+    }
+
+    root.addEventListener("wheel", onWheel, { passive: false });
+    return () => root.removeEventListener("wheel", onWheel);
+  }, [
+    paperSettings.paperPreviewZoom,
+    previewScale,
+    scrollRootRef,
+    updateSettings,
+  ]);
 
   function addAndEdit() {
     setNewQuestionDraft(createBlankQuestion("single-choice", uuid()));
@@ -226,40 +283,57 @@ export function PaperCanvas({
   }, [questionIds, onActiveQuestionChange, scrollRootRef]);
 
   return (
-    <div className="paper-canvas flex min-w-fit justify-center px-4 py-8 sm:px-6">
-      <div className="paper-page-stack flex flex-col gap-6">
-        {display.questions.length === 0 ? (
-          <PaperPageShell
-            paperSettings={paperSettings}
-            pageMetrics={pageMetrics}
-            pageNumber={1}
-            totalPages={1}
+    <div className="paper-canvas flex min-w-full justify-center px-4 py-8 sm:px-6">
+      <div>
+        <div
+          className="paper-preview-zoom-stage"
+          style={zoomStageStyle}
+        >
+          <div
+            ref={pageStackRef}
+            className="paper-page-stack flex flex-col gap-6 transition-transform duration-150 ease-out"
+            style={{
+              width: pageMetrics.width,
+              transform: `scale(${previewScale})`,
+              transformOrigin: "top left",
+            }}
           >
-            <EmptyPaper t={t} addAndEdit={addAndEdit} />
-          </PaperPageShell>
-        ) : (
-          <>
-            {pages.map((page, pageIndex) => (
+            {display.questions.length === 0 ? (
               <PaperPageShell
-                key={page.id}
                 paperSettings={paperSettings}
                 pageMetrics={pageMetrics}
-                pageNumber={pageIndex + 1}
-                totalPages={pages.length}
+                pageNumber={1}
+                totalPages={1}
               >
-                <div className={PAPER_BLOCK_SPACING_CLASS}>
-                  {page.blocks.map((block) => (
-                    <PaperBlock
-                      key={block.id}
-                      block={block}
-                      display={display}
-                      studentView={view === "student"}
-                      onEdit={setEditingId}
-                    />
-                  ))}
-                </div>
+                <EmptyPaper t={t} addAndEdit={addAndEdit} />
               </PaperPageShell>
-            ))}
+            ) : (
+              pages.map((page, pageIndex) => (
+                <PaperPageShell
+                  key={page.id}
+                  paperSettings={paperSettings}
+                  pageMetrics={pageMetrics}
+                  pageNumber={pageIndex + 1}
+                  totalPages={pages.length}
+                >
+                  <div className={PAPER_BLOCK_SPACING_CLASS}>
+                    {page.blocks.map((block) => (
+                      <PaperBlock
+                        key={block.id}
+                        block={block}
+                        display={display}
+                        studentView={view === "student"}
+                        onEdit={setEditingId}
+                      />
+                    ))}
+                  </div>
+                </PaperPageShell>
+              ))
+            )}
+          </div>
+        </div>
+        {display.questions.length > 0 && (
+          <>
             <MeasurementLayer
               refNode={measureRef}
               blocks={blocks}
@@ -527,6 +601,81 @@ function EmptyPaper({
 
 function pxToMm(px: number): number {
   return px * 0.264583;
+}
+
+function mmToPx(mm: number): number {
+  return mm * MM_TO_PX;
+}
+
+function previewScaleForSettings(
+  settings: AppSettings,
+  pageMetrics: PageMetrics,
+  viewport: ElementSize,
+): number {
+  if (isPaperPreviewFixedZoom(settings.paperPreviewZoom)) {
+    return PAPER_PREVIEW_FIXED_ZOOM_SCALES[settings.paperPreviewZoom];
+  }
+
+  const pageWidth = mmToPx(parseFloat(pageMetrics.width));
+  const pageHeight = mmToPx(parseFloat(pageMetrics.height));
+  const availableWidth = Math.max(
+    120,
+    viewport.width - AUTO_ZOOM_PADDING_PX,
+  );
+  const widthScale = availableWidth / pageWidth;
+  if (settings.paperPreviewZoom === "fitWidth") {
+    return clamp(widthScale, AUTO_ZOOM_MIN, AUTO_ZOOM_MAX);
+  }
+
+  const availableHeight = Math.max(
+    120,
+    viewport.height - AUTO_ZOOM_PADDING_PX,
+  );
+  return clamp(
+    Math.min(widthScale, availableHeight / pageHeight),
+    AUTO_ZOOM_MIN,
+    AUTO_ZOOM_MAX,
+  );
+}
+
+interface ElementSize {
+  width: number;
+  height: number;
+}
+
+function useElementSize(
+  ref: RefObject<HTMLElement | null> | undefined,
+): ElementSize {
+  const [size, setSize] = useState<ElementSize>({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const node = ref?.current;
+    if (!node) return;
+    const element = node;
+
+    function update() {
+      setSize({
+        width: element.clientWidth || element.getBoundingClientRect().width,
+        height: element.clientHeight || element.getBoundingClientRect().height,
+      });
+    }
+
+    update();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", update);
+      return () => window.removeEventListener("resize", update);
+    }
+
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return size;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 function samePages(a: PaperPage[] | null, b: PaperPage[]): boolean {

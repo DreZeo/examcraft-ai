@@ -10,6 +10,7 @@ import type { ExamPaper } from "../types/exam";
 let paper: ExamPaper;
 let view: "teacher" | "student";
 const appendQuestion = vi.fn();
+const updateSettings = vi.fn();
 let paperSettings = defaultPaperSettings();
 
 function defaultPaperSettings() {
@@ -25,6 +26,7 @@ function defaultPaperSettings() {
     paperHeaderAlign: "right",
     paperHeaderFooterLine: false,
     paperPageNumberStyle: "zhFraction",
+    paperPreviewZoom: "pct100",
   };
 }
 
@@ -42,6 +44,7 @@ vi.mock("../../stores/configStore", () => ({
       config: {
         settings: paperSettings,
       },
+      updateSettings,
     }),
 }));
 
@@ -49,6 +52,7 @@ describe("PaperCanvas", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     appendQuestion.mockReset();
+    updateSettings.mockReset();
     view = "teacher";
     paper = {
       version: 1,
@@ -84,6 +88,20 @@ describe("PaperCanvas", () => {
     expect(sheet).not.toHaveStyle({ textAlign: "justify" });
     expect(document.documentElement.style.getPropertyValue("--paper-page-size"))
       .toBe("176mm 250mm");
+  });
+
+  it("scales only the screen preview while keeping paper dimensions unchanged", () => {
+    paperSettings.paperPreviewZoom = "pct75";
+
+    const { container } = renderCanvas();
+    const stack = container.querySelector(".paper-page-stack");
+    const sheet = container.querySelector(".paper-page");
+
+    expect(stack).toHaveStyle({ transform: "scale(0.75)" });
+    expect(sheet).toHaveStyle({
+      width: "176mm",
+      minHeight: "250mm",
+    });
   });
 
   it("renders type sections with numbering restarted inside each section", () => {

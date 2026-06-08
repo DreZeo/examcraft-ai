@@ -22,6 +22,15 @@ describe("print.css", () => {
     expect(css).toMatch(/\.paper-page:last-of-type\s*\{[\s\S]*break-after:\s*auto;/);
   });
 
+  it("removes screen preview zoom before printing", () => {
+    expect(css).toMatch(
+      /\.paper-preview-zoom-stage\s*\{[\s\S]*width:\s*auto !important;[\s\S]*height:\s*auto !important;/,
+    );
+    expect(css).toMatch(
+      /\.paper-page-stack\s*\{[\s\S]*transform:\s*none !important;/,
+    );
+  });
+
   it("does not let the browser re-paginate individual question blocks", () => {
     const questionBlockRule = css.match(/\.question-block\s*\{(?<body>[^}]*)\}/)
       ?.groups?.body ?? "";

@@ -187,6 +187,11 @@ The double `font-style` provides a fallback: `oblique 12deg` is used by modern b
   usable question content height. Any change to header/footer height, visibility,
   or placement must update `getPageMetrics()` and pagination tests; otherwise
   preview pagination can drift from print/PDF.
+- Screen-only preview zoom must wrap the rendered page stack outside
+  `.paper-page` and use a visual `transform`, leaving `.paper-page` dimensions,
+  padding, and pagination inputs unchanged. Print CSS must reset the zoom
+  wrapper (`width`/`height: auto`) and page stack transform (`transform: none`)
+  so PDF export uses the real paper metrics rather than the viewport zoom.
 
 ### Markdown Preview
 
