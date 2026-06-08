@@ -40,6 +40,11 @@
     flex: none !important;
   }
 
+  .paper-preview-shell {
+    display: block !important;
+    min-height: 0 !important;
+  }
+
   main > div,
   .paper-canvas {
     display: block !important;
