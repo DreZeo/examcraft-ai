@@ -30,8 +30,12 @@ export default function App() {
   const [outlineOpen, setOutlineOpen] = useState(true);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const paperScrollRef = useRef<HTMLElement | null>(null);
-  const workbenchScale = useWorkbenchScale();
-  const scaledWorkbench = workbenchScale < 0.999;
+  const viewportSize = useViewportSize();
+  const workbenchScale = computeWorkbenchScale(
+    viewportSize.width,
+    viewportSize.height,
+  );
+  const workbenchStyle = getWorkbenchStyle(workbenchScale, viewportSize);
 
   useTheme();
   useGlobalFont();
@@ -90,13 +94,7 @@ export default function App() {
       <div className="h-full w-full overflow-hidden bg-background">
         <div
           className="origin-top-left bg-background text-foreground"
-          style={{
-            width: scaledWorkbench ? WORKBENCH_BASE_WIDTH : "100%",
-            height: scaledWorkbench ? WORKBENCH_BASE_HEIGHT : "100%",
-            transform: scaledWorkbench
-              ? `scale(${workbenchScale})`
-              : undefined,
-          }}
+          style={workbenchStyle}
         >
           <div className="flex h-full flex-col bg-background text-foreground">
             <TopBar
@@ -139,6 +137,24 @@ export default function App() {
   );
 }
 
+export function getWorkbenchStyle(
+  scale: number,
+  viewport: { width: number; height: number },
+): {
+  width: number | "100%";
+  height: number | "100%";
+  transform?: string;
+} {
+  if (scale >= 0.999) {
+    return { width: "100%", height: "100%" };
+  }
+  return {
+    width: WORKBENCH_BASE_WIDTH,
+    height: Math.max(WORKBENCH_BASE_HEIGHT, viewport.height / scale),
+    transform: `scale(${scale})`,
+  };
+}
+
 export function computeWorkbenchScale(
   viewportWidth: number,
   viewportHeight: number,
@@ -151,22 +167,39 @@ export function computeWorkbenchScale(
   );
 }
 
-function useWorkbenchScale(): number {
-  const [scale, setScale] = useState(() =>
+function readViewportSize(): { width: number; height: number } {
+  const viewport = window.visualViewport;
+  return {
+    width: viewport?.width ?? window.innerWidth,
+    height: viewport?.height ?? window.innerHeight,
+  };
+}
+
+function useViewportSize(): { width: number; height: number } {
+  const [size, setSize] = useState(() =>
     typeof window === "undefined"
-      ? 1
-      : computeWorkbenchScale(window.innerWidth, window.innerHeight),
+      ? { width: WORKBENCH_BASE_WIDTH, height: WORKBENCH_BASE_HEIGHT }
+      : readViewportSize(),
   );
 
   useEffect(() => {
-    function updateScale() {
-      setScale(computeWorkbenchScale(window.innerWidth, window.innerHeight));
+    function updateSize() {
+      const next = readViewportSize();
+      setSize((current) =>
+        current.width === next.width && current.height === next.height
+          ? current
+          : next,
+      );
     }
 
-    updateScale();
-    window.addEventListener("resize", updateScale);
-    return () => window.removeEventListener("resize", updateScale);
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    window.visualViewport?.addEventListener("resize", updateSize);
+    return () => {
+      window.removeEventListener("resize", updateSize);
+      window.visualViewport?.removeEventListener("resize", updateSize);
+    };
   }, []);
 
-  return scale;
+  return size;
 }
