@@ -359,6 +359,16 @@ describe("assistantStore web search tool loop", () => {
   }
 
   it("executes model-requested search and feeds results into the next model call", async () => {
+    let resolveSearch!: (results: unknown[]) => void;
+    const searchPromise = new Promise<unknown[]>((resolve) => {
+      resolveSearch = resolve;
+    });
+    tauriMocks.invoke.mockImplementation((command: string) => {
+      if (command === "get_api_key") return Promise.resolve("test-key");
+      if (command === "web_search") return searchPromise;
+      return Promise.resolve();
+    });
+
     await useAssistantStore
       .getState()
       .sendMessage("生成计算机二级 C 语言最新趋势题", true);
@@ -378,6 +388,10 @@ describe("assistantStore web search tool loop", () => {
         ([command]) => command === "web_search",
       ),
     );
+    expect(useAssistantStore.getState().status).toBe("searching");
+    expect(useAssistantStore.getState().activeSearchQuery).toBe(
+      "计算机二级 C 语言 考试 趋势",
+    );
     expect(
       tauriMocks.invoke.mock.calls.some(
         ([command, args]) =>
@@ -385,14 +399,71 @@ describe("assistantStore web search tool loop", () => {
           args.query === "计算机二级 C 语言 考试 趋势",
       ),
     ).toBe(true);
-    expect(useAssistantStore.getState().messages.some((message) => message.kind === "webSearch")).toBe(true);
+    resolveSearch([
+      {
+        title: "NCRE C exam trend",
+        url: "https://example.test/ncre-c",
+        snippet: "Recent C programming exam topics.",
+        provider: "tavily",
+      },
+    ]);
+    await waitForCondition(() =>
+      useAssistantStore.getState().messages.some((message) => message.kind === "webSearch"),
+    );
     await waitForCondition(() => streamCalls().length === 2);
     expect(streamCalls()).toHaveLength(2);
 
     const secondMessages = streamCalls()[1]?.[1]?.messages ?? [];
-    expect(secondMessages.at(-1)?.role).toBe("user");
-    expect(secondMessages.at(-1)?.content).toContain("Web search results for this turn");
-    expect(secondMessages.at(-1)?.content).toContain("NCRE C exam trend");
+    const secondLastMessage = secondMessages[secondMessages.length - 1];
+    expect(secondLastMessage?.role).toBe("user");
+    expect(secondLastMessage?.content).toContain("Web search results for this turn");
+    expect(secondLastMessage?.content).toContain("NCRE C exam trend");
+  });
+
+  it("keeps turn search context even when the context window is small", async () => {
+    useConfigStore.setState({
+      config: {
+        ...useConfigStore.getState().config,
+        settings: {
+          ...useConfigStore.getState().config.settings,
+          contextMessageLimit: 2,
+        },
+      },
+    });
+    await useAssistantStore
+      .getState()
+      .sendMessage("生成计算机二级 C 语言最新趋势题", true);
+
+    await finishStreamWith(`
+\`\`\`search_web
+{"query":"计算机二级 C 语言 考试 趋势"}
+\`\`\`
+`);
+    await waitForCondition(() => streamCalls().length === 2);
+    await finishStreamWith("我会基于搜索资料生成题目。");
+    await waitForCondition(() =>
+      useAssistantStore.getState().messages.some((message) => message.kind === "confirmation"),
+    );
+
+    const confirmation = useAssistantStore
+      .getState()
+      .messages.find((message) => message.kind === "confirmation");
+    expect(confirmation?.kind).toBe("confirmation");
+
+    await useAssistantStore.getState().confirm(confirmation?.id ?? "");
+
+    const calls = streamCalls();
+    const lastMessages = calls[calls.length - 1]?.[1]?.messages ?? [];
+    expect(
+      lastMessages.some((message: { content: string }) =>
+        message.content.includes("Web search results for this turn"),
+      ),
+    ).toBe(true);
+    expect(
+      lastMessages.some((message: { content: string }) =>
+        message.content.includes("NCRE C exam trend"),
+      ),
+    ).toBe(true);
   });
 
   it("keeps search context when confirmation asks for JSON generation", async () => {
@@ -421,7 +492,7 @@ describe("assistantStore web search tool loop", () => {
     const calls = streamCalls();
     const lastMessages = calls[calls.length - 1]?.[1]?.messages ?? [];
     expect(lastMessages.some((message: { content: string }) => message.content.includes("NCRE C exam trend"))).toBe(true);
-    expect(lastMessages.at(-1)?.content).toContain("Confirmed. Generate the paper operations now");
+    expect(lastMessages[lastMessages.length - 1]?.content).toContain("Confirmed. Generate the paper operations now");
   });
 
   it("does not expose search tool instructions when web search is disabled", async () => {

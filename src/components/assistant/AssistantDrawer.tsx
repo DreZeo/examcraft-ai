@@ -51,6 +51,7 @@ export function AssistantDrawer({
   const messages = useAssistantStore((s) => s.messages);
   const status = useAssistantStore((s) => s.status);
   const streamBuffer = useAssistantStore((s) => s.streamBuffer);
+  const activeSearchQuery = useAssistantStore((s) => s.activeSearchQuery);
   const focusedQuestion = useAssistantStore((s) => s.focusedQuestion);
   const undoableResultId = useAssistantStore((s) => s.undoableResultId);
   const sendMessage = useAssistantStore((s) => s.sendMessage);
@@ -63,14 +64,16 @@ export function AssistantDrawer({
   const [resizing, setResizing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const streaming = status === "streaming";
+  const searching = status === "searching";
+  const busy = status !== "idle";
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages, streamBuffer]);
+  }, [messages, streamBuffer, activeSearchQuery]);
 
   function submit() {
     const text = draft.trim();
-    if (!text || streaming || !activeConfig) return;
+    if (!text || busy || !activeConfig) return;
     setDraft("");
     void sendMessage(text, webSearchEnabled);
   }
@@ -225,6 +228,25 @@ export function AssistantDrawer({
               )}
             </div>
           )}
+
+          {searching && (
+            <div className="mr-8 flex animate-fade-in items-start gap-2">
+              <span className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Search className="h-4 w-4 animate-pulse" />
+              </span>
+              <div className="min-w-0 flex-1 rounded-2xl rounded-tl-md border border-border/70 bg-card px-3.5 py-2.5 text-sm text-foreground shadow-sm">
+                <span className="inline-flex max-w-full items-center gap-2 text-muted-foreground">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                  <span className="shrink-0">{t("assistant.searching")}</span>
+                  {activeSearchQuery && (
+                    <span className="truncate text-foreground">
+                      {activeSearchQuery}
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-border bg-card px-3 py-3">
@@ -261,7 +283,7 @@ export function AssistantDrawer({
                 webSearchEnabled ? t("webSearch.toggleOn") : t("webSearch.toggleOff")
               }
               onClick={() => setWebSearchEnabled((value) => !value)}
-              disabled={!activeConfig || streaming}
+              disabled={!activeConfig || busy}
               className={
                 webSearchEnabled
                   ? "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-shadow hover:shadow-md hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
@@ -270,7 +292,7 @@ export function AssistantDrawer({
             >
               <Search className="h-4 w-4" />
             </button>
-            {streaming ? (
+            {busy ? (
               <button
                 type="button"
                 aria-label={t("assistant.stop")}

@@ -67,9 +67,11 @@ interface AssistantState {
   messages: ChatMessage[];
   sessions: ChatSessionMeta[];
   activeSessionId: string | null;
-  status: "idle" | "streaming";
+  status: "idle" | "streaming" | "searching";
   /** Accumulated content of the in-flight assistant reply (typewriter view). */
   streamBuffer: string;
+  /** Current web search query being executed between model calls. */
+  activeSearchQuery: string | null;
   /** Question pulled into context via "AI modify"; switches apply to replace. */
   focusedQuestion: Question | null;
   /** Result card whose paper snapshot can currently be undone. */
@@ -220,10 +222,17 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     const paperContextMsg = buildPaperContextMessage(summary, questionTypeStrategy);
     const limit = configState.config.settings.contextMessageLimit ?? 0;
     const windowedHistory = applyContextWindow(apiHistory, limit);
+    const messagesWithSearchContext =
+      activeSearchContexts.length > 0
+        ? ensureSearchContextMessage(
+            windowedHistory,
+            buildSearchContextMessage(activeSearchContexts),
+          )
+        : windowedHistory;
     return [
       { role: "system", content: `${system}${searchInstructions}` },
       ...(paperContextMsg ? [{ role: "user" as const, content: paperContextMsg }] : []),
-      ...windowedHistory,
+      ...messagesWithSearchContext,
     ];
   }
 
@@ -262,6 +271,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       apiKey = null;
     }
     if (!apiKey) {
+      set({ activeSearchQuery: null });
       pushMessage({
         id: uuid(),
         kind: "error",
@@ -274,6 +284,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     }
 
     try {
+      set({ status: "searching", streamBuffer: "", activeSearchQuery: query });
       const results = await storage.webSearch({
         provider: settings.activeProvider,
         apiKey,
@@ -290,9 +301,11 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         contentMode: settings.contentMode,
         results,
       });
+      set({ activeSearchQuery: null });
       await persistSession();
       return results;
     } catch (err) {
+      set({ activeSearchQuery: null });
       const error = toAppError(err);
       pushMessage({
         id: uuid(),
@@ -359,7 +372,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     messageId: string,
     nextText?: string,
   ): Promise<UserMessageResendResult> {
-    if (get().status === "streaming") return { ok: false, reason: "streaming" };
+    if (get().status !== "idle") return { ok: false, reason: "streaming" };
 
     const target = findUserMessage(messageId);
     if (!target) return { ok: false, reason: "notFound" };
@@ -420,7 +433,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       return;
     }
 
-    set({ status: "streaming", streamBuffer: "" });
+    set({ status: "streaming", streamBuffer: "", activeSearchQuery: null });
     settled = false;
 
     let apiKey: string | null;
@@ -430,7 +443,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       apiKey = null;
     }
     if (!apiKey) {
-      set({ status: "idle" });
+      set({ status: "idle", activeSearchQuery: null });
       pushMessage({
         id: uuid(),
         kind: "error",
@@ -475,7 +488,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     settled = true;
     const reply = get().streamBuffer;
     await teardown();
-    set({ status: "idle", streamBuffer: "" });
+    set({ status: "idle", streamBuffer: "", activeSearchQuery: null });
 
     const { json, prose } = extractJson(reply);
 
@@ -582,24 +595,38 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     }
 
     activeSearchContexts = [...activeSearchContexts, ...newContexts];
-    apiHistory.push({
-      role: "user",
-      content: buildSearchContextMessage(activeSearchContexts),
-    });
+    replaceSearchContextMessage(buildSearchContextMessage(activeSearchContexts));
     return true;
   }
 
   function beginTurn(useWebSearch: boolean) {
     retryCount = 0;
     activeSearchContexts = [];
+    set({ activeSearchQuery: null });
     webSearchEnabledForTurn = useWebSearch;
+  }
+
+  function replaceSearchContextMessage(content: string) {
+    const previousIndex = apiHistory.findIndex((message) =>
+      isSearchContextMessage(message),
+    );
+    const nextMessage: ApiMessage = { role: "user", content };
+    if (previousIndex === -1) {
+      apiHistory.push(nextMessage);
+      return;
+    }
+    apiHistory = [
+      ...apiHistory.slice(0, previousIndex),
+      nextMessage,
+      ...apiHistory.slice(previousIndex + 1),
+    ];
   }
 
   async function handleError(error: AppError): Promise<void> {
     if (settled) return;
     settled = true;
     await teardown();
-    set({ status: "idle", streamBuffer: "" });
+    set({ status: "idle", streamBuffer: "", activeSearchQuery: null });
     pushMessage({
       id: uuid(),
       kind: "error",
@@ -616,6 +643,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     activeSessionId: null,
     status: "idle",
     streamBuffer: "",
+    activeSearchQuery: null,
     focusedQuestion: null,
     undoableResultId: null,
 
@@ -626,6 +654,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       set({
         status: "idle",
         streamBuffer: "",
+        activeSearchQuery: null,
         focusedQuestion: null,
         undoableResultId: null,
       });
@@ -699,7 +728,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
 
     sendMessage: async (text, useWebSearch = false) => {
       const trimmed = text.trim();
-      if (!trimmed || get().status === "streaming") return;
+      if (!trimmed || get().status !== "idle") return;
       beginTurn(useWebSearch);
 
       const focused = get().focusedQuestion;
@@ -723,7 +752,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     },
 
     confirm: async (cardId) => {
-      if (get().status === "streaming") return;
+      if (get().status !== "idle") return;
       set((s) => ({
         messages: s.messages.map((m) =>
           m.id === cardId && m.kind === "confirmation"
@@ -754,7 +783,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     },
 
     retry: async () => {
-      if (get().status === "streaming") return;
+      if (get().status !== "idle") return;
       retryCount = 0;
       await runChat();
     },
@@ -770,7 +799,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       }
       await teardown();
       const reply = get().streamBuffer.trim();
-      set({ status: "idle", streamBuffer: "" });
+      set({ status: "idle", streamBuffer: "", activeSearchQuery: null });
       if (reply) {
         apiHistory.push({ role: "assistant", content: reply });
         pushMessage({ id: uuid(), kind: "text", role: "assistant", content: reply });
@@ -837,6 +866,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         messages: [],
         status: "idle",
         streamBuffer: "",
+        activeSearchQuery: null,
         focusedQuestion: null,
         undoableResultId: null,
       });
@@ -857,6 +887,21 @@ export function applyContextWindow(history: ApiMessage[], limit: number): ApiMes
     start = Math.max(0, start - 1);
   }
   return history.slice(start);
+}
+
+function ensureSearchContextMessage(
+  messages: ApiMessage[],
+  searchContext: string,
+): ApiMessage[] {
+  if (messages.some((message) => isSearchContextMessage(message))) return messages;
+  return [{ role: "user", content: searchContext }, ...messages];
+}
+
+function isSearchContextMessage(message: ApiMessage): boolean {
+  return (
+    message.role === "user" &&
+    message.content.startsWith("Web search results for this turn.")
+  );
 }
 
 function toAppError(err: unknown): AppError {
