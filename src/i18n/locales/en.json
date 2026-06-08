@@ -323,6 +323,10 @@
     "reorderQuestions": "Reorder questions",
     "applied": "Applied to paper",
     "thinking": "Thinking…",
+    "reasoningTitle": "Thinking",
+    "reasoningThinking": "Thinking…",
+    "expandReasoning": "Expand thinking",
+    "collapseReasoning": "Collapse thinking",
     "searching": "Searching the web…",
     "you": "You"
   },

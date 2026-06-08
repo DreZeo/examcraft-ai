@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatMessage } from "../types/library";
 import type { ExamPaper, Question } from "../types/exam";
 import { defaultAppConfig } from "../types/config";
-import { useAssistantStore, applyContextWindow } from "../../stores/assistantStore";
+import {
+  useAssistantStore,
+  applyContextWindow,
+  splitThinking,
+} from "../../stores/assistantStore";
 import { useConfigStore } from "../../stores/configStore";
 import { usePaperStore } from "../../stores/paperStore";
 
@@ -503,6 +507,117 @@ describe("assistantStore web search tool loop", () => {
     expect(
       tauriMocks.invoke.mock.calls.some(([command]) => command === "web_search"),
     ).toBe(false);
+  });
+});
+
+describe("assistantStore reasoning streams", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    tauriMocks.listeners = {};
+    tauriMocks.listen.mockImplementation((event: string, callback: (event: { payload: unknown }) => void) => {
+      tauriMocks.listeners[event] = callback;
+      return Promise.resolve(vi.fn());
+    });
+    tauriMocks.invoke.mockImplementation((command: string) => {
+      if (command === "get_api_key") return Promise.resolve("test-key");
+      if (command === "web_search") {
+        return Promise.resolve([
+          {
+            title: "NCRE C",
+            url: "https://example.test/c",
+            snippet: "C exam",
+            provider: "tavily",
+          },
+        ]);
+      }
+      return Promise.resolve();
+    });
+    configureModel();
+    usePaperStore.setState({
+      paper: paper(),
+      undoSnapshot: null,
+      activePaperId: "paper-1",
+      saveStatus: "saved",
+    });
+    useAssistantStore.getState().reset();
+  });
+
+  async function waitForCondition(
+    predicate: () => boolean,
+    timeoutMs = 1000,
+  ) {
+    const start = Date.now();
+    while (!predicate()) {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error("Timed out waiting for condition");
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
+  it("stores reasoning chunks on the final confirmation card without sending them back", async () => {
+    await useAssistantStore.getState().sendMessage("生成一份普通试卷", false);
+
+    tauriMocks.listeners["chat:reasoning-chunk"]?.({ payload: "先分析需求" });
+    tauriMocks.listeners["chat:chunk"]?.({ payload: "我会生成一份试卷。" });
+    tauriMocks.listeners["chat:done"]?.({ payload: undefined });
+
+    await waitForCondition(() =>
+      useAssistantStore.getState().messages.some((message) => message.kind === "confirmation"),
+    );
+    const confirmation = useAssistantStore
+      .getState()
+      .messages.find((message) => message.kind === "confirmation");
+    expect(confirmation).toMatchObject({
+      kind: "confirmation",
+      content: "我会生成一份试卷。",
+      reasoning: "先分析需求",
+    });
+    expect(useAssistantStore.getState().reasoningBuffer).toBe("");
+
+    await useAssistantStore.getState().confirm(confirmation?.id ?? "");
+    const calls = tauriMocks.invoke.mock.calls.filter(
+      ([command]) => command === "stream_chat",
+    );
+    const lastMessages = calls[calls.length - 1]?.[1]?.messages ?? [];
+    expect(
+      lastMessages.some((message: { content: string }) =>
+        message.content.includes("先分析需求"),
+      ),
+    ).toBe(false);
+  });
+
+  it("splits think tags out of visible content", () => {
+    expect(splitThinking("<think>分析</think>最终答案")).toEqual({
+      content: "最终答案",
+      reasoning: "分析",
+    });
+    expect(splitThinking("开头<think>未闭合")).toEqual({
+      content: "开头",
+      reasoning: "未闭合",
+    });
+  });
+
+  it("parses search tool calls after removing think tags", async () => {
+    await useAssistantStore
+      .getState()
+      .sendMessage("联网搜索计算机二级 C 语言", true);
+
+    tauriMocks.listeners["chat:chunk"]?.({
+      payload:
+        '<think>需要搜索</think>\n```search_web\n{"query":"计算机二级 C 语言"}\n```',
+    });
+    tauriMocks.listeners["chat:done"]?.({ payload: undefined });
+
+    await waitForCondition(() =>
+      tauriMocks.invoke.mock.calls.some(([command]) => command === "web_search"),
+    );
+    expect(
+      tauriMocks.invoke.mock.calls.some(
+        ([command, args]) =>
+          command === "web_search" && args.query === "计算机二级 C 语言",
+      ),
+    ).toBe(true);
   });
 });
 

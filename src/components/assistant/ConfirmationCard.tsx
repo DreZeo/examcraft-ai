@@ -2,10 +2,12 @@ import { useTranslation } from "react-i18next";
 import { Check, Pencil } from "lucide-react";
 import { useAssistantStore } from "../../stores/assistantStore";
 import { Markdown } from "../paper/Markdown";
+import { ReasoningBlock } from "./ReasoningBlock";
 
 interface ConfirmationCardProps {
   id: string;
   content: string;
+  reasoning?: string;
   resolved: boolean;
 }
 
@@ -14,7 +16,12 @@ interface ConfirmationCardProps {
  * for the user to confirm before generating JSON. "Confirm" sends the generate
  * request; "Modify" simply dismisses so the user can type an adjustment.
  */
-export function ConfirmationCard({ id, content, resolved }: ConfirmationCardProps) {
+export function ConfirmationCard({
+  id,
+  content,
+  reasoning,
+  resolved,
+}: ConfirmationCardProps) {
   const { t } = useTranslation();
   const confirm = useAssistantStore((s) => s.confirm);
   const dismiss = useAssistantStore((s) => s.dismissConfirmation);
@@ -22,6 +29,7 @@ export function ConfirmationCard({ id, content, resolved }: ConfirmationCardProp
 
   return (
     <div className="animate-fade-in rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/[0.08] to-primary/[0.04] p-4 text-sm shadow-sm">
+      <ReasoningBlock content={reasoning} />
       <div className="text-foreground">
         <Markdown>{content}</Markdown>
       </div>

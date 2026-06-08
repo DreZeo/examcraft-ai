@@ -26,6 +26,7 @@ use tokio::sync::broadcast;
 /// Frontend event names. The Part B (React) layer subscribes to these exact
 /// strings, so they are the load-bearing contract between backend and frontend.
 const EVENT_CHUNK: &str = "chat:chunk";
+const EVENT_REASONING_CHUNK: &str = "chat:reasoning-chunk";
 const EVENT_DONE: &str = "chat:done";
 const EVENT_ERROR: &str = "chat:error";
 
@@ -50,8 +51,8 @@ pub struct ChatMessage {
 
 // --- Tolerant response shapes -------------------------------------------------
 
-/// One streamed SSE chunk. Only `choices[].delta.content` is read; every other
-/// field (id, model, usage, finish_reason, role, ...) is ignored by serde.
+/// One streamed SSE chunk. Only assistant text/reasoning deltas are read; every
+/// other field (id, model, usage, finish_reason, role, ...) is ignored by serde.
 #[derive(Debug, Deserialize)]
 struct StreamChunk {
     #[serde(default)]
@@ -67,7 +68,13 @@ struct StreamChoice {
 #[derive(Debug, Default, Deserialize)]
 struct Delta {
     #[serde(default)]
-    content: Option<String>,
+    content: Option<serde_json::Value>,
+    #[serde(default)]
+    reasoning_content: Option<serde_json::Value>,
+    #[serde(default)]
+    reasoning: Option<serde_json::Value>,
+    #[serde(default)]
+    thinking: Option<serde_json::Value>,
 }
 
 /// `GET /models` response. Only `data[].id` is read.
@@ -226,7 +233,7 @@ async fn stream_chat_inner(
     tokio::pin!(stream);
 
     let mut sse_buf = String::new();
-    let mut batch = String::new();
+    let mut batch = StreamBatches::default();
     let mut last_flush = Instant::now();
 
     loop {
@@ -274,13 +281,13 @@ struct DrainOutcome {
 }
 
 /// Parse all complete SSE events (`...\n\n`) currently in `buf`, appending any
-/// decoded content to `batch`. Returns whether the `[DONE]` sentinel was seen.
+/// decoded content/reasoning to `batch`. Returns whether the `[DONE]` sentinel was seen.
 ///
 /// This only reads `buf`; the caller trims consumed bytes afterwards via
 /// `retain_tail`. Because `retain_tail` leaves no complete event behind, the
 /// next call only ever sees newly arrived events, so content is never
 /// double-counted.
-fn drain_events(buf: &str, batch: &mut String) -> DrainOutcome {
+fn drain_events(buf: &str, batch: &mut StreamBatches) -> DrainOutcome {
     let mut done = false;
     let mut pos = 0usize;
     while let Some(rel) = buf[pos..].find("\n\n") {
@@ -294,10 +301,8 @@ fn drain_events(buf: &str, batch: &mut String) -> DrainOutcome {
                     done = true;
                 } else if !data.is_empty() {
                     if let Ok(chunk) = serde_json::from_str::<StreamChunk>(data) {
-                        if let Some(content) =
-                            chunk.choices.into_iter().next().and_then(|c| c.delta.content)
-                        {
-                            batch.push_str(&content);
+                        if let Some(choice) = chunk.choices.into_iter().next() {
+                            append_delta(&choice.delta, batch);
                         }
                     }
                 }
@@ -311,6 +316,110 @@ fn drain_events(buf: &str, batch: &mut String) -> DrainOutcome {
     DrainOutcome { done }
 }
 
+#[derive(Default)]
+struct StreamBatches {
+    content: String,
+    reasoning: String,
+}
+
+impl StreamBatches {
+    fn is_empty(&self) -> bool {
+        self.content.is_empty() && self.reasoning.is_empty()
+    }
+
+    fn char_count(&self) -> usize {
+        self.content.chars().count() + self.reasoning.chars().count()
+    }
+}
+
+fn append_delta(delta: &Delta, batch: &mut StreamBatches) {
+    if let Some(reasoning) = extract_plain_text(delta.reasoning_content.as_ref())
+        .or_else(|| extract_plain_text(delta.reasoning.as_ref()))
+        .or_else(|| extract_plain_text(delta.thinking.as_ref()))
+    {
+        batch.reasoning.push_str(&reasoning);
+    }
+
+    if let Some(content) = delta.content.as_ref() {
+        let reasoning_from_content = extract_thinking_text(content);
+        if !reasoning_from_content.is_empty() {
+            batch.reasoning.push_str(&reasoning_from_content);
+        }
+        let visible_content = extract_content_text(content);
+        if !visible_content.is_empty() {
+            batch.content.push_str(&visible_content);
+        }
+    }
+}
+
+fn extract_plain_text(value: Option<&serde_json::Value>) -> Option<String> {
+    value.and_then(|v| {
+        let text = collect_text(v);
+        if text.is_empty() {
+            None
+        } else {
+            Some(text)
+        }
+    })
+}
+
+fn collect_text(value: &serde_json::Value) -> String {
+    match value {
+        serde_json::Value::String(text) => text.clone(),
+        serde_json::Value::Array(items) => items.iter().map(collect_text).collect(),
+        serde_json::Value::Object(map) => map
+            .get("text")
+            .or_else(|| map.get("content"))
+            .or_else(|| map.get("thinking"))
+            .map(collect_text)
+            .unwrap_or_default(),
+        _ => String::new(),
+    }
+}
+
+fn extract_content_text(value: &serde_json::Value) -> String {
+    match value {
+        serde_json::Value::String(text) => text.clone(),
+        serde_json::Value::Array(items) => items.iter().map(extract_content_text).collect(),
+        serde_json::Value::Object(map) => {
+            if map
+                .get("type")
+                .and_then(|v| v.as_str())
+                .is_some_and(|kind| kind.eq_ignore_ascii_case("thinking"))
+            {
+                String::new()
+            } else {
+                map.get("text")
+                    .or_else(|| map.get("content"))
+                    .map(collect_text)
+                    .unwrap_or_default()
+            }
+        }
+        _ => String::new(),
+    }
+}
+
+fn extract_thinking_text(value: &serde_json::Value) -> String {
+    match value {
+        serde_json::Value::Array(items) => items.iter().map(extract_thinking_text).collect(),
+        serde_json::Value::Object(map) => {
+            if map
+                .get("type")
+                .and_then(|v| v.as_str())
+                .is_some_and(|kind| kind.eq_ignore_ascii_case("thinking"))
+            {
+                return map
+                    .get("thinking")
+                    .or_else(|| map.get("text"))
+                    .map(collect_text)
+                    .unwrap_or_default();
+            }
+            map.get("thinking").map(collect_text).unwrap_or_default()
+        }
+        _ => String::new(),
+    }
+}
+
 /// Remove everything up to and including the last `\n\n`, keeping only an
 /// incomplete trailing event for the next read.
 fn retain_tail(buf: &mut String) {
@@ -319,20 +428,24 @@ fn retain_tail(buf: &mut String) {
     }
 }
 
-fn maybe_flush(app: &AppHandle, batch: &mut String, last_flush: &mut Instant) {
+fn maybe_flush(app: &AppHandle, batch: &mut StreamBatches, last_flush: &mut Instant) {
     if batch.is_empty() {
         return;
     }
-    if batch.chars().count() >= BATCH_MAX_CHARS || last_flush.elapsed() >= BATCH_INTERVAL {
+    if batch.char_count() >= BATCH_MAX_CHARS || last_flush.elapsed() >= BATCH_INTERVAL {
         flush_batch(app, batch);
         *last_flush = Instant::now();
     }
 }
 
-fn flush_batch(app: &AppHandle, batch: &mut String) {
-    if !batch.is_empty() {
-        let _ = app.emit(EVENT_CHUNK, batch.clone());
-        batch.clear();
+fn flush_batch(app: &AppHandle, batch: &mut StreamBatches) {
+    if !batch.reasoning.is_empty() {
+        let _ = app.emit(EVENT_REASONING_CHUNK, batch.reasoning.clone());
+        batch.reasoning.clear();
+    }
+    if !batch.content.is_empty() {
+        let _ = app.emit(EVENT_CHUNK, batch.content.clone());
+        batch.content.clear();
     }
 }
 
@@ -389,19 +502,20 @@ mod tests {
             "data: {\"id\":\"x\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello\"}}]}\n\n",
             "data: {\"choices\":[{\"delta\":{\"content\":\" world\"},\"finish_reason\":null}]}\n\n"
         );
-        let mut batch = String::new();
+        let mut batch = StreamBatches::default();
         let out = drain_events(buf, &mut batch);
         assert!(!out.done);
-        assert_eq!(batch, "Hello world");
+        assert_eq!(batch.content, "Hello world");
+        assert_eq!(batch.reasoning, "");
     }
 
     #[test]
     fn drain_detects_done_sentinel() {
         let buf = "data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\ndata: [DONE]\n\n";
-        let mut batch = String::new();
+        let mut batch = StreamBatches::default();
         let out = drain_events(buf, &mut batch);
         assert!(out.done);
-        assert_eq!(batch, "hi");
+        assert_eq!(batch.content, "hi");
     }
 
     #[test]
@@ -411,9 +525,35 @@ mod tests {
             "data: {\"choices\":[{\"delta\":{\"role\":\"assistant\"}}]}\n\n",
             "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\n"
         );
-        let mut batch = String::new();
+        let mut batch = StreamBatches::default();
         drain_events(buf, &mut batch);
-        assert_eq!(batch, "ok");
+        assert_eq!(batch.content, "ok");
+    }
+
+    #[test]
+    fn drain_extracts_reasoning_content_separately() {
+        let buf = concat!(
+            "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"think\"}}]}\n\n",
+            "data: {\"choices\":[{\"delta\":{\"content\":\"answer\"}}]}\n\n"
+        );
+        let mut batch = StreamBatches::default();
+        let out = drain_events(buf, &mut batch);
+        assert!(!out.done);
+        assert_eq!(batch.reasoning, "think");
+        assert_eq!(batch.content, "answer");
+    }
+
+    #[test]
+    fn drain_extracts_thinking_array_without_polluting_content() {
+        let buf = concat!(
+            "data: {\"choices\":[{\"delta\":{\"content\":[{\"type\":\"thinking\",\"thinking\":[{\"type\":\"text\",\"text\":\"plan\"}]},{\"type\":\"text\",\"text\":\"final\"}]}}]}\n\n",
+            "data: [DONE]\n\n"
+        );
+        let mut batch = StreamBatches::default();
+        let out = drain_events(buf, &mut batch);
+        assert!(out.done);
+        assert_eq!(batch.reasoning, "plan");
+        assert_eq!(batch.content, "final");
     }
 
     #[test]
@@ -421,28 +561,28 @@ mod tests {
         // Simulates an event split across two reads.
         let mut buf =
             String::from("data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\ndata: {\"choi");
-        let mut batch = String::new();
+        let mut batch = StreamBatches::default();
         drain_events(&buf, &mut batch);
         retain_tail(&mut buf);
-        assert_eq!(batch, "a");
+        assert_eq!(batch.content, "a");
         assert_eq!(buf, "data: {\"choi");
 
         // Second read completes the event.
         buf.push_str("ces\":[{\"delta\":{\"content\":\"b\"}}]}\n\n");
-        let mut batch2 = String::new();
+        let mut batch2 = StreamBatches::default();
         drain_events(&buf, &mut batch2);
         retain_tail(&mut buf);
-        assert_eq!(batch2, "b");
+        assert_eq!(batch2.content, "b");
         assert_eq!(buf, "");
     }
 
     #[test]
     fn drain_handles_malformed_json_without_panicking() {
         let buf = "data: {not valid json}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"x\"}}]}\n\n";
-        let mut batch = String::new();
+        let mut batch = StreamBatches::default();
         let out = drain_events(buf, &mut batch);
         assert!(!out.done);
-        assert_eq!(batch, "x");
+        assert_eq!(batch.content, "x");
     }
 
     #[test]

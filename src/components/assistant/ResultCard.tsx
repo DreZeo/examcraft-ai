@@ -17,10 +17,12 @@ import {
 } from "../../lib/exam/operationPreview";
 import { useAssistantStore } from "../../stores/assistantStore";
 import { Markdown } from "../paper/Markdown";
+import { ReasoningBlock } from "./ReasoningBlock";
 
 interface ResultCardProps {
   id: string;
   prose: string;
+  reasoning?: string;
   operations: AiPaperOperation[];
   questions?: Question[];
   applied: boolean;
@@ -31,6 +33,7 @@ interface ResultCardProps {
 export function ResultCard({
   id,
   prose,
+  reasoning,
   operations,
   questions,
   applied,
@@ -45,6 +48,7 @@ export function ResultCard({
 
   return (
     <div className="animate-fade-in rounded-2xl border border-border/70 bg-card p-4 text-sm shadow-sm transition-shadow hover:shadow-md">
+      <ReasoningBlock content={reasoning} />
       {prose && (
         <div className="mb-2 text-muted-foreground">
           <Markdown>{prose}</Markdown>

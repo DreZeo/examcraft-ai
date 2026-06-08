@@ -323,6 +323,10 @@
     "reorderQuestions": "重排题目顺序",
     "applied": "已应用到试卷",
     "thinking": "思考中…",
+    "reasoningTitle": "思考过程",
+    "reasoningThinking": "思考中…",
+    "expandReasoning": "展开思考过程",
+    "collapseReasoning": "收起思考过程",
     "searching": "正在联网搜索中…",
     "you": "你"
   },

@@ -56,6 +56,7 @@ function renderDrawer(message: ChatMessage = userMessage()) {
     messages: [message],
     status: "idle",
     streamBuffer: "",
+    reasoningBuffer: "",
     focusedQuestion: null,
     undoableResultId: null,
     resendUserMessage: mocks.resendUserMessage,
@@ -181,5 +182,24 @@ describe("AssistantDrawer user message actions", () => {
       "text-muted-foreground",
       "shadow-sm",
     );
+  });
+
+  it("renders assistant reasoning collapsed by default and expands on click", async () => {
+    const user = userEvent.setup();
+    renderDrawer({
+      id: "assistant-1",
+      kind: "text",
+      role: "assistant",
+      content: "最终回答",
+      reasoning: "内部分析步骤",
+    });
+
+    expect(screen.getByRole("button", { name: "展开思考过程" })).toBeInTheDocument();
+    expect(screen.queryByText("内部分析步骤")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "展开思考过程" }));
+
+    expect(screen.getByRole("button", { name: "收起思考过程" })).toBeInTheDocument();
+    expect(screen.getByText("内部分析步骤")).toBeInTheDocument();
   });
 });

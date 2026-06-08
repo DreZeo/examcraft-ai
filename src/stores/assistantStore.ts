@@ -70,6 +70,8 @@ interface AssistantState {
   status: "idle" | "streaming" | "searching";
   /** Accumulated content of the in-flight assistant reply (typewriter view). */
   streamBuffer: string;
+  /** Accumulated reasoning of the in-flight assistant reply. Not sent back to the model. */
+  reasoningBuffer: string;
   /** Current web search query being executed between model calls. */
   activeSearchQuery: string | null;
   /** Question pulled into context via "AI modify"; switches apply to replace. */
@@ -284,7 +286,12 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     }
 
     try {
-      set({ status: "searching", streamBuffer: "", activeSearchQuery: query });
+      set({
+        status: "searching",
+        streamBuffer: "",
+        reasoningBuffer: "",
+        activeSearchQuery: query,
+      });
       const results = await storage.webSearch({
         provider: settings.activeProvider,
         apiKey,
@@ -433,7 +440,12 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       return;
     }
 
-    set({ status: "streaming", streamBuffer: "", activeSearchQuery: null });
+    set({
+      status: "streaming",
+      streamBuffer: "",
+      reasoningBuffer: "",
+      activeSearchQuery: null,
+    });
     settled = false;
 
     let apiKey: string | null;
@@ -443,7 +455,12 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       apiKey = null;
     }
     if (!apiKey) {
-      set({ status: "idle", activeSearchQuery: null });
+      set({
+        status: "idle",
+        streamBuffer: "",
+        reasoningBuffer: "",
+        activeSearchQuery: null,
+      });
       pushMessage({
         id: uuid(),
         kind: "error",
@@ -456,6 +473,11 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     unlisteners.push(
       await listen<string>("chat:chunk", (e) => {
         set((s) => ({ streamBuffer: s.streamBuffer + e.payload }));
+      }),
+    );
+    unlisteners.push(
+      await listen<string>("chat:reasoning-chunk", (e) => {
+        set((s) => ({ reasoningBuffer: s.reasoningBuffer + e.payload }));
       }),
     );
     unlisteners.push(
@@ -486,9 +508,16 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
   async function handleDone(): Promise<void> {
     if (settled) return;
     settled = true;
-    const reply = get().streamBuffer;
+    const rawReply = get().streamBuffer;
+    const rawReasoning = get().reasoningBuffer;
+    const { content: reply, reasoning } = splitThinking(rawReply, rawReasoning);
     await teardown();
-    set({ status: "idle", streamBuffer: "", activeSearchQuery: null });
+    set({
+      status: "idle",
+      streamBuffer: "",
+      reasoningBuffer: "",
+      activeSearchQuery: null,
+    });
 
     const { json, prose } = extractJson(reply);
 
@@ -512,6 +541,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         id: uuid(),
         kind: "confirmation",
         content: reply.trim(),
+        reasoning: reasoning || undefined,
         resolved: false,
       });
       await persistSession();
@@ -536,6 +566,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         id: uuid(),
         kind: "result",
         prose,
+        reasoning: reasoning || undefined,
         operations: result.operations,
         applied: false,
       });
@@ -626,7 +657,12 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     if (settled) return;
     settled = true;
     await teardown();
-    set({ status: "idle", streamBuffer: "", activeSearchQuery: null });
+    set({
+      status: "idle",
+      streamBuffer: "",
+      reasoningBuffer: "",
+      activeSearchQuery: null,
+    });
     pushMessage({
       id: uuid(),
       kind: "error",
@@ -643,6 +679,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     activeSessionId: null,
     status: "idle",
     streamBuffer: "",
+    reasoningBuffer: "",
     activeSearchQuery: null,
     focusedQuestion: null,
     undoableResultId: null,
@@ -654,6 +691,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       set({
         status: "idle",
         streamBuffer: "",
+        reasoningBuffer: "",
         activeSearchQuery: null,
         focusedQuestion: null,
         undoableResultId: null,
@@ -799,10 +837,25 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       }
       await teardown();
       const reply = get().streamBuffer.trim();
-      set({ status: "idle", streamBuffer: "", activeSearchQuery: null });
-      if (reply) {
-        apiHistory.push({ role: "assistant", content: reply });
-        pushMessage({ id: uuid(), kind: "text", role: "assistant", content: reply });
+      const rawReasoning = get().reasoningBuffer;
+      const split = splitThinking(reply, rawReasoning);
+      set({
+        status: "idle",
+        streamBuffer: "",
+        reasoningBuffer: "",
+        activeSearchQuery: null,
+      });
+      if (split.content || split.reasoning) {
+        if (split.content) {
+          apiHistory.push({ role: "assistant", content: split.content });
+        }
+        pushMessage({
+          id: uuid(),
+          kind: "text",
+          role: "assistant",
+          content: split.content,
+          reasoning: split.reasoning || undefined,
+        });
         await persistSession();
       }
     },
@@ -866,6 +919,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         messages: [],
         status: "idle",
         streamBuffer: "",
+        reasoningBuffer: "",
         activeSearchQuery: null,
         focusedQuestion: null,
         undoableResultId: null,
@@ -887,6 +941,40 @@ export function applyContextWindow(history: ApiMessage[], limit: number): ApiMes
     start = Math.max(0, start - 1);
   }
   return history.slice(start);
+}
+
+export function splitThinking(
+  content: string,
+  reasoning = "",
+): { content: string; reasoning: string } {
+  let visible = "";
+  let extracted = "";
+  let cursor = 0;
+
+  while (cursor < content.length) {
+    const start = content.indexOf("<think>", cursor);
+    if (start === -1) {
+      visible += content.slice(cursor);
+      break;
+    }
+
+    visible += content.slice(cursor, start);
+    const bodyStart = start + "<think>".length;
+    const end = content.indexOf("</think>", bodyStart);
+    if (end === -1) {
+      extracted += content.slice(bodyStart);
+      cursor = content.length;
+      break;
+    }
+
+    extracted += content.slice(bodyStart, end);
+    cursor = end + "</think>".length;
+  }
+
+  return {
+    content: visible.trim(),
+    reasoning: [reasoning.trim(), extracted.trim()].filter(Boolean).join("\n\n"),
+  };
 }
 
 function ensureSearchContextMessage(

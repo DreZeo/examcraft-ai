@@ -59,6 +59,7 @@ Events (listen via `@tauri-apps/api/event`):
 | Event | Payload | Meaning |
 |-------|---------|---------|
 | `chat:chunk` | `string` | incremental content delta (batched ~50ms/~80 chars) |
+| `chat:reasoning-chunk` | `string` | incremental provider reasoning/thinking delta, rendered separately and not sent back in `apiHistory` |
 | `chat:done` | `()` | stream finished or cancelled |
 | `chat:error` | `{ code, detail? }` | AppError (see backend error-handling.md) |
 
