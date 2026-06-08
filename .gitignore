@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Local workflow/runtime files and generated release artifacts
+.agents/
+.codex/
+release/
+cc-switch-3.16.1/
+.trellis/tasks/
+.trellis/workspace/
+.trellis/.developer
+.trellis/.runtime/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
