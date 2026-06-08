@@ -19,7 +19,7 @@ export function UserMessageBubble({ message }: UserMessageBubbleProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
   const [error, setError] = useState<string | null>(null);
-  const streaming = status === "streaming";
+  const busy = status !== "idle";
 
   useEffect(() => {
     if (!editing) setDraft(message.content);
@@ -43,11 +43,14 @@ export function UserMessageBubble({ message }: UserMessageBubbleProps) {
 
   async function confirmEdit() {
     setError(null);
+    const nextText = draft.trim();
+    if (!nextText) return;
+    setEditing(false);
     const result = await editAndResendUserMessage(message.id, draft);
     if (result.ok) {
-      setEditing(false);
       return;
     }
+    setEditing(true);
     setError(errorText(result.reason));
   }
 
@@ -77,7 +80,7 @@ export function UserMessageBubble({ message }: UserMessageBubbleProps) {
               value={draft}
               onChange={(e) => setDraft(e.currentTarget.value)}
               onKeyDown={onEditKeyDown}
-              disabled={streaming}
+              disabled={busy}
               rows={Math.max(2, draft.split("\n").length)}
               aria-label={t("assistant.editMessage")}
               className="min-h-16 w-full resize-none rounded-xl border border-primary-foreground/20 bg-primary-foreground/10 px-2.5 py-2 text-sm text-primary-foreground placeholder:text-primary-foreground/60 shadow-inner outline-none transition-shadow focus:ring-2 focus:ring-primary-foreground/40 disabled:opacity-60"
@@ -95,7 +98,7 @@ export function UserMessageBubble({ message }: UserMessageBubbleProps) {
               <button
                 type="button"
                 onClick={() => void confirmEdit()}
-                disabled={streaming || !draft.trim()}
+                disabled={busy || !draft.trim()}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-primary-foreground/80 transition-colors hover:bg-primary-foreground/15 hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/40 disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
                 aria-label={t("assistant.resendEdited")}
                 title={t("assistant.resendEdited")}
@@ -118,7 +121,7 @@ export function UserMessageBubble({ message }: UserMessageBubbleProps) {
           <button
             type="button"
             onClick={() => void retry()}
-            disabled={streaming}
+            disabled={busy}
             className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
             aria-label={t("assistant.retry")}
             title={t("assistant.retry")}
@@ -131,7 +134,7 @@ export function UserMessageBubble({ message }: UserMessageBubbleProps) {
               setError(null);
               setEditing(true);
             }}
-            disabled={streaming}
+            disabled={busy}
             className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
             aria-label={t("assistant.editMessage")}
             title={t("assistant.editMessage")}

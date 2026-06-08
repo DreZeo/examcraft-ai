@@ -113,6 +113,31 @@ describe("AssistantDrawer user message actions", () => {
     );
   });
 
+  it("closes inline editing immediately after confirming resend", async () => {
+    const user = userEvent.setup();
+    let resolveResend!: (value: { ok: true }) => void;
+    mocks.editAndResendUserMessage.mockReturnValue(
+      new Promise((resolve) => {
+        resolveResend = resolve;
+      }),
+    );
+    renderDrawer();
+
+    await user.click(screen.getByRole("button", { name: "编辑消息" }));
+    const editor = screen.getByRole("textbox", { name: "编辑消息" });
+    await user.clear(editor);
+    await user.type(editor, "计算机基础知识第一章");
+    await user.click(screen.getByRole("button", { name: "重新发送" }));
+
+    expect(screen.queryByRole("textbox", { name: "编辑消息" })).not.toBeInTheDocument();
+    expect(mocks.editAndResendUserMessage).toHaveBeenCalledWith(
+      "user-1",
+      "计算机基础知识第一章",
+    );
+
+    resolveResend({ ok: true });
+  });
+
   it("cancels inline editing", async () => {
     const user = userEvent.setup();
     renderDrawer();
