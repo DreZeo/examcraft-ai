@@ -1,14 +1,69 @@
 **简体中文** · [English](./README_EN.md)
 
-# 智卷工坊
+<p align="center">
+  <img src="./docs/images/app-icon.png" width="120" alt="智卷工坊图标" />
+</p>
 
-> 一个本地优先的桌面试卷工作台，用 AI 生成题目，用接近 Word 的方式排版、预览、打印和导出。
+<h1 align="center">智卷工坊</h1>
+
+<p align="center">
+  一个本地优先的桌面试卷工作台，用 AI 生成题目，用接近 Word 的方式排版、预览、打印和导出。
+</p>
+
+<p align="center">
+  <a href="https://github.com/DreZeo/examcraft-ai/releases">下载 Windows 版本</a>
+  ·
+  <a href="./LICENSE">MIT License</a>
+</p>
 
 智卷工坊是一款面向教师、培训者和教育内容创作者的 Tauri 桌面应用。你可以用自然语言描述试卷需求，应用会让 AI 先分析并确认理解，再生成结构化题目数据；题目 JSON 经过严格校验后，才能进入试卷，并实时渲染为分页的纸张预览。
 
 这个项目的核心不是“让 AI 随便吐一段题目”，而是把 AI 放进真实出卷流程里：它可以帮你分析、检索、生成和修改，但最终是否应用、如何排版、如何打印，仍然由教师控制。
 
-![智卷工坊试卷预览与 AI 助手](./docs/images/paper-preview-ai.png)
+## 界面预览
+
+<table>
+  <tr>
+    <td width="50%">
+      <h3>试卷工作台</h3>
+      <img src="./docs/images/paper-preview-ai.png" alt="试卷预览与 AI 助手" />
+    </td>
+    <td width="50%">
+      <h3>学生预览</h3>
+      <img src="./docs/images/paper-preview-student.png" alt="学生版试卷预览" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>多页缩放</h3>
+      <img src="./docs/images/paper-zoom-pages.png" alt="多页缩放预览" />
+    </td>
+    <td width="50%">
+      <h3>所见即所得打印</h3>
+      <img src="./docs/images/print-preview-student.png" alt="学生版打印预览" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>教师版导出预览</h3>
+      <img src="./docs/images/print-preview-teacher.png" alt="教师版导出预览" />
+    </td>
+    <td width="50%">
+      <h3>空白试卷状态</h3>
+      <img src="./docs/images/empty-state.png" alt="空白试卷状态" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>模型配置</h3>
+      <img src="./docs/images/model-settings.png" alt="模型配置" />
+    </td>
+    <td width="50%">
+      <h3>AI 智能体</h3>
+      <img src="./docs/images/agent-settings.png" alt="AI 智能体设置" />
+    </td>
+  </tr>
+</table>
 
 ## 项目亮点
 
@@ -82,13 +137,9 @@
 
 应用支持配置不同的助手角色，用于按学科和出题风格辅助生成、修改试卷。
 
-![AI 智能体设置](./docs/images/agent-settings.png)
-
 ## 试卷排版
 
 预览界面面向真实试卷制作，而不是普通文本编辑。当前支持：
-
-![接近 Word 的多页缩放预览](./docs/images/paper-zoom-pages.png)
 
 - A3、A4、A5、B5、Letter、Legal、Executive 等纸张
 - 横向 / 纵向页面方向
@@ -107,8 +158,6 @@
 ## 导出与打印
 
 支持的输出方式：
-
-![学生版打印预览](./docs/images/print-preview-student.png)
 
 - **JSON 导入 / 导出** —— 保存和恢复完整试卷数据。
 - **Markdown 导出** —— 导出教师版或学生版内容，便于备份或二次编辑。
