@@ -556,8 +556,55 @@ describe("assistantStore reasoning streams", () => {
     }
   }
 
-  it("stores reasoning chunks on the final confirmation card without sending them back", async () => {
+  it("disables reasoning capture by default", async () => {
     await useAssistantStore.getState().sendMessage("生成一份普通试卷", false);
+
+    expect(tauriMocks.listeners["chat:reasoning-chunk"]).toBeUndefined();
+    const calls = tauriMocks.invoke.mock.calls.filter(
+      ([command]) => command === "stream_chat",
+    );
+    expect(calls[0]?.[1]?.reasoningEnabled).toBe(false);
+
+    tauriMocks.listeners["chat:chunk"]?.({
+      payload: "<think>先分析需求</think>我会生成一份试卷。",
+    });
+    tauriMocks.listeners["chat:done"]?.({ payload: undefined });
+
+    await waitForCondition(() =>
+      useAssistantStore.getState().messages.some((message) => message.kind === "confirmation"),
+    );
+    const confirmation = useAssistantStore
+      .getState()
+      .messages.find((message) => message.kind === "confirmation");
+    expect(confirmation).toMatchObject({
+      kind: "confirmation",
+      content: "我会生成一份试卷。",
+    });
+    expect(
+      (confirmation as Extract<ChatMessage, { kind: "confirmation" }> | undefined)
+        ?.reasoning,
+    ).toBeUndefined();
+    expect(useAssistantStore.getState().reasoningBuffer).toBe("");
+  });
+
+  it("stores reasoning chunks when enabled without sending them back", async () => {
+    useConfigStore.setState((state) => ({
+      config: {
+        ...state.config,
+        settings: {
+          ...state.config.settings,
+          assistantReasoningEnabled: true,
+        },
+      },
+    }));
+
+    await useAssistantStore.getState().sendMessage("生成一份普通试卷", false);
+
+    expect(tauriMocks.listeners["chat:reasoning-chunk"]).toBeDefined();
+    const initialCalls = tauriMocks.invoke.mock.calls.filter(
+      ([command]) => command === "stream_chat",
+    );
+    expect(initialCalls[0]?.[1]?.reasoningEnabled).toBe(true);
 
     tauriMocks.listeners["chat:reasoning-chunk"]?.({ payload: "先分析需求" });
     tauriMocks.listeners["chat:chunk"]?.({ payload: "我会生成一份试卷。" });

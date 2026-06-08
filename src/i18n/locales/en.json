@@ -56,6 +56,7 @@
     "paperFont": "Paper font",
     "globalFont": "Global font",
     "explanationTier": "Explanation detail",
+    "assistantReasoningEnabled": "Show thinking",
     "contextMessageLimit": "Context message limit",
     "contextMessageLimitDescription": "Max historical messages sent to the model per turn. 0 = unlimited.",
     "customInstructions": "Custom instructions",

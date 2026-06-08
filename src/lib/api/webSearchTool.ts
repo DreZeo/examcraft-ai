@@ -31,7 +31,8 @@ When current or source-backed information would improve the paper, request web s
 Rules:
 - Use focused search keywords, not the whole user request.
 - You may request up to ${MAX_SEARCH_TOOL_CALLS} searches in one response.
-- After search results are provided, continue with the normal two-phase paper workflow.
+- After search results are provided, continue quickly with the normal two-phase paper workflow.
+- Do not output chain-of-thought, long analysis, or planning notes.
 - Do not invent citations or facts outside the provided search results.`;
 }
 

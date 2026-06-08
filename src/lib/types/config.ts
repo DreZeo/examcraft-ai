@@ -378,6 +378,8 @@ export const AppSettingsSchema = z.object({
   autoSave: z.boolean().default(true),
   /** Explanation detail level injected into the system prompt as a default. */
   explanationTier: ExplanationTierSchema.default("brief"),
+  /** Whether provider reasoning/thinking streams should be captured and shown. */
+  assistantReasoningEnabled: z.boolean().default(false),
   /** Global UI font preset. Overrides --font-sans on <html>. */
   globalFont: GlobalFontSchema.default("system"),
   /** Font preset used only for paper rendering. */

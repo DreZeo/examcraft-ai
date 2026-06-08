@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 let assistantState: Record<string, unknown>;
+let assistantReasoningEnabled = false;
 
 vi.mock("../../components/assistant/ChatHistoryPanel", () => ({
   ChatHistoryPanel: () => null,
@@ -26,6 +27,11 @@ vi.mock("../../components/assistant/ChatHistoryPanel", () => ({
 vi.mock("../../stores/configStore", () => ({
   useConfigStore: (selector: (state: unknown) => unknown) =>
     selector({
+      config: {
+        settings: {
+          assistantReasoningEnabled,
+        },
+      },
       activeConfig: () => ({
         id: "model-1",
         name: "Test Model",
@@ -51,7 +57,11 @@ function userMessage(content = "生成一份英语试卷"): ChatMessage {
   };
 }
 
-function renderDrawer(message: ChatMessage = userMessage()) {
+function renderDrawer(
+  message: ChatMessage = userMessage(),
+  options: { reasoningEnabled?: boolean } = {},
+) {
+  assistantReasoningEnabled = options.reasoningEnabled ?? false;
   assistantState = {
     messages: [message],
     status: "idle",
@@ -87,6 +97,7 @@ describe("AssistantDrawer user message actions", () => {
     window.HTMLElement.prototype.scrollTo = vi.fn();
     mocks.resendUserMessage.mockResolvedValue({ ok: true });
     mocks.editAndResendUserMessage.mockResolvedValue({ ok: true });
+    assistantReasoningEnabled = false;
   });
 
   it("retries a user message from the bubble action", async () => {
@@ -186,13 +197,16 @@ describe("AssistantDrawer user message actions", () => {
 
   it("renders assistant reasoning collapsed by default and expands on click", async () => {
     const user = userEvent.setup();
-    renderDrawer({
-      id: "assistant-1",
-      kind: "text",
-      role: "assistant",
-      content: "最终回答",
-      reasoning: "内部分析步骤",
-    });
+    renderDrawer(
+      {
+        id: "assistant-1",
+        kind: "text",
+        role: "assistant",
+        content: "最终回答",
+        reasoning: "内部分析步骤",
+      },
+      { reasoningEnabled: true },
+    );
 
     expect(screen.getByRole("button", { name: "展开思考过程" })).toBeInTheDocument();
     expect(screen.queryByText("内部分析步骤")).not.toBeInTheDocument();
@@ -201,5 +215,19 @@ describe("AssistantDrawer user message actions", () => {
 
     expect(screen.getByRole("button", { name: "收起思考过程" })).toBeInTheDocument();
     expect(screen.getByText("内部分析步骤")).toBeInTheDocument();
+  });
+
+  it("hides assistant reasoning when the setting is disabled", () => {
+    renderDrawer({
+      id: "assistant-1",
+      kind: "text",
+      role: "assistant",
+      content: "最终回答",
+      reasoning: "内部分析步骤",
+    });
+
+    expect(screen.queryByRole("button", { name: "展开思考过程" })).not.toBeInTheDocument();
+    expect(screen.queryByText("内部分析步骤")).not.toBeInTheDocument();
+    expect(screen.getByText("最终回答")).toBeInTheDocument();
   });
 });

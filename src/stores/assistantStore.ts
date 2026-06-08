@@ -455,6 +455,8 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       activeSearchQuery: null,
     });
     settled = false;
+    const reasoningEnabled =
+      useConfigStore.getState().config.settings.assistantReasoningEnabled;
 
     let apiKey: string | null;
     try {
@@ -483,11 +485,13 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         set((s) => ({ streamBuffer: s.streamBuffer + e.payload }));
       }),
     );
-    unlisteners.push(
-      await listen<string>("chat:reasoning-chunk", (e) => {
-        set((s) => ({ reasoningBuffer: s.reasoningBuffer + e.payload }));
-      }),
-    );
+    if (reasoningEnabled) {
+      unlisteners.push(
+        await listen<string>("chat:reasoning-chunk", (e) => {
+          set((s) => ({ reasoningBuffer: s.reasoningBuffer + e.payload }));
+        }),
+      );
+    }
     unlisteners.push(
       await listen("chat:done", () => {
         void handleDone();
@@ -507,6 +511,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         messages: buildApiMessages(),
         temperature: active.temperature,
         maxTokens: active.maxTokens,
+        reasoningEnabled,
       });
     } catch (err) {
       await handleError(toAppError(err));
@@ -518,7 +523,12 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     settled = true;
     const rawReply = get().streamBuffer;
     const rawReasoning = get().reasoningBuffer;
-    const { content: reply, reasoning } = splitThinking(rawReply, rawReasoning);
+    const reasoningEnabled =
+      useConfigStore.getState().config.settings.assistantReasoningEnabled;
+    const { content: reply, reasoning } = splitThinking(
+      rawReply,
+      reasoningEnabled ? rawReasoning : "",
+    );
     await teardown();
     set({
       status: "idle",
@@ -549,7 +559,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         id: uuid(),
         kind: "confirmation",
         content: reply.trim(),
-        reasoning: reasoning || undefined,
+        reasoning: reasoningEnabled && reasoning ? reasoning : undefined,
         resolved: false,
       });
       await persistSession();
@@ -574,7 +584,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         id: uuid(),
         kind: "result",
         prose,
-        reasoning: reasoning || undefined,
+        reasoning: reasoningEnabled && reasoning ? reasoning : undefined,
         operations: result.operations,
         applied: false,
       });
@@ -812,7 +822,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       apiHistory.push({
         role: "user",
         content:
-          "Confirmed. Generate the paper operations now as JSON inside a ```json fenced block.",
+          "Confirmed. Generate the paper operations now. Return only one ```json fenced block with the JSON payload. Do not include analysis, planning notes, or thinking text.",
       });
       await persistSession();
       await runChat();
@@ -847,7 +857,9 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       await teardown();
       const reply = get().streamBuffer.trim();
       const rawReasoning = get().reasoningBuffer;
-      const split = splitThinking(reply, rawReasoning);
+      const reasoningEnabled =
+        useConfigStore.getState().config.settings.assistantReasoningEnabled;
+      const split = splitThinking(reply, reasoningEnabled ? rawReasoning : "");
       set({
         status: "idle",
         streamBuffer: "",
@@ -863,7 +875,8 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
           kind: "text",
           role: "assistant",
           content: split.content,
-          reasoning: split.reasoning || undefined,
+          reasoning:
+            reasoningEnabled && split.reasoning ? split.reasoning : undefined,
         });
         await persistSession();
       }

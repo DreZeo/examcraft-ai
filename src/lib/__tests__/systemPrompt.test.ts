@@ -55,6 +55,15 @@ describe("buildSystemPrompt", () => {
     );
   });
 
+  it("discourages visible chain-of-thought and keeps phase 2 direct", () => {
+    const prompt = buildSystemPrompt(settings());
+    expect(prompt).toContain("Do not output chain-of-thought or hidden reasoning");
+    expect(prompt).toContain(
+      "do not include analysis, planning notes, or thinking text",
+    );
+    expect(prompt).not.toContain("reasoning/thinking\n  content");
+  });
+
   it("lists all 7 question types from the schema", () => {
     const prompt = buildSystemPrompt(settings());
     for (const type of [

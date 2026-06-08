@@ -168,6 +168,7 @@ pub async fn stream_chat(
     messages: Vec<ChatMessage>,
     temperature: Option<f64>,
     max_tokens: Option<u32>,
+    reasoning_enabled: Option<bool>,
 ) -> AppResult<()> {
     let result = stream_chat_inner(
         &app,
@@ -177,6 +178,7 @@ pub async fn stream_chat(
         messages,
         temperature,
         max_tokens,
+        reasoning_enabled.unwrap_or(false),
     )
     .await;
 
@@ -201,6 +203,7 @@ async fn stream_chat_inner(
     messages: Vec<ChatMessage>,
     temperature: Option<f64>,
     max_tokens: Option<u32>,
+    reasoning_enabled: bool,
 ) -> AppResult<()> {
     let mut body = serde_json::json!({
         "model": model,
@@ -251,7 +254,7 @@ async fn stream_chat_inner(
                 match next {
                     Some(Ok(bytes)) => {
                         sse_buf.push_str(&String::from_utf8_lossy(&bytes));
-                        if drain_events(&sse_buf, &mut batch).done {
+                        if drain_events(&sse_buf, &mut batch, reasoning_enabled).done {
                             // Recompute remaining buffer is unnecessary; [DONE]
                             // is the terminal sentinel.
                             flush_batch(app, &mut batch);
@@ -287,7 +290,7 @@ struct DrainOutcome {
 /// `retain_tail`. Because `retain_tail` leaves no complete event behind, the
 /// next call only ever sees newly arrived events, so content is never
 /// double-counted.
-fn drain_events(buf: &str, batch: &mut StreamBatches) -> DrainOutcome {
+fn drain_events(buf: &str, batch: &mut StreamBatches, reasoning_enabled: bool) -> DrainOutcome {
     let mut done = false;
     let mut pos = 0usize;
     while let Some(rel) = buf[pos..].find("\n\n") {
@@ -302,7 +305,7 @@ fn drain_events(buf: &str, batch: &mut StreamBatches) -> DrainOutcome {
                 } else if !data.is_empty() {
                     if let Ok(chunk) = serde_json::from_str::<StreamChunk>(data) {
                         if let Some(choice) = chunk.choices.into_iter().next() {
-                            append_delta(&choice.delta, batch);
+                            append_delta(&choice.delta, batch, reasoning_enabled);
                         }
                     }
                 }
@@ -332,18 +335,22 @@ impl StreamBatches {
     }
 }
 
-fn append_delta(delta: &Delta, batch: &mut StreamBatches) {
-    if let Some(reasoning) = extract_plain_text(delta.reasoning_content.as_ref())
-        .or_else(|| extract_plain_text(delta.reasoning.as_ref()))
-        .or_else(|| extract_plain_text(delta.thinking.as_ref()))
-    {
-        batch.reasoning.push_str(&reasoning);
+fn append_delta(delta: &Delta, batch: &mut StreamBatches, reasoning_enabled: bool) {
+    if reasoning_enabled {
+        if let Some(reasoning) = extract_plain_text(delta.reasoning_content.as_ref())
+            .or_else(|| extract_plain_text(delta.reasoning.as_ref()))
+            .or_else(|| extract_plain_text(delta.thinking.as_ref()))
+        {
+            batch.reasoning.push_str(&reasoning);
+        }
     }
 
     if let Some(content) = delta.content.as_ref() {
-        let reasoning_from_content = extract_thinking_text(content);
-        if !reasoning_from_content.is_empty() {
-            batch.reasoning.push_str(&reasoning_from_content);
+        if reasoning_enabled {
+            let reasoning_from_content = extract_thinking_text(content);
+            if !reasoning_from_content.is_empty() {
+                batch.reasoning.push_str(&reasoning_from_content);
+            }
         }
         let visible_content = extract_content_text(content);
         if !visible_content.is_empty() {
@@ -503,7 +510,7 @@ mod tests {
             "data: {\"choices\":[{\"delta\":{\"content\":\" world\"},\"finish_reason\":null}]}\n\n"
         );
         let mut batch = StreamBatches::default();
-        let out = drain_events(buf, &mut batch);
+        let out = drain_events(buf, &mut batch, false);
         assert!(!out.done);
         assert_eq!(batch.content, "Hello world");
         assert_eq!(batch.reasoning, "");
@@ -513,7 +520,7 @@ mod tests {
     fn drain_detects_done_sentinel() {
         let buf = "data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\ndata: [DONE]\n\n";
         let mut batch = StreamBatches::default();
-        let out = drain_events(buf, &mut batch);
+        let out = drain_events(buf, &mut batch, false);
         assert!(out.done);
         assert_eq!(batch.content, "hi");
     }
@@ -526,7 +533,7 @@ mod tests {
             "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\n"
         );
         let mut batch = StreamBatches::default();
-        drain_events(buf, &mut batch);
+        drain_events(buf, &mut batch, false);
         assert_eq!(batch.content, "ok");
     }
 
@@ -537,7 +544,7 @@ mod tests {
             "data: {\"choices\":[{\"delta\":{\"content\":\"answer\"}}]}\n\n"
         );
         let mut batch = StreamBatches::default();
-        let out = drain_events(buf, &mut batch);
+        let out = drain_events(buf, &mut batch, true);
         assert!(!out.done);
         assert_eq!(batch.reasoning, "think");
         assert_eq!(batch.content, "answer");
@@ -550,10 +557,23 @@ mod tests {
             "data: [DONE]\n\n"
         );
         let mut batch = StreamBatches::default();
-        let out = drain_events(buf, &mut batch);
+        let out = drain_events(buf, &mut batch, true);
         assert!(out.done);
         assert_eq!(batch.reasoning, "plan");
         assert_eq!(batch.content, "final");
+    }
+
+    #[test]
+    fn drain_ignores_reasoning_when_disabled() {
+        let buf = concat!(
+            "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"think\"}}]}\n\n",
+            "data: {\"choices\":[{\"delta\":{\"content\":[{\"type\":\"thinking\",\"thinking\":\"plan\"},{\"type\":\"text\",\"text\":\"answer\"}]}}]}\n\n"
+        );
+        let mut batch = StreamBatches::default();
+        let out = drain_events(buf, &mut batch, false);
+        assert!(!out.done);
+        assert_eq!(batch.reasoning, "");
+        assert_eq!(batch.content, "answer");
     }
 
     #[test]
@@ -562,7 +582,7 @@ mod tests {
         let mut buf =
             String::from("data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\ndata: {\"choi");
         let mut batch = StreamBatches::default();
-        drain_events(&buf, &mut batch);
+        drain_events(&buf, &mut batch, false);
         retain_tail(&mut buf);
         assert_eq!(batch.content, "a");
         assert_eq!(buf, "data: {\"choi");
@@ -570,7 +590,7 @@ mod tests {
         // Second read completes the event.
         buf.push_str("ces\":[{\"delta\":{\"content\":\"b\"}}]}\n\n");
         let mut batch2 = StreamBatches::default();
-        drain_events(&buf, &mut batch2);
+        drain_events(&buf, &mut batch2, false);
         retain_tail(&mut buf);
         assert_eq!(batch2.content, "b");
         assert_eq!(buf, "");
@@ -580,7 +600,7 @@ mod tests {
     fn drain_handles_malformed_json_without_panicking() {
         let buf = "data: {not valid json}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"x\"}}]}\n\n";
         let mut batch = StreamBatches::default();
-        let out = drain_events(buf, &mut batch);
+        let out = drain_events(buf, &mut batch, false);
         assert!(!out.done);
         assert_eq!(batch.content, "x");
     }

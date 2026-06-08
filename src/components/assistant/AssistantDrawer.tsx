@@ -49,6 +49,9 @@ export function AssistantDrawer({
 }: AssistantDrawerProps) {
   const { t } = useTranslation();
   const activeConfig = useConfigStore((s) => s.activeConfig());
+  const reasoningEnabled = useConfigStore(
+    (s) => s.config?.settings?.assistantReasoningEnabled ?? false,
+  );
   const messages = useAssistantStore((s) => s.messages);
   const status = useAssistantStore((s) => s.status);
   const streamBuffer = useAssistantStore((s) => s.streamBuffer);
@@ -215,12 +218,15 @@ export function AssistantDrawer({
               message={m}
               undoableResultId={undoableResultId}
               onOpenSettings={onOpenSettings}
+              reasoningEnabled={reasoningEnabled}
             />
           ))}
 
           {streaming && (
             <div className="mr-8 animate-fade-in rounded-2xl rounded-tl-md border border-border bg-card px-3.5 py-2.5 text-sm text-foreground shadow-sm">
-              <ReasoningBlock content={reasoningBuffer} streaming />
+              {reasoningEnabled && (
+                <ReasoningBlock content={reasoningBuffer} streaming />
+              )}
               {streamBuffer ? (
                 <Markdown>{streamBuffer}</Markdown>
               ) : (
@@ -328,10 +334,12 @@ function MessageItem({
   message,
   undoableResultId,
   onOpenSettings,
+  reasoningEnabled,
 }: {
   message: ChatMessage;
   undoableResultId: string | null;
   onOpenSettings: () => void;
+  reasoningEnabled: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -346,7 +354,7 @@ function MessageItem({
             <Bot className="h-4 w-4 text-primary" />
           </span>
           <div className="min-w-0 flex-1 rounded-2xl rounded-tl-md border border-border/70 bg-card px-3.5 py-2.5 text-sm text-foreground shadow-sm transition-shadow hover:shadow-md hover:border-border">
-            <ReasoningBlock content={message.reasoning} />
+            {reasoningEnabled && <ReasoningBlock content={message.reasoning} />}
             <Markdown>{message.content}</Markdown>
           </div>
         </div>
@@ -356,7 +364,7 @@ function MessageItem({
         <ConfirmationCard
           id={message.id}
           content={message.content}
-          reasoning={message.reasoning}
+          reasoning={reasoningEnabled ? message.reasoning : undefined}
           resolved={message.resolved}
         />
       );
@@ -365,7 +373,7 @@ function MessageItem({
         <ResultCard
           id={message.id}
           prose={message.prose}
-          reasoning={message.reasoning}
+          reasoning={reasoningEnabled ? message.reasoning : undefined}
           operations={message.operations}
           questions={message.questions}
           applied={message.applied}
