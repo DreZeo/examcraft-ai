@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "AI Exam Generator",
+  "productName": "ExamCraft AI",
   "version": "0.1.0",
   "identifier": "com.examgen.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "AI Exam Generator",
+        "title": "ExamCraft AI",
         "width": 1280,
         "height": 800,
         "minWidth": 900,
