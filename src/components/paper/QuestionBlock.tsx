@@ -146,7 +146,7 @@ function StudentAnswerSpace({ question }: { question: Question }) {
   if (lines === 0) return null;
   return (
     <div
-      className="answer-space mt-3 rounded-sm border border-dashed border-border"
+      className="answer-space mt-3"
       style={{ height: `${lines * 1.7}em` }}
       aria-hidden="true"
     />

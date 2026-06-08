@@ -52,6 +52,7 @@
     "language": "Language",
     "theme": "Theme",
     "autoSave": "Auto-save",
+    "paperHeaderFooterLine": "Header / footer lines",
     "paperFont": "Paper font",
     "globalFont": "Global font",
     "explanationTier": "Explanation detail",

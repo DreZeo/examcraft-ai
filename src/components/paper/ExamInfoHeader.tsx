@@ -50,7 +50,7 @@ export function ExamInfoHeader({ paper }: { paper: ExamPaper }) {
   if (!showHeader || items.length === 0) return null;
 
   return (
-    <div className="mb-6 flex flex-wrap justify-center gap-x-8 gap-y-1 border-b border-border pb-4 text-sm text-muted-foreground">
+    <div className="mb-6 flex flex-wrap justify-center gap-x-8 gap-y-1 text-sm text-muted-foreground">
       {items.map((item, i) => (
         <span key={i} className="inline-flex items-end whitespace-nowrap">
           {item.label}：{item.value}

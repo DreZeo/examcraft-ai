@@ -273,8 +273,11 @@ describe("QuestionBlock", () => {
     };
 
     const { container } = renderQuestion(question, true);
+    const answerSpace = container.querySelector(".answer-space");
 
-    expect(container.querySelector(".answer-space")).toBeInTheDocument();
+    expect(answerSpace).toBeInTheDocument();
+    expect(answerSpace?.className).not.toContain("border");
+    expect(answerSpace?.className).not.toContain("dashed");
     expect(container.querySelector(".answer-block")).not.toBeInTheDocument();
   });
 });

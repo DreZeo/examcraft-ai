@@ -4,21 +4,27 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import "../../i18n";
 import { MarkdownFormatProvider } from "../../components/layout/MarkdownFormatContext";
 import { PaperCanvas } from "../../components/paper/PaperCanvas";
+import { useExportStore } from "../../stores/exportStore";
 import type { ExamPaper } from "../types/exam";
 
 let paper: ExamPaper;
 let view: "teacher" | "student";
 const appendQuestion = vi.fn();
-const paperSettings = {
-  paperFont: "fangsong",
-  paperFontSize: "sihao",
-  paperLineHeight: "oneHalf",
-  paperMargin: "normal",
-  paperSize: "b5",
-  paperOrientation: "portrait",
-  paperHeader: "机密",
-  paperPageNumberStyle: "zhFraction",
-};
+let paperSettings = defaultPaperSettings();
+
+function defaultPaperSettings() {
+  return {
+    paperFont: "fangsong",
+    paperFontSize: "sihao",
+    paperLineHeight: "oneHalf",
+    paperMargin: "normal",
+    paperSize: "b5",
+    paperOrientation: "portrait",
+    paperHeader: "机密",
+    paperHeaderFooterLine: false,
+    paperPageNumberStyle: "zhFraction",
+  };
+}
 
 vi.mock("../../stores/paperStore", () => ({
   usePaperStore: () => ({
@@ -47,6 +53,18 @@ describe("PaperCanvas", () => {
       title: "测试卷",
       questions: [],
     };
+    paperSettings = defaultPaperSettings();
+    useExportStore.setState({
+      showHeader: true,
+      fields: {
+        subject: true,
+        className: true,
+        studentName: true,
+        duration: false,
+        totalScore: false,
+        score: false,
+      },
+    });
   });
 
   it("applies Word-like paper size and font size styles", () => {
@@ -70,6 +88,7 @@ describe("PaperCanvas", () => {
     paper = makePaper();
 
     const { container } = renderCanvas();
+    const sectionTitle = container.querySelector(".paper-section-title");
 
     expect(container).toHaveTextContent("一、单选题共1题 每小题5分 共5分");
     expect(container).toHaveTextContent("二、填空题共1题 每小题4分 共4分");
@@ -80,21 +99,43 @@ describe("PaperCanvas", () => {
       ]),
     ].map((node) => node.textContent)).toEqual(["1.", "1.", "1."]);
     expect(container).not.toHaveTextContent("(5)");
+    expect(sectionTitle?.className).not.toContain("border-b");
   });
 
-  it("renders configured Word-like header and page number footer on each page", () => {
+  it("renders configured Word-like header and page number footer without separator lines by default", () => {
     paper = makePaper();
 
     const { container } = renderCanvas();
+    const header = container.querySelector(".paper-header");
+    const footer = container.querySelector(".paper-footer");
 
-    expect(container.querySelector(".paper-header")).toHaveTextContent("机密");
-    expect(container.querySelector(".paper-footer")).toHaveTextContent(
-      "第 1 页 / 共 2 页",
-    );
+    expect(header).toHaveTextContent("机密");
+    expect(footer).toHaveTextContent("第 1 页 / 共 2 页");
+    expect(header?.className).not.toContain("border-b");
+    expect(footer?.className).not.toContain("border-t");
+  });
+
+  it("renders header and footer separator lines when enabled", () => {
+    paper = makePaper();
+    paperSettings.paperHeaderFooterLine = true;
+
+    const { container } = renderCanvas();
+    const header = container.querySelector(".paper-header");
+    const footer = container.querySelector(".paper-footer");
+
+    expect(header?.className).toContain("border-b");
+    expect(footer?.className).toContain("border-t");
   });
 
   it("renders score as a fill-in field without adding an underline after total score", () => {
     paper = makePaper();
+    useExportStore.setState((state) => ({
+      fields: {
+        ...state.fields,
+        totalScore: true,
+        score: true,
+      },
+    }));
 
     const { container } = renderCanvas();
 
@@ -116,8 +157,11 @@ describe("PaperCanvas", () => {
     view = "student";
 
     const { container } = renderCanvas();
+    const answerSpace = container.querySelector(".answer-space");
 
-    expect(container.querySelector(".answer-space")).toBeInTheDocument();
+    expect(answerSpace).toBeInTheDocument();
+    expect(answerSpace?.className).not.toContain("border");
+    expect(answerSpace?.className).not.toContain("dashed");
     expect(container).toHaveTextContent("__________");
     expect(container.querySelector(".answer-block")).not.toBeInTheDocument();
   });

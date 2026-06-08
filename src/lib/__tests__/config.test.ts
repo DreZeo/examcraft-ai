@@ -17,6 +17,7 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperSize).toBe("a4");
     expect(config.settings.paperOrientation).toBe("portrait");
     expect(config.settings.paperHeader).toBe("");
+    expect(config.settings.paperHeaderFooterLine).toBe(false);
     expect(config.settings.paperPageNumberStyle).toBe("zhPage");
   });
 
@@ -37,6 +38,7 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperSize).toBe("a4");
     expect(config.settings.paperOrientation).toBe("portrait");
     expect(config.settings.paperHeader).toBe("");
+    expect(config.settings.paperHeaderFooterLine).toBe(false);
     expect(config.settings.paperPageNumberStyle).toBe("zhPage");
     expect(config.settings.language).toBe("en");
   });
@@ -83,6 +85,7 @@ describe("AppConfigSchema", () => {
         paperSize: "legal",
         paperOrientation: "landscape",
         paperHeader: "期末考试",
+        paperHeaderFooterLine: true,
         paperPageNumberStyle: "zhFraction",
       },
     });
@@ -94,6 +97,7 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperSize).toBe("legal");
     expect(config.settings.paperOrientation).toBe("landscape");
     expect(config.settings.paperHeader).toBe("期末考试");
+    expect(config.settings.paperHeaderFooterLine).toBe(true);
     expect(config.settings.paperPageNumberStyle).toBe("zhFraction");
   });
 

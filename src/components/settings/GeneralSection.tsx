@@ -5,6 +5,7 @@ import {
   LayoutTemplate,
   MessageSquare,
   Palette,
+  SeparatorHorizontal,
   Save,
   Sparkles,
   Type,
@@ -96,6 +97,16 @@ export function GeneralSection() {
           <Toggle
             checked={s.autoSave}
             onChange={(v) => void updateSettings({ autoSave: v })}
+          />
+        </SettingRow>
+
+        <SettingRow
+          icon={<SeparatorHorizontal className="h-4 w-4" />}
+          label={t("settings.paperHeaderFooterLine")}
+        >
+          <Toggle
+            checked={s.paperHeaderFooterLine}
+            onChange={(v) => void updateSettings({ paperHeaderFooterLine: v })}
           />
         </SettingRow>
       </SettingsGroup>

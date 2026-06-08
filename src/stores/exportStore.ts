@@ -26,9 +26,9 @@ export const defaultExamInfoFields = (): ExamInfoFields => ({
   subject: true,
   className: true,
   studentName: true,
-  duration: true,
-  totalScore: true,
-  score: true,
+  duration: false,
+  totalScore: false,
+  score: false,
 });
 
 export const useExportStore = create<ExportState>((set) => ({

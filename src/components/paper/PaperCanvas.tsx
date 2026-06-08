@@ -351,6 +351,14 @@ function PaperPageShell({
     pageNumber,
     totalPages,
   );
+  const headerClassName = [
+    "paper-header mb-4 text-center text-sm text-muted-foreground",
+    paperSettings.paperHeaderFooterLine ? "border-b border-border pb-2" : "",
+  ].filter(Boolean).join(" ");
+  const footerClassName = [
+    "paper-footer mt-4 text-center text-xs text-muted-foreground",
+    paperSettings.paperHeaderFooterLine ? "border-t border-border pt-2" : "",
+  ].filter(Boolean).join(" ");
   return (
     <section
       className="paper-sheet paper-page flex w-full flex-col rounded-lg bg-card shadow-sm"
@@ -368,12 +376,12 @@ function PaperPageShell({
       } as CSSProperties}
     >
       {header && (
-        <div className="paper-header mb-4 border-b border-border pb-2 text-center text-sm text-muted-foreground">
+        <div className={headerClassName}>
           {header}
         </div>
       )}
       <div className="paper-page-content min-h-0 flex-1">{children}</div>
-      <div className="paper-footer mt-4 border-t border-border pt-2 text-center text-xs text-muted-foreground">
+      <div className={footerClassName}>
         {pageNumberText}
       </div>
     </section>
@@ -431,7 +439,7 @@ function PaperBlock({
       const summary = sectionScoreSummary(block.section.questions);
       return (
         <div {...attrs}>
-          <h2 className="paper-section-title mt-2 border-b border-border pb-1 text-base font-semibold text-foreground">
+          <h2 className="paper-section-title mt-2 text-base font-semibold text-foreground">
             {block.section.title}
             <span className="ml-2 text-sm font-normal text-muted-foreground">
               {formatSectionScoreSummary(summary)}

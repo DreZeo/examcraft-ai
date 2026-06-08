@@ -52,6 +52,7 @@
     "language": "界面语言",
     "theme": "主题",
     "autoSave": "自动保存",
+    "paperHeaderFooterLine": "页眉页脚横线",
     "paperFont": "试卷字体",
     "globalFont": "全局字体",
     "explanationTier": "解析详细程度",

@@ -309,6 +309,8 @@ export const AppSettingsSchema = z.object({
   paperOrientation: PaperOrientationSchema.default("portrait"),
   /** Free-text Word-like page header shown on each rendered paper page. */
   paperHeader: z.string().default(""),
+  /** Whether to draw Word-like separator lines for the page header and footer. */
+  paperHeaderFooterLine: z.boolean().default(false),
   /** Footer page-number preset used on each rendered paper page. */
   paperPageNumberStyle: PaperPageNumberStyleSchema.default("zhPage"),
   /** Legacy field: migrated into an AI agent and no longer shown in settings. */
