@@ -95,9 +95,16 @@ describe("PaperCanvas", () => {
 
     const { container } = renderCanvas();
     const stack = container.querySelector(".paper-page-stack");
+    const previewFrame = container.querySelector(".paper-preview-page-frame");
+    const previewPage = container.querySelector(".paper-preview-page");
     const sheet = container.querySelector(".paper-page");
 
-    expect(stack).toHaveStyle({ transform: "scale(0.75)" });
+    expect(stack?.className).toContain("flex-wrap");
+    expect(previewFrame).toHaveStyle({
+      width: `${176 * (96 / 25.4) * 0.75}px`,
+      height: `${250 * (96 / 25.4) * 0.75}px`,
+    });
+    expect(previewPage).toHaveStyle({ transform: "scale(0.75)" });
     expect(sheet).toHaveStyle({
       width: "176mm",
       minHeight: "250mm",

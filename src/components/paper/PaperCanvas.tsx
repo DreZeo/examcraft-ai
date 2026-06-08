@@ -75,24 +75,19 @@ export function PaperCanvas({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newQuestionDraft, setNewQuestionDraft] = useState<Question | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
-  const pageStackRef = useRef<HTMLDivElement | null>(null);
   const pageMetrics = getPageMetrics(paperSettings);
   const adaptivePreviewZoom = !isPaperPreviewFixedZoom(
     paperSettings.paperPreviewZoom,
   );
   const scrollRootSize = useElementSize(scrollRootRef, adaptivePreviewZoom);
-  const stackSize = useElementSize(pageStackRef);
   const previewScale = previewScaleForSettings(
     paperSettings,
     pageMetrics,
     scrollRootSize,
   );
-  const naturalWidthPx = stackSize.width || mmToPx(parseFloat(pageMetrics.width));
-  const naturalHeightPx =
-    stackSize.height || mmToPx(parseFloat(pageMetrics.height));
-  const zoomStageStyle = {
-    width: `${naturalWidthPx * previewScale}px`,
-    height: `${naturalHeightPx * previewScale}px`,
+  const pageFrameStyle = {
+    width: `${mmToPx(parseFloat(pageMetrics.width)) * previewScale}px`,
+    height: `${mmToPx(parseFloat(pageMetrics.height)) * previewScale}px`,
   };
   const includeAnswers = view !== "student";
   const blocks = useMemo(
@@ -287,50 +282,53 @@ export function PaperCanvas({
 
   return (
     <div className="paper-canvas flex min-w-full justify-center px-4 py-8 sm:px-6">
-      <div>
-        <div
-          className="paper-preview-zoom-stage"
-          style={zoomStageStyle}
-        >
+      <div className="w-full">
+        <div className="paper-preview-zoom-stage w-full">
           <div
-            ref={pageStackRef}
-            className="paper-page-stack flex flex-col gap-6 transition-transform duration-150 ease-out"
-            style={{
-              width: pageMetrics.width,
-              transform: `scale(${previewScale})`,
-              transformOrigin: "top left",
-            }}
+            className="paper-page-stack flex flex-wrap items-start justify-center gap-6"
           >
             {display.questions.length === 0 ? (
-              <PaperPageShell
-                paperSettings={paperSettings}
+              <PaperPreviewPage
                 pageMetrics={pageMetrics}
-                pageNumber={1}
-                totalPages={1}
+                previewScale={previewScale}
+                frameStyle={pageFrameStyle}
               >
-                <EmptyPaper t={t} addAndEdit={addAndEdit} />
-              </PaperPageShell>
-            ) : (
-              pages.map((page, pageIndex) => (
                 <PaperPageShell
-                  key={page.id}
                   paperSettings={paperSettings}
                   pageMetrics={pageMetrics}
-                  pageNumber={pageIndex + 1}
-                  totalPages={pages.length}
+                  pageNumber={1}
+                  totalPages={1}
                 >
-                  <div className={PAPER_BLOCK_SPACING_CLASS}>
-                    {page.blocks.map((block) => (
-                      <PaperBlock
-                        key={block.id}
-                        block={block}
-                        display={display}
-                        studentView={view === "student"}
-                        onEdit={setEditingId}
-                      />
-                    ))}
-                  </div>
+                  <EmptyPaper t={t} addAndEdit={addAndEdit} />
                 </PaperPageShell>
+              </PaperPreviewPage>
+            ) : (
+              pages.map((page, pageIndex) => (
+                <PaperPreviewPage
+                  key={page.id}
+                  pageMetrics={pageMetrics}
+                  previewScale={previewScale}
+                  frameStyle={pageFrameStyle}
+                >
+                  <PaperPageShell
+                    paperSettings={paperSettings}
+                    pageMetrics={pageMetrics}
+                    pageNumber={pageIndex + 1}
+                    totalPages={pages.length}
+                  >
+                    <div className={PAPER_BLOCK_SPACING_CLASS}>
+                      {page.blocks.map((block) => (
+                        <PaperBlock
+                          key={block.id}
+                          block={block}
+                          display={display}
+                          studentView={view === "student"}
+                          onEdit={setEditingId}
+                        />
+                      ))}
+                    </div>
+                  </PaperPageShell>
+                </PaperPreviewPage>
               ))
             )}
           </div>
@@ -374,6 +372,38 @@ export function PaperCanvas({
           onSave={appendQuestion}
         />
       )}
+    </div>
+  );
+}
+
+interface PaperPreviewPageProps {
+  pageMetrics: PageMetrics;
+  previewScale: number;
+  frameStyle: CSSProperties;
+  children: ReactNode;
+}
+
+function PaperPreviewPage({
+  pageMetrics,
+  previewScale,
+  frameStyle,
+  children,
+}: PaperPreviewPageProps) {
+  return (
+    <div
+      className="paper-preview-page-frame relative shrink-0"
+      style={frameStyle}
+    >
+      <div
+        className="paper-preview-page absolute left-0 top-0 transition-transform duration-150 ease-out"
+        style={{
+          width: pageMetrics.width,
+          transform: `scale(${previewScale})`,
+          transformOrigin: "top left",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

@@ -29,6 +29,12 @@ describe("print.css", () => {
     expect(css).toMatch(
       /\.paper-page-stack\s*\{[\s\S]*transform:\s*none !important;/,
     );
+    expect(css).toMatch(
+      /\.paper-preview-page-frame\s*\{[\s\S]*position:\s*static !important;[\s\S]*width:\s*auto !important;[\s\S]*height:\s*auto !important;/,
+    );
+    expect(css).toMatch(
+      /\.paper-preview-page\s*\{[\s\S]*position:\s*static !important;[\s\S]*transform:\s*none !important;/,
+    );
   });
 
   it("does not let the browser re-paginate individual question blocks", () => {
