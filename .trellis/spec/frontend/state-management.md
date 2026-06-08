@@ -51,7 +51,7 @@ are for components only. Avoids hook-rules violations inside plain functions.
 AI chat streams over **Tauri events**, not the `invoke` return value (invoke is
 request/response; events carry the token stream and bypass browser CORS).
 
-Commands: `stream_chat({ baseUrl, apiKey, model, messages, temperature?, maxTokens?, reasoningEnabled? })`,
+Commands: `stream_chat({ baseUrl, apiKey, model, messages, temperature?, maxTokens? })`,
 `abort_chat()`, `list_models({ baseUrl, apiKey })`, `test_connection({ baseUrl, apiKey })`.
 
 Events (listen via `@tauri-apps/api/event`):
@@ -59,19 +59,11 @@ Events (listen via `@tauri-apps/api/event`):
 | Event | Payload | Meaning |
 |-------|---------|---------|
 | `chat:chunk` | `string` | incremental content delta (batched ~50ms/~80 chars) |
-| `chat:reasoning-chunk` | `string` | incremental provider reasoning/thinking delta, rendered separately and not sent back in `apiHistory` |
 | `chat:done` | `()` | stream finished or cancelled |
 | `chat:error` | `{ code, detail? }` | AppError (see backend error-handling.md) |
 
 `messages[0]` is the system prompt, forwarded to the API verbatim — the frontend
 builds it (`lib/api/systemPrompt.ts`), Rust does not synthesize one.
-
-`reasoningEnabled` defaults to `false`. When disabled, `assistantStore` must not
-listen for `chat:reasoning-chunk`, must not persist reasoning on messages, and
-the Rust stream parser must ignore provider reasoning/thinking fields while
-still extracting visible content. When enabled, reasoning is UI/debug context
-only: it may be displayed in the collapsible `ReasoningBlock`, but it is never
-sent back in `apiHistory`.
 
 ---
 
@@ -179,33 +171,6 @@ The visible `webSearch` message is historical evidence of searched sources and
 may include optional tool metadata such as `toolCallId`; the actual source
 context that affects generation is the structured search-context message added
 to `apiHistory`.
-
-## Pattern: assistant response language policy
-
-`assistantStore` determines a turn-level target language from the user's visible
-request before calling `stream_chat`. User input language wins; the configured
-interface language is only the fallback when the request text has no clear CJK
-or Latin signal. Internal control messages such as `Confirmed. Generate...`,
-validation retries, and web-search context messages must not change the target
-language for the turn.
-
-`buildSystemPrompt()` receives that target language and tells the model to use
-it for all user-visible prose, including confirmations, explanations,
-error-recovery text, and web-search summaries. Subject material language is
-separate from assistant prose: a Chinese request for an English exam should keep
-assistant explanations in Chinese while allowing English inside the actual exam
-content.
-
-Do not prompt the model to output chain-of-thought. The default product path is
-fast confirmation/JSON generation, so system and confirmation prompts should
-ask for brief visible analysis only and no thinking text. If
-`assistantReasoningEnabled` is turned on, the app may display provider-returned
-reasoning for debugging, but prompting should still avoid encouraging long
-reasoning.
-
-Question-type strategy prompts are internal constraints only. Do not expose
-human-readable detected labels or strategy ids in model-facing prose that the
-assistant might quote back to the user.
 
 ## Pattern: paper-scoped persistence
 

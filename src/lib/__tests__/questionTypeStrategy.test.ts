@@ -80,29 +80,9 @@ describe("question type strategy", () => {
       inferQuestionTypeStrategy({ requestText: "初一数学函数测试" }),
     );
 
-    expect(guidance).toContain("Internal question-type policy");
-    expect(guidance).toContain("Policy scope: subject-specific question type constraints");
-    expect(guidance).toContain("Do not mention, quote, or explain it to the user");
+    expect(guidance).toContain("Mathematics paper");
     expect(guidance).toContain("Preferred question types");
     expect(guidance).toContain("calculation");
-  });
-
-  it("does not expose user-visible detected-context labels", () => {
-    const guidance = formatQuestionTypeStrategy(
-      inferQuestionTypeStrategy({ requestText: "帮我生成一份六年级英语试卷" }),
-    );
-
-    expect(guidance).toContain("Policy scope: subject-specific question type constraints");
-    expect(guidance).not.toContain("Policy id: english-language");
-    expect(guidance).not.toContain("Detected context: English language paper");
-  });
-
-  it("does not treat C language programming as an English-language paper", () => {
-    const match = inferQuestionTypeStrategy({
-      requestText: "生成计算机二级 C language 程序设计题",
-    });
-
-    expect(match?.strategy.id).not.toBe("english-language");
   });
 
   it("rejects default-excluded question types when context is clear", () => {
@@ -116,8 +96,7 @@ describe("question type strategy", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error).toContain("requested subject/task format");
-      expect(result.error).not.toContain("English language paper");
+      expect(result.error).toContain("English language paper");
       expect(result.error).toContain("true-false");
     }
   });

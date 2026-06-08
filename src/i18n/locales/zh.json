@@ -56,7 +56,6 @@
     "paperFont": "试卷字体",
     "globalFont": "全局字体",
     "explanationTier": "解析详细程度",
-    "assistantReasoningEnabled": "显示思考过程",
     "contextMessageLimit": "上下文消息上限",
     "contextMessageLimitDescription": "发送给模型的最大历史消息条数，0 表示不限",
     "customInstructions": "自定义补充指令",
@@ -324,10 +323,6 @@
     "reorderQuestions": "重排题目顺序",
     "applied": "已应用到试卷",
     "thinking": "思考中…",
-    "reasoningTitle": "思考过程",
-    "reasoningThinking": "思考中…",
-    "expandReasoning": "展开思考过程",
-    "collapseReasoning": "收起思考过程",
     "searching": "正在联网搜索中…",
     "you": "你"
   },

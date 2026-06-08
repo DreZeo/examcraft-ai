@@ -18,11 +18,7 @@ import {
   updateChatSessionContent,
   upsertChatSessionMeta,
 } from "../lib/api/chatLibrary";
-import {
-  buildSystemPrompt,
-  buildPaperContextMessage,
-  languageName,
-} from "../lib/api/systemPrompt";
+import { buildSystemPrompt, buildPaperContextMessage } from "../lib/api/systemPrompt";
 import { validatePaperOperations } from "../lib/api/validatePaperOperations";
 import { extractJson } from "../lib/api/extractJson";
 import { type AppError } from "../lib/api/errorMessages";
@@ -74,8 +70,6 @@ interface AssistantState {
   status: "idle" | "streaming" | "searching";
   /** Accumulated content of the in-flight assistant reply (typewriter view). */
   streamBuffer: string;
-  /** Accumulated reasoning of the in-flight assistant reply. Not sent back to the model. */
-  reasoningBuffer: string;
   /** Current web search query being executed between model calls. */
   activeSearchQuery: string | null;
   /** Question pulled into context via "AI modify"; switches apply to replace. */
@@ -115,7 +109,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
   let retryCount = 0;
   let activeSearchContexts: SearchWebContext[] = [];
   let webSearchEnabledForTurn = false;
-  let targetLanguageForTurn: string | null = null;
   let unlisteners: UnlistenFn[] = [];
   /**
    * Whether the current stream attempt has already been finalized (done OR
@@ -190,7 +183,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     activePaperId = paperId;
     activeSession = session;
     apiHistory = session.apiHistory;
-    targetLanguageForTurn = null;
     if (dataDir) {
       const index =
         (await storage.loadChatIndex(dataDir, paperId)) ?? createChatIndex(session);
@@ -223,7 +215,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     const system = buildSystemPrompt(
       configState.config.settings,
       configState.activeAgent(),
-      targetLanguageForTurn ?? inferAssistantLanguage(userIntentContext()),
     );
     const searchInstructions = webSearchEnabledForTurn
       ? `\n\n${buildSearchToolInstructions()}`
@@ -293,12 +284,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     }
 
     try {
-      set({
-        status: "searching",
-        streamBuffer: "",
-        reasoningBuffer: "",
-        activeSearchQuery: query,
-      });
+      set({ status: "searching", streamBuffer: "", activeSearchQuery: query });
       const results = await storage.webSearch({
         provider: settings.activeProvider,
         apiKey,
@@ -405,7 +391,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     apiHistory = apiHistory.slice(0, apiIndex);
     activeSearchContexts = [];
     webSearchEnabledForTurn = false;
-    targetLanguageForTurn = inferAssistantLanguage(text);
     const nextApiIndex = apiHistory.length;
     apiHistory.push({
       role: "user",
@@ -448,15 +433,8 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       return;
     }
 
-    set({
-      status: "streaming",
-      streamBuffer: "",
-      reasoningBuffer: "",
-      activeSearchQuery: null,
-    });
+    set({ status: "streaming", streamBuffer: "", activeSearchQuery: null });
     settled = false;
-    const reasoningEnabled =
-      useConfigStore.getState().config.settings.assistantReasoningEnabled;
 
     let apiKey: string | null;
     try {
@@ -465,12 +443,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       apiKey = null;
     }
     if (!apiKey) {
-      set({
-        status: "idle",
-        streamBuffer: "",
-        reasoningBuffer: "",
-        activeSearchQuery: null,
-      });
+      set({ status: "idle", activeSearchQuery: null });
       pushMessage({
         id: uuid(),
         kind: "error",
@@ -485,13 +458,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         set((s) => ({ streamBuffer: s.streamBuffer + e.payload }));
       }),
     );
-    if (reasoningEnabled) {
-      unlisteners.push(
-        await listen<string>("chat:reasoning-chunk", (e) => {
-          set((s) => ({ reasoningBuffer: s.reasoningBuffer + e.payload }));
-        }),
-      );
-    }
     unlisteners.push(
       await listen("chat:done", () => {
         void handleDone();
@@ -511,7 +477,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         messages: buildApiMessages(),
         temperature: active.temperature,
         maxTokens: active.maxTokens,
-        reasoningEnabled,
       });
     } catch (err) {
       await handleError(toAppError(err));
@@ -521,21 +486,9 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
   async function handleDone(): Promise<void> {
     if (settled) return;
     settled = true;
-    const rawReply = get().streamBuffer;
-    const rawReasoning = get().reasoningBuffer;
-    const reasoningEnabled =
-      useConfigStore.getState().config.settings.assistantReasoningEnabled;
-    const { content: reply, reasoning } = splitThinking(
-      rawReply,
-      reasoningEnabled ? rawReasoning : "",
-    );
+    const reply = get().streamBuffer;
     await teardown();
-    set({
-      status: "idle",
-      streamBuffer: "",
-      reasoningBuffer: "",
-      activeSearchQuery: null,
-    });
+    set({ status: "idle", streamBuffer: "", activeSearchQuery: null });
 
     const { json, prose } = extractJson(reply);
 
@@ -559,7 +512,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         id: uuid(),
         kind: "confirmation",
         content: reply.trim(),
-        reasoning: reasoningEnabled && reasoning ? reasoning : undefined,
         resolved: false,
       });
       await persistSession();
@@ -584,7 +536,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
         id: uuid(),
         kind: "result",
         prose,
-        reasoning: reasoningEnabled && reasoning ? reasoning : undefined,
         operations: result.operations,
         applied: false,
       });
@@ -648,12 +599,11 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     return true;
   }
 
-  function beginTurn(useWebSearch: boolean, requestText: string) {
+  function beginTurn(useWebSearch: boolean) {
     retryCount = 0;
     activeSearchContexts = [];
     set({ activeSearchQuery: null });
     webSearchEnabledForTurn = useWebSearch;
-    targetLanguageForTurn = inferAssistantLanguage(requestText);
   }
 
   function replaceSearchContextMessage(content: string) {
@@ -676,12 +626,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     if (settled) return;
     settled = true;
     await teardown();
-    set({
-      status: "idle",
-      streamBuffer: "",
-      reasoningBuffer: "",
-      activeSearchQuery: null,
-    });
+    set({ status: "idle", streamBuffer: "", activeSearchQuery: null });
     pushMessage({
       id: uuid(),
       kind: "error",
@@ -698,7 +643,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     activeSessionId: null,
     status: "idle",
     streamBuffer: "",
-    reasoningBuffer: "",
     activeSearchQuery: null,
     focusedQuestion: null,
     undoableResultId: null,
@@ -710,7 +654,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       set({
         status: "idle",
         streamBuffer: "",
-        reasoningBuffer: "",
         activeSearchQuery: null,
         focusedQuestion: null,
         undoableResultId: null,
@@ -786,7 +729,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     sendMessage: async (text, useWebSearch = false) => {
       const trimmed = text.trim();
       if (!trimmed || get().status !== "idle") return;
-      beginTurn(useWebSearch, trimmed);
+      beginTurn(useWebSearch);
 
       const focused = get().focusedQuestion;
       const requestContext: RequestContext = focused
@@ -822,7 +765,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       apiHistory.push({
         role: "user",
         content:
-          "Confirmed. Generate the paper operations now. Return only one ```json fenced block with the JSON payload. Do not include analysis, planning notes, or thinking text.",
+          "Confirmed. Generate the paper operations now as JSON inside a ```json fenced block.",
       });
       await persistSession();
       await runChat();
@@ -856,28 +799,10 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       }
       await teardown();
       const reply = get().streamBuffer.trim();
-      const rawReasoning = get().reasoningBuffer;
-      const reasoningEnabled =
-        useConfigStore.getState().config.settings.assistantReasoningEnabled;
-      const split = splitThinking(reply, reasoningEnabled ? rawReasoning : "");
-      set({
-        status: "idle",
-        streamBuffer: "",
-        reasoningBuffer: "",
-        activeSearchQuery: null,
-      });
-      if (split.content || split.reasoning) {
-        if (split.content) {
-          apiHistory.push({ role: "assistant", content: split.content });
-        }
-        pushMessage({
-          id: uuid(),
-          kind: "text",
-          role: "assistant",
-          content: split.content,
-          reasoning:
-            reasoningEnabled && split.reasoning ? split.reasoning : undefined,
-        });
+      set({ status: "idle", streamBuffer: "", activeSearchQuery: null });
+      if (reply) {
+        apiHistory.push({ role: "assistant", content: reply });
+        pushMessage({ id: uuid(), kind: "text", role: "assistant", content: reply });
         await persistSession();
       }
     },
@@ -937,12 +862,10 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       activePaperId = null;
       activeSearchContexts = [];
       webSearchEnabledForTurn = false;
-      targetLanguageForTurn = null;
       set({
         messages: [],
         status: "idle",
         streamBuffer: "",
-        reasoningBuffer: "",
         activeSearchQuery: null,
         focusedQuestion: null,
         undoableResultId: null,
@@ -950,31 +873,6 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     },
   };
 });
-
-export function inferAssistantLanguage(text: string): string {
-  const fallback = languageName(useConfigStore.getState().config.settings.language);
-  const sample = stripInternalAssistantMessages(text);
-  if (!sample.trim()) return fallback;
-
-  const cjkCount = Array.from(sample.matchAll(/[\u3400-\u9fff]/g)).length;
-  if (cjkCount > 0) return "Simplified Chinese";
-
-  const latinWords = sample.match(/[A-Za-z]{2,}/g)?.length ?? 0;
-  return latinWords > 0 ? "English" : fallback;
-}
-
-function stripInternalAssistantMessages(text: string): string {
-  return text
-    .split(/\n{2,}/)
-    .map((part) => part.trim())
-    .filter(
-      (part) =>
-        !part.startsWith("Confirmed. Generate the paper operations now") &&
-        !part.startsWith("Your previous response did not pass validation:") &&
-        !part.startsWith("Web search results for this turn."),
-    )
-    .join("\n\n");
-}
 
 export function applyContextWindow(history: ApiMessage[], limit: number): ApiMessage[] {
   if (limit <= 0 || history.length <= limit) return history;
@@ -989,40 +887,6 @@ export function applyContextWindow(history: ApiMessage[], limit: number): ApiMes
     start = Math.max(0, start - 1);
   }
   return history.slice(start);
-}
-
-export function splitThinking(
-  content: string,
-  reasoning = "",
-): { content: string; reasoning: string } {
-  let visible = "";
-  let extracted = "";
-  let cursor = 0;
-
-  while (cursor < content.length) {
-    const start = content.indexOf("<think>", cursor);
-    if (start === -1) {
-      visible += content.slice(cursor);
-      break;
-    }
-
-    visible += content.slice(cursor, start);
-    const bodyStart = start + "<think>".length;
-    const end = content.indexOf("</think>", bodyStart);
-    if (end === -1) {
-      extracted += content.slice(bodyStart);
-      cursor = content.length;
-      break;
-    }
-
-    extracted += content.slice(bodyStart, end);
-    cursor = end + "</think>".length;
-  }
-
-  return {
-    content: visible.trim(),
-    reasoning: [reasoning.trim(), extracted.trim()].filter(Boolean).join("\n\n"),
-  };
 }
 
 function ensureSearchContextMessage(

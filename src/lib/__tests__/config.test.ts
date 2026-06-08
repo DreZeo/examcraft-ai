@@ -22,7 +22,6 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperHeaderFooterLine).toBe(false);
     expect(config.settings.paperPageNumberStyle).toBe("zhPage");
     expect(config.settings.paperPreviewZoom).toBe("pct100");
-    expect(config.settings.assistantReasoningEnabled).toBe(false);
   });
 
   it("loads old settings without paper layout presets", () => {
@@ -47,16 +46,7 @@ describe("AppConfigSchema", () => {
     expect(config.settings.paperHeaderFooterLine).toBe(false);
     expect(config.settings.paperPageNumberStyle).toBe("zhPage");
     expect(config.settings.paperPreviewZoom).toBe("pct100");
-    expect(config.settings.assistantReasoningEnabled).toBe(false);
     expect(config.settings.language).toBe("en");
-  });
-
-  it("keeps configured assistant reasoning preference", () => {
-    const config = AppConfigSchema.parse({
-      settings: { assistantReasoningEnabled: true },
-    });
-
-    expect(config.settings.assistantReasoningEnabled).toBe(true);
   });
 
   it("accepts every global font preset and has a stack for each one", () => {

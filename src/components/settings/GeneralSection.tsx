@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Brain,
   Languages,
   LayoutTemplate,
   MessageSquare,
@@ -124,16 +123,6 @@ export function GeneralSection() {
             options={EXPLANATION_TIERS}
             optionKeyPrefix="explanationTier"
             onChange={(v) => void updateSettings({ explanationTier: v as ExplanationTier })}
-          />
-        </SettingRow>
-
-        <SettingRow
-          icon={<Brain className="h-4 w-4" />}
-          label={t("settings.assistantReasoningEnabled")}
-        >
-          <Toggle
-            checked={s.assistantReasoningEnabled}
-            onChange={(v) => void updateSettings({ assistantReasoningEnabled: v })}
           />
         </SettingRow>
 
