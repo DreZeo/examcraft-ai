@@ -275,9 +275,9 @@ src-tauri/
     keychain.rs     系统钥匙串 API Key 存储
 ```
 
-## 说明
+## 致谢
 
-- 当前项目仍是私有 / 内部项目（`package.json` 标记为 `private`）。
+感谢 [unity2.ai](https://unity2.ai) 提供的技术支持。
 
 ## 开源协议
 

@@ -1,14 +1,69 @@
 **English** · [简体中文](./README.md)
 
-# ExamCraft AI
+<p align="center">
+  <img src="./docs/images/app-icon.png" width="120" alt="ExamCraft AI icon" />
+</p>
 
-> A local-first desktop workspace for generating, editing, previewing, and printing exam papers with AI.
+<h1 align="center">ExamCraft AI</h1>
+
+<p align="center">
+  A local-first desktop workspace for generating, editing, previewing, and printing exam papers with AI.
+</p>
+
+<p align="center">
+  <a href="https://github.com/DreZeo/examcraft-ai/releases">Download for Windows</a>
+  ·
+  <a href="./LICENSE">MIT License</a>
+</p>
 
 ExamCraft AI is a Tauri desktop application for teachers, trainers, and education content creators. It turns natural-language requirements into structured exam questions, validates the generated JSON before it can affect the paper, and renders the result as a Word-like paginated paper that can be previewed, printed, exported, and revised.
 
 The project is designed around one practical idea: AI should help draft the exam, but the teacher keeps control. The assistant analyzes the request, asks for confirmation, can search the web when needed, and returns an auditable result card. Nothing is applied automatically.
 
-![ExamCraft AI paper preview with AI assistant](./docs/images/paper-preview-ai.png)
+## Interface Preview
+
+<table>
+  <tr>
+    <td width="50%">
+      <h3>Paper Workbench</h3>
+      <img src="./docs/images/paper-preview-ai.png" alt="Paper preview with AI assistant" />
+    </td>
+    <td width="50%">
+      <h3>Student Preview</h3>
+      <img src="./docs/images/paper-preview-student.png" alt="Student paper preview" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>Multi-page Zoom</h3>
+      <img src="./docs/images/paper-zoom-pages.png" alt="Multi-page zoom preview" />
+    </td>
+    <td width="50%">
+      <h3>Print Layout Preview</h3>
+      <img src="./docs/images/print-preview-student.png" alt="Student print preview" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>Teacher Export Preview</h3>
+      <img src="./docs/images/print-preview-teacher.png" alt="Teacher export preview" />
+    </td>
+    <td width="50%">
+      <h3>Empty Paper State</h3>
+      <img src="./docs/images/empty-state.png" alt="Empty paper state" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>Model Settings</h3>
+      <img src="./docs/images/model-settings.png" alt="Model settings" />
+    </td>
+    <td width="50%">
+      <h3>AI Agents</h3>
+      <img src="./docs/images/agent-settings.png" alt="AI agent settings" />
+    </td>
+  </tr>
+</table>
 
 ## Highlights
 
@@ -82,13 +137,9 @@ Search settings include active provider, result count, and content mode. Search 
 
 The app includes configurable assistant personas for subject-specific paper generation and revision.
 
-![AI agent settings](./docs/images/agent-settings.png)
-
 ## Paper Layout
 
 The preview is built for exam-paper production rather than a generic text editor. It includes:
-
-![Word-like multi-page preview zoom](./docs/images/paper-zoom-pages.png)
 
 - Paper sizes: A3, A4, A5, B5, Letter, Legal, Executive
 - Portrait and landscape orientation
@@ -107,8 +158,6 @@ The preview supports teacher and student modes. Teacher mode shows answers and e
 ## Export and Printing
 
 Available output workflows:
-
-![Student print preview](./docs/images/print-preview-student.png)
 
 - **JSON export/import** — save and restore complete paper data.
 - **Markdown export** — export teacher or student content for backup or external editing.
@@ -226,7 +275,10 @@ src-tauri/
     keychain.rs     OS keychain API key storage
 ```
 
-## Notes
+## Acknowledgements
 
-- This project is currently private/internal (`package.json` is marked `private`).
-- License has not been specified yet.
+Thanks to [unity2.ai](https://unity2.ai) for technical support.
+
+## License
+
+This project is open-sourced under the [MIT License](./LICENSE).
