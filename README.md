@@ -229,4 +229,7 @@ src-tauri/
 ## 说明
 
 - 当前项目仍是私有 / 内部项目（`package.json` 标记为 `private`）。
-- 许可证暂未指定。
+
+## 开源协议
+
+本项目基于 [MIT License](./LICENSE) 开源。
