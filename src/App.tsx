@@ -15,6 +15,9 @@ import { SettingsModal } from "./components/settings/SettingsModal";
 import { PaperManagerModal } from "./components/paper/PaperManagerModal";
 import { useAssistantStore } from "./stores/assistantStore";
 
+const WORKBENCH_BASE_WIDTH = 1280;
+const WORKBENCH_BASE_HEIGHT = 800;
+
 export default function App() {
   const { loaded, dataDir, init } = useConfigStore();
   const paper = usePaperStore((s) => s.paper);
@@ -27,6 +30,8 @@ export default function App() {
   const [outlineOpen, setOutlineOpen] = useState(true);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const paperScrollRef = useRef<HTMLElement | null>(null);
+  const workbenchScale = useWorkbenchScale();
+  const scaledWorkbench = workbenchScale < 0.999;
 
   useTheme();
   useGlobalFont();
@@ -82,39 +87,86 @@ export default function App() {
 
   return (
     <MarkdownFormatProvider>
-      <div className="flex h-full flex-col bg-background text-foreground">
-      <TopBar
-        onOpenSettings={() => setSettingsOpen(true)}
-        onOpenPaperManager={() => setPaperManagerOpen(true)}
-      />
-      <PaperToolbar />
-      <div className="flex min-h-0 flex-1">
-        <PaperOutline
-          questions={paper.questions}
-          activeQuestionId={activeQuestionId}
-          open={outlineOpen}
-          onToggle={() => setOutlineOpen((value) => !value)}
-          onActiveQuestionChange={setActiveQuestionId}
-        />
-        <main ref={paperScrollRef} className="min-w-0 flex-1 overflow-auto">
-          <PaperErrorBoundary key={activePaperId ?? "none"}>
-            <PaperCanvas
-              scrollRootRef={paperScrollRef}
-              onActiveQuestionChange={setActiveQuestionId}
+      <div className="h-full w-full overflow-hidden bg-background">
+        <div
+          className="origin-top-left bg-background text-foreground"
+          style={{
+            width: scaledWorkbench ? WORKBENCH_BASE_WIDTH : "100%",
+            height: scaledWorkbench ? WORKBENCH_BASE_HEIGHT : "100%",
+            transform: scaledWorkbench
+              ? `scale(${workbenchScale})`
+              : undefined,
+          }}
+        >
+          <div className="flex h-full flex-col bg-background text-foreground">
+            <TopBar
+              onOpenSettings={() => setSettingsOpen(true)}
+              onOpenPaperManager={() => setPaperManagerOpen(true)}
             />
-          </PaperErrorBoundary>
-        </main>
-        <AssistantDrawer
-          open={drawerOpen}
-          onToggle={() => setDrawerOpen((v) => !v)}
-          onOpenSettings={() => setSettingsOpen(true)}
-        />
-      </div>
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
-        {paperManagerOpen && (
-          <PaperManagerModal onClose={() => setPaperManagerOpen(false)} />
-        )}
+            <PaperToolbar />
+            <div className="flex min-h-0 flex-1">
+              <PaperOutline
+                questions={paper.questions}
+                activeQuestionId={activeQuestionId}
+                open={outlineOpen}
+                onToggle={() => setOutlineOpen((value) => !value)}
+                onActiveQuestionChange={setActiveQuestionId}
+              />
+              <main ref={paperScrollRef} className="min-w-0 flex-1 overflow-auto">
+                <PaperErrorBoundary key={activePaperId ?? "none"}>
+                  <PaperCanvas
+                    scrollRootRef={paperScrollRef}
+                    onActiveQuestionChange={setActiveQuestionId}
+                  />
+                </PaperErrorBoundary>
+              </main>
+              <AssistantDrawer
+                open={drawerOpen}
+                onToggle={() => setDrawerOpen((v) => !v)}
+                onOpenSettings={() => setSettingsOpen(true)}
+              />
+            </div>
+            {settingsOpen && (
+              <SettingsModal onClose={() => setSettingsOpen(false)} />
+            )}
+            {paperManagerOpen && (
+              <PaperManagerModal onClose={() => setPaperManagerOpen(false)} />
+            )}
+          </div>
+        </div>
       </div>
     </MarkdownFormatProvider>
   );
+}
+
+export function computeWorkbenchScale(
+  viewportWidth: number,
+  viewportHeight: number,
+): number {
+  if (viewportWidth <= 0 || viewportHeight <= 0) return 1;
+  return Math.min(
+    1,
+    viewportWidth / WORKBENCH_BASE_WIDTH,
+    viewportHeight / WORKBENCH_BASE_HEIGHT,
+  );
+}
+
+function useWorkbenchScale(): number {
+  const [scale, setScale] = useState(() =>
+    typeof window === "undefined"
+      ? 1
+      : computeWorkbenchScale(window.innerWidth, window.innerHeight),
+  );
+
+  useEffect(() => {
+    function updateScale() {
+      setScale(computeWorkbenchScale(window.innerWidth, window.innerHeight));
+    }
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, []);
+
+  return scale;
 }

@@ -30,8 +30,8 @@ export function PaperOutline({
     <aside
       className={
         open
-          ? "no-print motion-panel-shell hidden w-56 shrink-0 overflow-hidden border-r border-border bg-background/60 lg:flex lg:flex-col"
-          : "no-print motion-panel-shell hidden w-16 shrink-0 overflow-hidden border-r border-border bg-background/60 lg:flex lg:flex-col"
+          ? "no-print motion-panel-shell flex w-56 shrink-0 flex-col overflow-hidden border-r border-border bg-background/60"
+          : "no-print motion-panel-shell flex w-16 shrink-0 flex-col overflow-hidden border-r border-border bg-background/60"
       }
     >
       <div
