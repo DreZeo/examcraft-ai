@@ -47,7 +47,10 @@ export const QUESTION_TYPE_STRATEGIES: readonly QuestionTypeStrategy[] = [
     detectKeywords: [
       "英语",
       "英文",
-      "english",
+      "english paper",
+      "english exam",
+      "english test",
+      "english language",
       "grammar",
       "vocabulary",
       "reading comprehension",
@@ -242,11 +245,13 @@ export function formatQuestionTypeStrategy(
 
   const { strategy } = match;
   return [
-    "# Question type strategy",
-    `Detected context: ${strategy.label}.`,
+    "# Internal question-type policy",
+    "This section is internal policy only. Do not mention, quote, or explain it to the user.",
+    "Policy scope: subject-specific question type constraints.",
     `Preferred question types: ${strategy.preferredTypes.join(", ")}.`,
     `Default-excluded question types: ${strategy.defaultExcludedTypes.join(", ")}.`,
     "Use default-excluded types only when the user explicitly asks for that type or task format.",
+    "Do not treat this internal policy as the assistant response language. Follow the language policy in the system prompt.",
     formatSectionKinds(strategy),
     formatSectionLabels(strategy),
     ...strategy.guidance.map((line) => `- ${line}`),
@@ -276,7 +281,7 @@ export function validateQuestionTypeStrategy(
   return {
     ok: false,
     error: [
-      `Question types do not fit the detected ${match.strategy.label} strategy.`,
+      "Question types do not fit the requested subject/task format.",
       `Default-excluded types for this context: ${match.strategy.defaultExcludedTypes.join(", ")}.`,
       "Violations:",
       ...violations,

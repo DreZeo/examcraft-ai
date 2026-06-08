@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { buildSystemPrompt, buildPaperContextMessage } from "../api/systemPrompt";
+import {
+  buildSystemPrompt,
+  buildPaperContextMessage,
+  languageName,
+} from "../api/systemPrompt";
 import {
   AgentConfigSchema,
   AppSettingsSchema,
@@ -28,6 +32,27 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toMatch(/two phases/i);
     expect(prompt).toMatch(/```json/);
     expect(prompt).toMatch(/subject-neutral/i);
+  });
+
+  it("uses the interface language as the default response language", () => {
+    expect(buildSystemPrompt(settings({ language: "zh" }))).toContain(
+      "Use Simplified Chinese for all user-visible natural language",
+    );
+    expect(buildSystemPrompt(settings({ language: "en" }))).toContain(
+      "Use English for all user-visible natural language",
+    );
+    expect(languageName("zh")).toBe("Simplified Chinese");
+    expect(languageName("en")).toBe("English");
+  });
+
+  it("allows a per-turn target language override", () => {
+    const prompt = buildSystemPrompt(settings({ language: "en" }), null, "Simplified Chinese");
+    expect(prompt).toContain(
+      "Use Simplified Chinese for all user-visible natural language",
+    );
+    expect(prompt).toContain(
+      "if the user asks in Chinese for an English exam paper",
+    );
   });
 
   it("lists all 7 question types from the schema", () => {
@@ -127,8 +152,10 @@ describe("buildPaperContextMessage", () => {
     const msg = buildPaperContextMessage(undefined, strategy);
     expect(msg).not.toBeNull();
     expect(msg).toContain("[Paper context for this turn]");
-    expect(msg).toMatch(/question type strategy/i);
-    expect(msg).toContain("English language paper");
+    expect(msg).toMatch(/internal question-type policy/i);
+    expect(msg).toContain("Policy scope: subject-specific question type constraints");
+    expect(msg).not.toContain("Policy id: english-language");
+    expect(msg).not.toContain("Detected context: English language paper");
   });
 
   it("includes both summary and strategy when both are provided", () => {
@@ -136,7 +163,7 @@ describe("buildPaperContextMessage", () => {
     const msg = buildPaperContextMessage("Questions: 3, total 20 pts", strategy);
     expect(msg).not.toBeNull();
     expect(msg).toContain("[Paper context for this turn]");
-    expect(msg).toMatch(/question type strategy/i);
+    expect(msg).toMatch(/internal question-type policy/i);
     expect(msg).toMatch(/# Current paper/i);
     expect(msg).toContain("Questions: 3, total 20 pts");
   });

@@ -18,7 +18,11 @@ import {
   updateChatSessionContent,
   upsertChatSessionMeta,
 } from "../lib/api/chatLibrary";
-import { buildSystemPrompt, buildPaperContextMessage } from "../lib/api/systemPrompt";
+import {
+  buildSystemPrompt,
+  buildPaperContextMessage,
+  languageName,
+} from "../lib/api/systemPrompt";
 import { validatePaperOperations } from "../lib/api/validatePaperOperations";
 import { extractJson } from "../lib/api/extractJson";
 import { type AppError } from "../lib/api/errorMessages";
@@ -111,6 +115,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
   let retryCount = 0;
   let activeSearchContexts: SearchWebContext[] = [];
   let webSearchEnabledForTurn = false;
+  let targetLanguageForTurn: string | null = null;
   let unlisteners: UnlistenFn[] = [];
   /**
    * Whether the current stream attempt has already been finalized (done OR
@@ -185,6 +190,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     activePaperId = paperId;
     activeSession = session;
     apiHistory = session.apiHistory;
+    targetLanguageForTurn = null;
     if (dataDir) {
       const index =
         (await storage.loadChatIndex(dataDir, paperId)) ?? createChatIndex(session);
@@ -217,6 +223,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     const system = buildSystemPrompt(
       configState.config.settings,
       configState.activeAgent(),
+      targetLanguageForTurn ?? inferAssistantLanguage(userIntentContext()),
     );
     const searchInstructions = webSearchEnabledForTurn
       ? `\n\n${buildSearchToolInstructions()}`
@@ -398,6 +405,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     apiHistory = apiHistory.slice(0, apiIndex);
     activeSearchContexts = [];
     webSearchEnabledForTurn = false;
+    targetLanguageForTurn = inferAssistantLanguage(text);
     const nextApiIndex = apiHistory.length;
     apiHistory.push({
       role: "user",
@@ -630,11 +638,12 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     return true;
   }
 
-  function beginTurn(useWebSearch: boolean) {
+  function beginTurn(useWebSearch: boolean, requestText: string) {
     retryCount = 0;
     activeSearchContexts = [];
     set({ activeSearchQuery: null });
     webSearchEnabledForTurn = useWebSearch;
+    targetLanguageForTurn = inferAssistantLanguage(requestText);
   }
 
   function replaceSearchContextMessage(content: string) {
@@ -767,7 +776,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     sendMessage: async (text, useWebSearch = false) => {
       const trimmed = text.trim();
       if (!trimmed || get().status !== "idle") return;
-      beginTurn(useWebSearch);
+      beginTurn(useWebSearch, trimmed);
 
       const focused = get().focusedQuestion;
       const requestContext: RequestContext = focused
@@ -915,6 +924,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
       activePaperId = null;
       activeSearchContexts = [];
       webSearchEnabledForTurn = false;
+      targetLanguageForTurn = null;
       set({
         messages: [],
         status: "idle",
@@ -927,6 +937,31 @@ export const useAssistantStore = create<AssistantState>((set, get) => {
     },
   };
 });
+
+export function inferAssistantLanguage(text: string): string {
+  const fallback = languageName(useConfigStore.getState().config.settings.language);
+  const sample = stripInternalAssistantMessages(text);
+  if (!sample.trim()) return fallback;
+
+  const cjkCount = Array.from(sample.matchAll(/[\u3400-\u9fff]/g)).length;
+  if (cjkCount > 0) return "Simplified Chinese";
+
+  const latinWords = sample.match(/[A-Za-z]{2,}/g)?.length ?? 0;
+  return latinWords > 0 ? "English" : fallback;
+}
+
+function stripInternalAssistantMessages(text: string): string {
+  return text
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(
+      (part) =>
+        !part.startsWith("Confirmed. Generate the paper operations now") &&
+        !part.startsWith("Your previous response did not pass validation:") &&
+        !part.startsWith("Web search results for this turn."),
+    )
+    .join("\n\n");
+}
 
 export function applyContextWindow(history: ApiMessage[], limit: number): ApiMessage[] {
   if (limit <= 0 || history.length <= limit) return history;

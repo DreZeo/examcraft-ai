@@ -5,6 +5,7 @@ import { defaultAppConfig } from "../types/config";
 import {
   useAssistantStore,
   applyContextWindow,
+  inferAssistantLanguage,
   splitThinking,
 } from "../../stores/assistantStore";
 import { useConfigStore } from "../../stores/configStore";
@@ -618,6 +619,133 @@ describe("assistantStore reasoning streams", () => {
           command === "web_search" && args.query === "计算机二级 C 语言",
       ),
     ).toBe(true);
+  });
+});
+
+describe("assistantStore language policy", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    tauriMocks.listeners = {};
+    tauriMocks.listen.mockImplementation((event: string, callback: (event: { payload: unknown }) => void) => {
+      tauriMocks.listeners[event] = callback;
+      return Promise.resolve(vi.fn());
+    });
+    tauriMocks.invoke.mockImplementation((command: string) => {
+      if (command === "get_api_key") return Promise.resolve("test-key");
+      if (command === "web_search") {
+        return Promise.resolve([
+          {
+            title: "NCRE C",
+            url: "https://example.test/c",
+            snippet: "C exam",
+            provider: "tavily",
+          },
+        ]);
+      }
+      return Promise.resolve();
+    });
+    configureModel();
+    useConfigStore.setState({
+      config: {
+        ...useConfigStore.getState().config,
+        settings: {
+          ...useConfigStore.getState().config.settings,
+          language: "en",
+          webSearch: {
+            activeProvider: "tavily",
+            resultCount: 5,
+            contentMode: "summary",
+          },
+        },
+      },
+    });
+    usePaperStore.setState({
+      paper: paper(),
+      undoSnapshot: null,
+      activePaperId: "paper-1",
+      saveStatus: "saved",
+    });
+    useAssistantStore.getState().reset();
+  });
+
+  function streamCalls() {
+    return tauriMocks.invoke.mock.calls.filter(
+      ([command]) => command === "stream_chat",
+    );
+  }
+
+  async function finishStreamWith(content: string) {
+    tauriMocks.listeners["chat:chunk"]?.({ payload: content });
+    tauriMocks.listeners["chat:done"]?.({ payload: undefined });
+    await Promise.resolve();
+  }
+
+  async function waitForCondition(
+    predicate: () => boolean,
+    timeoutMs = 1000,
+  ) {
+    const start = Date.now();
+    while (!predicate()) {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error("Timed out waiting for condition");
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
+  it("infers user input language with interface language fallback", () => {
+    expect(inferAssistantLanguage("生成一份英语试卷")).toBe("Simplified Chinese");
+    expect(inferAssistantLanguage("Create an English exam")).toBe("English");
+    expect(inferAssistantLanguage("12345")).toBe("English");
+  });
+
+  it("uses Chinese for a Chinese request even when the interface is English", async () => {
+    await useAssistantStore.getState().sendMessage("生成一份英语试卷", false);
+
+    const messages = streamCalls()[0]?.[1]?.messages ?? [];
+    expect(messages[0]?.content).toContain(
+      "Use Simplified Chinese for all user-visible natural language",
+    );
+    expect(messages[0]?.content).toContain(
+      "if the user asks in Chinese for an English exam paper",
+    );
+  });
+
+  it("keeps the original target language after the internal confirmation prompt", async () => {
+    await useAssistantStore.getState().sendMessage("生成一份英语试卷", false);
+    await finishStreamWith("我会生成英语试卷。");
+    await waitForCondition(() =>
+      useAssistantStore.getState().messages.some((message) => message.kind === "confirmation"),
+    );
+
+    const confirmation = useAssistantStore
+      .getState()
+      .messages.find((message) => message.kind === "confirmation");
+    await useAssistantStore.getState().confirm(confirmation?.id ?? "");
+
+    const calls = streamCalls();
+    const messages = calls[calls.length - 1]?.[1]?.messages ?? [];
+    expect(messages[0]?.content).toContain(
+      "Use Simplified Chinese for all user-visible natural language",
+    );
+  });
+
+  it("keeps the original target language across web search tool turns", async () => {
+    await useAssistantStore
+      .getState()
+      .sendMessage("联网搜索计算机二级 C 语言趋势", true);
+
+    await finishStreamWith(`
+\`\`\`search_web
+{"query":"计算机二级 C 语言趋势"}
+\`\`\`
+`);
+    await waitForCondition(() => streamCalls().length === 2);
+
+    const messages = streamCalls()[1]?.[1]?.messages ?? [];
+    expect(messages[0]?.content).toContain(
+      "Use Simplified Chinese for all user-visible natural language",
+    );
   });
 });
 

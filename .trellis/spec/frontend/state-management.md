@@ -173,6 +173,26 @@ may include optional tool metadata such as `toolCallId`; the actual source
 context that affects generation is the structured search-context message added
 to `apiHistory`.
 
+## Pattern: assistant response language policy
+
+`assistantStore` determines a turn-level target language from the user's visible
+request before calling `stream_chat`. User input language wins; the configured
+interface language is only the fallback when the request text has no clear CJK
+or Latin signal. Internal control messages such as `Confirmed. Generate...`,
+validation retries, and web-search context messages must not change the target
+language for the turn.
+
+`buildSystemPrompt()` receives that target language and tells the model to use
+it for all user-visible prose, including confirmations, explanations,
+error-recovery text, web-search summaries, and provider-returned
+reasoning/thinking. Subject material language is separate from assistant prose:
+a Chinese request for an English exam should keep assistant explanations in
+Chinese while allowing English inside the actual exam content.
+
+Question-type strategy prompts are internal constraints only. Do not expose
+human-readable detected labels or strategy ids in model-facing prose that the
+assistant might quote back to the user.
+
 ## Pattern: paper-scoped persistence
 
 The app manages a local paper library rather than a single anonymous document.

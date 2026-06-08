@@ -118,7 +118,8 @@ describe("validatePaperOperations", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error).toContain("English language paper");
+      expect(result.error).toContain("requested subject/task format");
+      expect(result.error).not.toContain("English language paper");
       expect(result.error).toContain("true-false");
     }
   });
